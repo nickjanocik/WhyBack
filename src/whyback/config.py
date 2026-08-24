@@ -56,7 +56,9 @@ class AgentConfig(BaseModel):
     tool_timeout_seconds: float = Field(default=30.0, gt=0.0)
     max_retryable_retries: int = Field(default=1, ge=0, le=1)
     default_model: str = "gpt-5.6-sol"
-    default_reasoning_effort: Literal["minimal", "low", "medium", "high"] = "medium"
+    default_reasoning_effort: Literal[
+        "none", "low", "medium", "high", "xhigh", "max"
+    ] = "medium"
 
 
 class Settings(BaseModel):
@@ -71,7 +73,9 @@ class Settings(BaseModel):
     data_dir: Path = Path("data")
     artifact_dir: Path = Path("artifacts/local")
     model: str = "gpt-5.6-sol"
-    reasoning_effort: Literal["minimal", "low", "medium", "high"] = "medium"
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh", "max"] = (
+        "medium"
+    )
 
 
 def load_settings(path: Path = Path("configs/app.toml")) -> Settings:
