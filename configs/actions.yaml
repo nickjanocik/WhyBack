@@ -1,0 +1,232 @@
+catalog_version: 1
+actions:
+  - action_id: CATEGORY_WINBACK
+    description: >-
+      Recommend a human-reviewed test intended to rebuild engagement in a
+      specifically evidenced declining category; the catalog does not prescribe
+      an outreach channel or execute a treatment.
+    evidence_prerequisites:
+      - description: >-
+          A deterministic category decomposition identifies a category-level loss
+          or a material contribution to lost retailer sales value.
+        source_tools:
+          - category_decomposition
+        metrics:
+          - category_retailer_sales_value
+          - contribution_to_lost_retailer_sales_value
+        metric_match: any
+        minimum_matching_records: 1
+        minimum_distinct_tools: 1
+    contraindications:
+      - No category-level loss is supported by valid evidence.
+      - The apparent loss is dominated by unresolved UNKNOWN product mappings.
+      - Recent category growth contradicts the proposed win-back focus.
+    human_review_required: true
+    success_metric:
+      name: selected_category_retailer_sales_value_retention
+      description: >-
+        Change in retailer sales value for the selected category relative to an
+        eligible holdout over the evaluation window.
+      desired_direction: increase
+      evaluation_window_weeks: 8
+    experiment:
+      design: randomized_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Randomize eligible households between a reviewer-approved category
+        treatment and no treatment, preserving a ten-percent holdout.
+
+  - action_id: VISIT_FREQUENCY_REACTIVATION
+    description: >-
+      Recommend a human-reviewed reactivation test focused on restoring shopping
+      cadence when visit-frequency evidence, rather than basket value alone,
+      supports the decline.
+    evidence_prerequisites:
+      - description: >-
+          Deterministic trend or basket evidence shows deterioration in trips,
+          active weeks, baskets per week, or inter-basket timing.
+        source_tools:
+          - customer_trend
+          - basket_behavior
+        metrics:
+          - distinct_trips
+          - active_weeks
+          - basket_count
+          - baskets_per_calendar_week
+          - mean_basket_interval_days
+          - median_basket_interval_days
+        metric_match: any
+        minimum_matching_records: 1
+        minimum_distinct_tools: 1
+    contraindications:
+      - Visit cadence is stable or improving in the recent window.
+      - Sparse basket history makes cadence or interval evidence unreliable.
+      - The decline is isolated to basket value with no visit-frequency signal.
+    human_review_required: true
+    success_metric:
+      name: weekly_distinct_trip_retention
+      description: >-
+        Change in distinct shopping trips per week relative to an eligible
+        holdout over the evaluation window.
+      desired_direction: increase
+      evaluation_window_weeks: 8
+    experiment:
+      design: randomized_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Randomize eligible households between a reviewer-approved cadence
+        treatment and no treatment, then compare distinct trips per week.
+
+  - action_id: PROMOTION_VALUE_REENGAGEMENT
+    description: >-
+      Recommend a human-reviewed value-oriented test when promotion-associated
+      purchasing or recorded coupon behavior plausibly changed, without treating
+      availability records as proof of household exposure.
+    evidence_prerequisites:
+      - description: >-
+          Deterministic promotion-association or coupon-history evidence supports
+          a value-related reengagement hypothesis.
+        source_tools:
+          - promotion_response
+          - coupon_campaign_history
+        metrics:
+          - promotion_associated_retailer_sales_value
+          - promotion_associated_share
+          - display_associated_retailer_sales_value
+          - mailer_associated_retailer_sales_value
+          - transaction_coupon_baskets
+          - recorded_coupon_discount
+          - coupon_redemption_count
+        metric_match: any
+        minimum_matching_records: 1
+        minimum_distinct_tools: 1
+    contraindications:
+      - Promotion enrichment has an unresolved reconciliation failure.
+      - The rationale depends on claiming household exposure from availability data.
+      - Available evidence shows no meaningful value- or promotion-related change.
+    human_review_required: true
+    success_metric:
+      name: incremental_retailer_sales_value
+      description: >-
+        Incremental retailer sales value relative to an eligible holdout, with
+        treatment cost assessed separately by the reviewer.
+      desired_direction: increase
+      evaluation_window_weeks: 8
+    experiment:
+      design: randomized_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Randomize eligible households between a reviewer-approved value treatment
+        and no treatment; do not infer or automate a delivery channel.
+
+  - action_id: PERSONALIZED_CHECK_IN
+    description: >-
+      Recommend a human-reviewed service check-in when multiple independent
+      behavioral signals suggest a complex or ambiguous decline that is not well
+      served by a single category, cadence, or value hypothesis.
+    evidence_prerequisites:
+      - description: >-
+          At least two valid evidence records from distinct analytical tools
+          support a multifactor decline or unresolved competing explanations.
+        source_tools:
+          - customer_trend
+          - category_decomposition
+          - basket_behavior
+          - promotion_response
+          - coupon_campaign_history
+          - peer_comparison
+        metrics:
+          - retailer_sales_value
+          - distinct_trips
+          - basket_count
+          - category_retailer_sales_value
+          - primary_store_changed
+          - promotion_associated_share
+          - transaction_coupon_baskets
+          - target_retailer_sales_change_percentile
+        metric_match: any
+        minimum_matching_records: 2
+        minimum_distinct_tools: 2
+    contraindications:
+      - Evidence clearly supports a narrower catalog action.
+      - Required consent, contact-preference, or service-capacity review is unavailable.
+      - Only one weak or materially limited evidence family is available.
+    human_review_required: true
+    success_metric:
+      name: post_review_engagement_retention
+      description: >-
+        Change in active weeks and retailer sales value relative to an eligible
+        holdout after the reviewer-approved check-in period.
+      desired_direction: increase
+      evaluation_window_weeks: 8
+    experiment:
+      design: randomized_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Randomize eligible, contactable households between a reviewer-approved
+        service workflow and no intervention, subject to consent policy.
+
+  - action_id: MONITOR
+    description: >-
+      Recommend no immediate outreach and schedule deterministic reassessment when
+      valid evidence exists but the decline appears weak, recent, or plausibly
+      transient.
+    evidence_prerequisites:
+      - description: >-
+          At least one valid trend, basket, or peer record supports monitoring the
+          observed change without escalating to an intervention hypothesis.
+        source_tools:
+          - customer_trend
+          - basket_behavior
+          - peer_comparison
+        metrics:
+          - retailer_sales_value
+          - distinct_trips
+          - basket_count
+          - target_retailer_sales_change
+          - target_retailer_sales_change_percentile
+        metric_match: any
+        minimum_matching_records: 1
+        minimum_distinct_tools: 1
+    contraindications:
+      - Multiple independent tools support a severe and sustained decline.
+      - A clear, catalog-supported driver warrants a reviewer-approved test.
+      - Critical data failures prevent even a defensible monitoring baseline.
+    human_review_required: true
+    success_metric:
+      name: monitored_engagement_stability
+      description: >-
+        Stability or recovery in active weeks and retailer sales value at the next
+        scheduled reassessment.
+      desired_direction: maintain_or_increase
+      evaluation_window_weeks: 4
+    experiment:
+      design: matched_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Compare monitored households with a matched historical or concurrent
+        cohort to calibrate whether reassessment thresholds identify true decline.
+
+  - action_id: INSUFFICIENT_EVIDENCE
+    description: >-
+      Recommend no customer action because valid evidence does not support another
+      catalog choice; preserve failures and limitations for human review and
+      request evidence recovery or later reassessment.
+    evidence_prerequisites: []
+    contraindications:
+      - Valid, sufficient evidence already satisfies another catalog action.
+    human_review_required: true
+    fallback_only: true
+    success_metric:
+      name: reviewer_resolution_rate
+      description: >-
+        Share of insufficient-evidence cases that reviewers resolve through data
+        recovery or a documented no-action decision.
+      desired_direction: increase
+      evaluation_window_weeks: 4
+    experiment:
+      design: reviewer_audit_holdout
+      holdout_fraction: 0.10
+      description: >-
+        Audit a random holdout of closed cases to estimate false insufficiency and
+        verify that no unsupported customer action was recommended.

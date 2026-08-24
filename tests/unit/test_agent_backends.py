@@ -15,6 +15,7 @@ from whyback.agent.backend import (
 from whyback.agent.openai_backend import OpenAIResponsesBackend
 from whyback.agent.scripted_backend import ScriptedBackend
 from whyback.agent.state import (
+    DriverClaim,
     FinishDecision,
     FinishProposal,
     InvestigationState,
@@ -69,7 +70,12 @@ def _finish_decision() -> FinishDecision:
         investigation_question="Is the evidence sufficient to finish?",
         decision_summary="Submit a cautious evidence-grounded conclusion.",
         final=FinishProposal(
-            driver_summary=("Reduced visit frequency is a plausible driver.",),
+            driver_summary=(
+                DriverClaim(
+                    summary="Reduced visit frequency is a plausible driver.",
+                    supporting_evidence_ids=("ev-trend",),
+                ),
+            ),
             proposed_confidence="medium",
             supporting_evidence_ids=("ev-trend",),
             counterevidence_ids=(),
@@ -128,7 +134,12 @@ def test_investigation_state_is_frozen_and_budget_bounded() -> None:
 def test_finish_proposal_rejects_duplicate_evidence_references() -> None:
     with pytest.raises(ValidationError, match="unique"):
         FinishProposal(
-            driver_summary=("A plausible driver.",),
+            driver_summary=(
+                DriverClaim(
+                    summary="A plausible driver.",
+                    supporting_evidence_ids=("ev-1",),
+                ),
+            ),
             proposed_confidence="low",
             supporting_evidence_ids=("ev-1", "ev-1"),
             counterevidence_ids=(),

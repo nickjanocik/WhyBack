@@ -95,8 +95,25 @@ class ToolHistoryEntry(BaseModel):
     attempts: tuple[ToolAttemptRecord, ...]
     final_status: ToolStatus
     model_summary: dict[str, JsonValue] = Field(default_factory=dict)
+    provenance_diagnostics: dict[str, JsonValue] = Field(default_factory=dict)
     evidence_ids: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
+
+
+class DriverClaim(BaseModel):
+    """One qualitative driver mapped to its deterministic support."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    summary: str = Field(min_length=1, max_length=400)
+    supporting_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=6)
+
+    @field_validator("supporting_evidence_ids")
+    @classmethod
+    def unique_support(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(value) != len(set(value)):
+            raise ValueError("Driver evidence references must be unique")
+        return value
 
 
 class FinishProposal(BaseModel):
@@ -104,7 +121,7 @@ class FinishProposal(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    driver_summary: tuple[str, ...] = Field(min_length=1, max_length=4)
+    driver_summary: tuple[DriverClaim, ...] = Field(max_length=4)
     proposed_confidence: ConfidenceLevel
     supporting_evidence_ids: tuple[str, ...] = Field(max_length=12)
     counterevidence_ids: tuple[str, ...] = Field(max_length=8)
