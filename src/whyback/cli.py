@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -52,3 +53,68 @@ def data_status() -> None:
     console.print(f"Source: {settings.data.source_repository}")
     console.print(f"Commit: {settings.data.source_commit}")
     console.print(f"Data directory: {settings.data_dir}")
+    manifest_path = settings.data_dir / "prepared" / "manifest.json"
+    console.print(
+        f"Prepared manifest: {'available' if manifest_path.is_file() else 'missing'}"
+    )
+
+
+@data_app.command("download")
+def data_download(
+    force: Annotated[
+        bool, typer.Option(help="Replace and reverify existing source files.")
+    ] = False,
+) -> None:
+    """Download the official files at the configured pinned commit."""
+
+    from whyback.data.download import download_sources
+
+    settings = load_settings()
+    hashes = download_sources(settings.data_dir / "raw", force=force)
+    console.print(f"Verified {len(hashes)} official source files.")
+
+
+@data_app.command("prepare")
+def data_prepare(
+    full: Annotated[
+        bool,
+        typer.Option(
+            "--full",
+            help="Prepare the complete transaction and promotion data.",
+        ),
+    ] = False,
+    force: Annotated[
+        bool, typer.Option(help="Rebuild prepared data even when hashes match.")
+    ] = False,
+    download: Annotated[
+        bool,
+        typer.Option(
+            "--download/--no-download",
+            help="Acquire missing official source files before preparation.",
+        ),
+    ] = True,
+    data_dir: Annotated[
+        Path | None,
+        typer.Option(help="Override the configured local data directory."),
+    ] = None,
+) -> None:
+    """Prepare validated canonical Parquet tables and a hash manifest."""
+
+    if not full:
+        raise typer.BadParameter(
+            "WhyBack does not silently substitute a sample; pass --full."
+        )
+    from whyback.data.download import download_sources
+    from whyback.data.prepare import prepare_data
+
+    settings = load_settings()
+    root = data_dir or settings.data_dir
+    raw_dir = root / "raw"
+    if download:
+        download_sources(raw_dir)
+    manifest = prepare_data(raw_dir, root / "prepared", force=force)
+    console.print(
+        f"Prepared {len(manifest.prepared)} tables from "
+        f"{sum(entry.row_count for entry in manifest.sources):,} source rows."
+    )
+    console.print(f"Manifest: {root / 'prepared' / 'manifest.json'}")

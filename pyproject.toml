@@ -54,6 +54,8 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
 include = ["src", "scripts", "evals"]
 exclude = ["artifacts", "data"]
 reportMissingTypeStubs = false
@@ -65,6 +67,7 @@ reportUnknownLambdaType = false
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers -ra"
 testpaths = ["tests"]
+pythonpath = ["."]
 timeout = 30
 markers = [
   "live: requires network, official prepared data, or an external model",

@@ -8,7 +8,7 @@ Status legend: **planned**, **implemented**, **verified**, **blocked**, or
 | # | Milestone | Depends on | Acceptance and checks | Status |
 |---|---|---|---|---|
 | 1 | Project scaffold and guardrails | — | Naming, `src` layout, `uv` lock, CLI help, Ruff/Pyright/Pytest configuration, secret/data ignores, `AGENTS.md`; run scaffold tests and static checks | verified (2 tests; Ruff and Pyright clean) |
-| 2 | Pinned data pipeline | 1 | Official commit URLs, SHA-256 verification, RDS/RDA normalization, contracts, canonical Parquet and manifest, idempotence, documented semantics; synthetic integration tests | planned |
+| 2 | Pinned data pipeline | 1 | Official commit URLs, SHA-256 verification, RDS/RDA normalization, contracts, canonical Parquet and manifest, idempotence, documented semantics; synthetic integration tests | verified (9 focused tests; full 22,627,890-row source preparation and idempotent reuse) |
 | 3 | Decline detector | 2 | Max-week anchored 8+8 windows, eligibility, exact weighted score, deterministic ranking and 0.20/0.30/0.40 sensitivity; hand-calculated and property tests | planned |
 | 4 | Trend, category, and basket tools | 2–3 | Typed envelopes, deterministic metrics, `UNKNOWN` mapping, reconciliation, order invariance, no ad hoc data connections | planned |
 | 5 | Promotion, coupon, and peer tools | 2–4 | Unique promotion state and economic non-multiplication; Type A partial semantics; deterministic behavioral peers excluding target; invariant tests | planned |
