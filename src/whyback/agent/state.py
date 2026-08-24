@@ -15,6 +15,7 @@ from pydantic import (
     field_validator,
 )
 
+from whyback.agent.actions import ActionId
 from whyback.detection.decline import DeclineSnapshot
 from whyback.tools.contracts import AnalysisWindow, EvidenceRecord, ToolName, ToolStatus
 
@@ -125,7 +126,7 @@ class FinishProposal(BaseModel):
     proposed_confidence: ConfidenceLevel
     supporting_evidence_ids: tuple[str, ...] = Field(max_length=12)
     counterevidence_ids: tuple[str, ...] = Field(max_length=8)
-    next_best_action_id: str = Field(min_length=1, max_length=80)
+    next_best_action_id: ActionId
     rationale: str = Field(min_length=1, max_length=800)
     alternative_explanations: tuple[str, ...] = Field(min_length=1, max_length=4)
     uncertainties: tuple[str, ...] = Field(min_length=1, max_length=6)

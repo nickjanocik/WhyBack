@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
+from datetime import datetime
 from typing import cast
 from uuid import UUID
 
@@ -15,6 +17,8 @@ from whyback import __version__
 from whyback.agent.actions import ActionCatalog, ActionId
 from whyback.agent.backend import ModelBackend, ModelBackendError
 from whyback.agent.evidence import EvidenceLedger, EvidenceLedgerError
+from whyback.agent.faults import DemoFaultInjector
+from whyback.agent.prompts import PROMPT_HASH, PROMPT_VERSION
 from whyback.agent.state import (
     ConfidenceLevel,
     FinishProposal,
@@ -30,6 +34,8 @@ from whyback.agent.verifier import FinalVerifier, VerificationResult
 from whyback.config import SOURCE_COMMIT, AgentConfig
 from whyback.data.repository import DataRepository
 from whyback.detection.decline import DeclineSnapshot
+from whyback.observability import AuditEvent, AuditEventName, AuditJsonlWriter
+from whyback.observability.events import utc_now
 from whyback.tools.contracts import (
     SUCCESS_STATUSES,
     ToolExecutionContext,
@@ -96,6 +102,9 @@ class InvestigationRunner:
         action_catalog: ActionCatalog,
         config: AgentConfig | None = None,
         source_hashes: dict[str, str] | None = None,
+        fault_injector: DemoFaultInjector | None = None,
+        audit_writer: AuditJsonlWriter | None = None,
+        event_clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._backend = backend
         self._registry = registry
@@ -104,6 +113,27 @@ class InvestigationRunner:
         self._verifier = FinalVerifier(action_catalog)
         self._config = config or AgentConfig()
         self._source_hashes = source_hashes or {}
+        self._fault_injector = fault_injector
+        self._audit_writer = audit_writer
+        self._event_clock = event_clock or utc_now
+
+    def _emit(
+        self,
+        state: InvestigationState,
+        event: AuditEventName,
+        details: dict[str, object] | None = None,
+    ) -> None:
+        if self._audit_writer is None:
+            return
+        self._audit_writer.append(
+            AuditEvent(
+                timestamp=self._event_clock(),
+                event=event,
+                run_id=state.run_id,
+                household_id=state.household_id,
+                details=cast(dict[str, JsonValue], details or {}),
+            )
+        )
 
     def run(
         self,
@@ -124,6 +154,25 @@ class InvestigationRunner:
                 )
             }
         )
+        self._emit(
+            state,
+            AuditEventName.RUN_STARTED,
+            {
+                "model": self._backend.model_name,
+                "prompt_version": PROMPT_VERSION,
+                "prompt_hash": PROMPT_HASH,
+                "dataset_source_commit": SOURCE_COMMIT,
+                "application_version": __version__,
+                "remaining_tool_budget": state.remaining_tool_budget,
+                "remaining_turn_budget": state.remaining_turn_budget,
+                "demo_fault": (
+                    self._fault_injector.scenario.value
+                    if self._fault_injector is not None
+                    else None
+                ),
+                "decline_score": state.detector_snapshot.decline_score,
+            },
+        )
         repair_pending = False
         repair_attempted = False
 
@@ -138,6 +187,20 @@ class InvestigationRunner:
                 )
                 definitions = self._registry.definitions(allowed)
             repair_issues = state.verification_issues if repair_pending else ()
+            self._emit(
+                state,
+                AuditEventName.MODEL_DECISION_REQUESTED,
+                {
+                    "model": self._backend.model_name,
+                    "prompt_version": PROMPT_VERSION,
+                    "prompt_hash": PROMPT_HASH,
+                    "allowed_tools": [item.name.value for item in definitions],
+                    "finish_available": True,
+                    "repair_requested": repair_pending,
+                    "remaining_tool_budget": state.remaining_tool_budget,
+                    "remaining_turn_budget": state.remaining_turn_budget,
+                },
+            )
             try:
                 backend_decision = self._backend.decide_next_step(
                     state,
@@ -153,6 +216,15 @@ class InvestigationRunner:
                         "run_status": RunStatus.FAILED,
                         "verification_issues": (str(error),),
                     }
+                )
+                self._emit(
+                    failed_state,
+                    AuditEventName.RUN_COMPLETED,
+                    {
+                        "status": failed_state.run_status.value,
+                        "failure_type": type(error).__name__,
+                        "message": str(error),
+                    },
                 )
                 return InvestigationOutcome(
                     state=failed_state,
@@ -174,7 +246,35 @@ class InvestigationRunner:
                 }
             )
             decision = backend_decision.decision
+            self._emit(
+                state,
+                AuditEventName.MODEL_DECISION_RECEIVED,
+                {
+                    "provider_call_id": backend_decision.provider_call_id,
+                    "model": backend_decision.model,
+                    "decision_kind": decision.kind,
+                    "investigation_question": decision.investigation_question,
+                    "decision_summary": decision.decision_summary,
+                    "selected_tool": (
+                        decision.selected_tool.value
+                        if isinstance(decision, ToolDecision)
+                        else None
+                    ),
+                    "input_tokens": reported.input_tokens,
+                    "output_tokens": reported.output_tokens,
+                    "latency_ms": reported.latency_ms,
+                },
+            )
             if isinstance(decision, ToolDecision):
+                self._emit(
+                    state,
+                    AuditEventName.TOOL_REQUESTED,
+                    {
+                        "tool_name": decision.selected_tool.value,
+                        "arguments": decision.arguments,
+                        "investigation_question": decision.investigation_question,
+                    },
+                )
                 if repair_pending:
                     return self._fallback(
                         state,
@@ -184,6 +284,29 @@ class InvestigationRunner:
                 state = self._handle_tool_decision(state, decision)
                 continue
 
+            self._emit(
+                state,
+                AuditEventName.FINISH_REQUESTED,
+                {
+                    "next_best_action_id": decision.final.next_best_action_id,
+                    "proposed_confidence": decision.final.proposed_confidence.value,
+                    "supporting_evidence_ids": list(
+                        decision.final.supporting_evidence_ids
+                    ),
+                    "counterevidence_ids": list(decision.final.counterevidence_ids),
+                },
+            )
+            self._emit(
+                state,
+                AuditEventName.VERIFICATION_STARTED,
+                {
+                    "repair_attempted": repair_attempted,
+                    "referenced_evidence_count": len(
+                        decision.final.supporting_evidence_ids
+                    )
+                    + len(decision.final.counterevidence_ids),
+                },
+            )
             verification = self._verifier.verify(state, decision.final)
             if verification.passed:
                 assert verification.final is not None
@@ -200,10 +323,49 @@ class InvestigationRunner:
                         "verification_issues": (),
                     }
                 )
+                self._emit(
+                    completed,
+                    AuditEventName.VERIFICATION_PASSED,
+                    {
+                        "next_best_action_id": (
+                            verification.final.next_best_action_id.value
+                        ),
+                        "resolved_confidence": (
+                            verification.final.resolved_confidence.value
+                        ),
+                        "confidence_cap_applied": (
+                            verification.final.confidence_cap_applied
+                        ),
+                    },
+                )
+                self._emit(
+                    completed,
+                    AuditEventName.RUN_COMPLETED,
+                    {
+                        "status": completed.run_status.value,
+                        "next_best_action_id": (
+                            verification.final.next_best_action_id.value
+                        ),
+                        "human_review_required": True,
+                    },
+                )
                 return InvestigationOutcome(
                     state=completed,
                     verification=verification,
                 )
+            self._emit(
+                state,
+                AuditEventName.VERIFICATION_REJECTED,
+                {
+                    "issues": [
+                        {"code": issue.code.value, "message": issue.message}
+                        for issue in verification.issues
+                    ],
+                    "repair_available": (
+                        not repair_attempted and state.remaining_turn_budget > 0
+                    ),
+                },
+            )
             if not repair_attempted and state.remaining_turn_budget > 0:
                 repair_attempted = True
                 repair_pending = True
@@ -260,7 +422,7 @@ class InvestigationRunner:
                     "Exact duplicate tool and normalized arguments were refused.",
                 ),
             )
-            return state.model_copy(
+            refused_state = state.model_copy(
                 update={
                     "tool_history": (*state.tool_history, history),
                     "failed_or_partial_tools": _append_unique(
@@ -272,6 +434,18 @@ class InvestigationRunner:
                     ),
                 }
             )
+            self._emit(
+                refused_state,
+                AuditEventName.TOOL_FAILED,
+                {
+                    "tool_name": decision.selected_tool.value,
+                    "status": ToolStatus.INVALID_REQUEST.value,
+                    "duplicate_refused": True,
+                    "normalized_signature": signature,
+                    "limitations": list(history.limitations),
+                },
+            )
+            return refused_state
 
         state = state.model_copy(
             update={
@@ -299,6 +473,17 @@ class InvestigationRunner:
                 source_hashes=self._source_hashes,
                 application_version=__version__,
             )
+            self._emit(
+                state,
+                AuditEventName.TOOL_STARTED,
+                {
+                    "tool_name": decision.selected_tool.value,
+                    "tool_call_id": call_id,
+                    "attempt": attempt_number,
+                    "normalized_arguments": normalized,
+                    "remaining_tool_budget": state.remaining_tool_budget,
+                },
+            )
             if validated is not None and (
                 str(getattr(validated, "household_id", "")) != state.household_id
             ):
@@ -311,6 +496,18 @@ class InvestigationRunner:
                         "household."
                     ),
                     parameters=normalized,
+                )
+            elif self._fault_injector is not None:
+                result = self._fault_injector.intercept(
+                    name=decision.selected_tool,
+                    attempt=attempt_number,
+                    context=context,
+                    normalized_parameters=normalized,
+                ) or self._execute_with_timeout(
+                    decision.selected_tool,
+                    decision.arguments,
+                    context,
+                    normalized,
                 )
             else:
                 result = self._execute_with_timeout(
@@ -333,6 +530,48 @@ class InvestigationRunner:
                 update={"remaining_tool_budget": state.remaining_tool_budget - 1}
             )
             final_result = result
+            event_name = (
+                AuditEventName.TOOL_COMPLETED
+                if result.status is ToolStatus.OK
+                else (
+                    AuditEventName.TOOL_PARTIAL
+                    if result.status is ToolStatus.PARTIAL
+                    else AuditEventName.TOOL_FAILED
+                )
+            )
+            self._emit(
+                state,
+                event_name,
+                {
+                    "tool_name": result.tool_name.value,
+                    "tool_call_id": result.tool_call_id,
+                    "attempt": attempt_number,
+                    "status": result.status.value,
+                    "retryable": result.retryable,
+                    "latency_ms": result.provenance.elapsed_ms,
+                    "rows_examined": result.provenance.rows_examined,
+                    "query_hash": result.provenance.query_hash,
+                    "evidence_ids": [item.evidence_id for item in result.evidence],
+                    "limitations": list(result.limitations),
+                    "diagnostics": result.provenance.diagnostics,
+                },
+            )
+            will_retry = (
+                result.retryable
+                and len(attempts) < max_attempts
+                and state.remaining_tool_budget > 0
+            )
+            if will_retry:
+                self._emit(
+                    state,
+                    AuditEventName.RETRY_SCHEDULED,
+                    {
+                        "tool_name": result.tool_name.value,
+                        "after_tool_call_id": result.tool_call_id,
+                        "next_attempt": attempt_number + 1,
+                        "remaining_tool_budget": state.remaining_tool_budget,
+                    },
+                )
             if not result.retryable:
                 break
 
@@ -344,6 +583,18 @@ class InvestigationRunner:
                 run_id=state.run_id,
                 household_id=state.household_id,
             )
+            for evidence in final_result.evidence:
+                self._emit(
+                    state,
+                    AuditEventName.EVIDENCE_ADDED,
+                    {
+                        "evidence_id": evidence.evidence_id,
+                        "source_tool": evidence.source_tool.value,
+                        "source_tool_call_id": evidence.source_tool_call_id,
+                        "metric": evidence.metric,
+                        "limitations": list(evidence.limitations),
+                    },
+                )
         except EvidenceLedgerError as error:
             final_result = _tool_failure(
                 context=ToolExecutionContext(
@@ -445,12 +696,21 @@ class InvestigationRunner:
             proposed_confidence=ConfidenceLevel.LOW,
             supporting_evidence_ids=(),
             counterevidence_ids=(),
-            next_best_action_id=ActionId.INSUFFICIENT_EVIDENCE.value,
+            next_best_action_id=ActionId.INSUFFICIENT_EVIDENCE,
             rationale="Available evidence does not support a customer action.",
             alternative_explanations=(
                 "The observed decline may reflect behavior outside the recorded data.",
             ),
             uncertainties=(reason,),
+        )
+        self._emit(
+            state,
+            AuditEventName.VERIFICATION_STARTED,
+            {
+                "deterministic_fallback": True,
+                "reason": reason,
+                "referenced_evidence_count": 0,
+            },
         )
         fallback_verification = self._verifier.verify(state, proposal)
         issues = tuple(
@@ -478,6 +738,26 @@ class InvestigationRunner:
                     "verification_issues": issues,
                 }
             )
+            self._emit(
+                final_state,
+                AuditEventName.VERIFICATION_PASSED,
+                {
+                    "deterministic_fallback": True,
+                    "next_best_action_id": ActionId.INSUFFICIENT_EVIDENCE.value,
+                    "resolved_confidence": ResolvedConfidence.INSUFFICIENT.value,
+                    "confidence_cap_applied": True,
+                },
+            )
+            self._emit(
+                final_state,
+                AuditEventName.RUN_COMPLETED,
+                {
+                    "status": final_state.run_status.value,
+                    "next_best_action_id": ActionId.INSUFFICIENT_EVIDENCE.value,
+                    "human_review_required": True,
+                    "fallback_reason": reason,
+                },
+            )
             return InvestigationOutcome(
                 state=final_state,
                 verification=fallback_verification,
@@ -495,6 +775,27 @@ class InvestigationRunner:
                     ),
                 ),
             }
+        )
+        self._emit(
+            final_state,
+            AuditEventName.VERIFICATION_REJECTED,
+            {
+                "deterministic_fallback": True,
+                "issues": [
+                    {"code": item.code.value, "message": item.message}
+                    for item in fallback_verification.issues
+                ],
+                "repair_available": False,
+            },
+        )
+        self._emit(
+            final_state,
+            AuditEventName.RUN_COMPLETED,
+            {
+                "status": final_state.run_status.value,
+                "failure_type": "fallback_verification_failed",
+                "fallback_reason": reason,
+            },
         )
         return InvestigationOutcome(
             state=final_state,

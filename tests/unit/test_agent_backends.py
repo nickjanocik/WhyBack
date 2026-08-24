@@ -7,6 +7,7 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
+from whyback.agent.actions import ActionId
 from whyback.agent.backend import (
     MalformedModelResponse,
     MissingModelCredential,
@@ -79,7 +80,7 @@ def _finish_decision() -> FinishDecision:
             proposed_confidence="medium",
             supporting_evidence_ids=("ev-trend",),
             counterevidence_ids=(),
-            next_best_action_id="VISIT_FREQUENCY_REACTIVATION",
+            next_best_action_id=ActionId.VISIT_FREQUENCY_REACTIVATION,
             rationale="The recorded pattern supports a human-reviewed test.",
             alternative_explanations=(
                 "Purchases may have shifted outside the retailer.",
@@ -143,7 +144,7 @@ def test_finish_proposal_rejects_duplicate_evidence_references() -> None:
             proposed_confidence="low",
             supporting_evidence_ids=("ev-1", "ev-1"),
             counterevidence_ids=(),
-            next_best_action_id="MONITOR",
+            next_best_action_id=ActionId.MONITOR,
             rationale="Monitor the pattern.",
             alternative_explanations=("The observed interval may be temporary.",),
             uncertainties=("No direct reason is recorded.",),

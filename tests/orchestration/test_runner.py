@@ -8,6 +8,7 @@ from pydantic import JsonValue
 
 from tests.fixtures.source_frames import minimal_source_frames
 from whyback.agent.actions import ActionId, load_action_catalog
+from whyback.agent.faults import DemoFaultInjector
 from whyback.agent.runner import InvestigationRunner
 from whyback.agent.scripted_backend import ScriptedBackend
 from whyback.agent.state import (
@@ -22,6 +23,7 @@ from whyback.config import AgentConfig
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
 from whyback.detection.decline import DeclineSnapshot
+from whyback.observability import AuditEventName, AuditJsonlWriter, read_audit_events
 from whyback.tools.contracts import (
     CustomerTrendInput,
     ToolExecutionContext,
@@ -95,7 +97,7 @@ def _finish(
             proposed_confidence=ConfidenceLevel.HIGH,
             supporting_evidence_ids=evidence_ids,
             counterevidence_ids=(),
-            next_best_action_id=action.value,
+            next_best_action_id=action,
             rationale="The recorded behavior supports a human-reviewed test.",
             alternative_explanations=(
                 "The change may reflect activity outside the recorded retailer.",
@@ -111,6 +113,8 @@ def _run(
     *,
     config: AgentConfig | None = None,
     registry: ToolRegistry | None = None,
+    fault_injector: DemoFaultInjector | None = None,
+    audit_writer: AuditJsonlWriter | None = None,
 ):
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
@@ -120,6 +124,8 @@ def _run(
             repository=repository,
             action_catalog=load_action_catalog(),
             config=config,
+            fault_injector=fault_injector,
+            audit_writer=audit_writer,
         ).run(_snapshot(), run_id=RUN_ID)
 
 
@@ -245,3 +251,90 @@ def test_retryable_failure_retries_once_then_marks_tool_unavailable(
     assert ToolName.CUSTOMER_TREND in outcome.state.unavailable_tools
     assert outcome.state.evidence_ledger == ()
     assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
+
+
+def test_timeout_once_retries_then_uses_real_promotion_evidence(
+    tmp_path: Path,
+) -> None:
+    promotion_evidence_id = "ev_call-0000000000-02-promotion_response_001"
+    finish = FinishDecision(
+        investigation_question="Is promotion evidence sufficient to finish?",
+        decision_summary="Submit the association for deterministic review.",
+        final=FinishProposal(
+            driver_summary=(
+                DriverClaim(
+                    summary="Promotion-associated purchasing is a plausible driver.",
+                    supporting_evidence_ids=(promotion_evidence_id,),
+                ),
+            ),
+            proposed_confidence=ConfidenceLevel.MEDIUM,
+            supporting_evidence_ids=(promotion_evidence_id,),
+            counterevidence_ids=(),
+            next_best_action_id=ActionId.PROMOTION_VALUE_REENGAGEMENT,
+            rationale="The recorded association supports a human-reviewed test.",
+            alternative_explanations=(
+                "Availability does not establish household exposure.",
+            ),
+            uncertainties=("The relationship is observational rather than causal.",),
+        ),
+    )
+    backend = ScriptedBackend([_tool(ToolName.PROMOTION_RESPONSE), finish])
+    injector = DemoFaultInjector.from_spec(
+        "promotion_response:timeout-once", enabled=True
+    )
+
+    outcome = _run(tmp_path, backend, fault_injector=injector)
+
+    assert outcome.state.run_status is RunStatus.COMPLETED
+    assert [attempt.status for attempt in outcome.state.tool_history[0].attempts] == [
+        ToolStatus.RETRYABLE_ERROR,
+        ToolStatus.OK,
+    ]
+    assert promotion_evidence_id in {
+        item.evidence_id for item in outcome.state.evidence_ledger
+    }
+    assert outcome.state.remaining_tool_budget == 3
+
+
+def test_persistent_timeout_is_traced_and_other_evidence_finishes(
+    tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    trend_evidence_id = "ev_call-0000000000-03-customer_trend_002"
+    backend = ScriptedBackend(
+        [
+            _tool(ToolName.PROMOTION_RESPONSE),
+            _tool(ToolName.CUSTOMER_TREND),
+            _finish(evidence_ids=(trend_evidence_id,)),
+        ]
+    )
+    injector = DemoFaultInjector.from_spec(
+        "promotion_response:timeout-always", enabled=True
+    )
+
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(
+            tmp_path / "prepared",
+            backend,
+            fault_injector=injector,
+            audit_writer=writer,
+        )
+
+    events = read_audit_events(trace_path)
+    names = [event.event for event in events]
+    promotion_history = outcome.state.tool_history[0]
+    assert outcome.state.run_status is RunStatus.COMPLETED
+    assert len(promotion_history.attempts) == 2
+    assert all(
+        attempt.status is ToolStatus.RETRYABLE_ERROR
+        for attempt in promotion_history.attempts
+    )
+    assert ToolName.PROMOTION_RESPONSE in outcome.state.unavailable_tools
+    assert not any(
+        evidence.source_tool is ToolName.PROMOTION_RESPONSE
+        for evidence in outcome.state.evidence_ledger
+    )
+    assert names.count(AuditEventName.RETRY_SCHEDULED) == 1
+    assert names.count(AuditEventName.TOOL_FAILED) == 2
+    assert names[-1] is AuditEventName.RUN_COMPLETED
+    assert AuditEventName.VERIFICATION_PASSED in names

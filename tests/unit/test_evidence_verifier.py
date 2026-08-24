@@ -133,7 +133,7 @@ def _proposal(
         proposed_confidence=confidence,
         supporting_evidence_ids=evidence_ids,
         counterevidence_ids=(),
-        next_best_action_id=action.value,
+        next_best_action_id=action,
         rationale="The recorded pattern supports human review.",
         alternative_explanations=(
             "The observed interval may reflect an unrecorded behavior shift.",
@@ -213,7 +213,7 @@ def test_high_confidence_requires_two_tools_without_limitations() -> None:
         proposed_confidence=ConfidenceLevel.HIGH,
         supporting_evidence_ids=("ev-trend", "ev-basket"),
         counterevidence_ids=(),
-        next_best_action_id=ActionId.PERSONALIZED_CHECK_IN.value,
+        next_best_action_id=ActionId.PERSONALIZED_CHECK_IN,
         rationale="Independent behavioral families support a reviewed test.",
         alternative_explanations=("A narrower driver may emerge with more data.",),
         uncertainties=("The dataset does not record customer intent.",),
