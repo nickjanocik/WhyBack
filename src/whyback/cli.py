@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from whyback import __version__
 from whyback.config import load_settings
@@ -118,3 +119,78 @@ def data_prepare(
         f"{sum(entry.row_count for entry in manifest.sources):,} source rows."
     )
     console.print(f"Manifest: {root / 'prepared' / 'manifest.json'}")
+
+
+@app.command("detect")
+def detect(
+    top: Annotated[int, typer.Option(min=1, help="Maximum flagged rows to show.")] = 20,
+    threshold: Annotated[
+        float | None,
+        typer.Option(min=0.0, max=1.0, help="Override the configured threshold."),
+    ] = None,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            help="Optionally write decline_candidates.csv and sensitivity.csv."
+        ),
+    ] = None,
+) -> None:
+    """Rank eligible households with the transparent decline heuristic."""
+
+    from whyback.data.repository import DataRepository
+    from whyback.detection.decline import (
+        candidates_frame,
+        detect_declines,
+        sensitivity_diagnostics,
+    )
+
+    settings = load_settings()
+    with DataRepository(
+        settings.data_dir / "prepared", required_tables=("household_week",)
+    ) as repository:
+        candidates = detect_declines(
+            repository, settings.detection, threshold=threshold
+        )
+    applied_threshold = (
+        settings.detection.decline_threshold if threshold is None else threshold
+    )
+    flagged = [
+        candidate
+        for candidate in candidates
+        if candidate.decline_score >= applied_threshold
+    ]
+    table = Table(title="WhyBack decline candidates")
+    table.add_column("Rank", justify="right")
+    table.add_column("Household")
+    table.add_column("Score", justify="right")
+    table.add_column("Baseline RSV", justify="right")
+    table.add_column("Recent RSV", justify="right")
+    table.add_column("Baseline trips", justify="right")
+    table.add_column("Recent trips", justify="right")
+    for rank, candidate in enumerate(flagged[:top], start=1):
+        table.add_row(
+            str(rank),
+            candidate.household_id,
+            f"{candidate.decline_score:.3f}",
+            f"{candidate.baseline_retailer_sales_value:,.2f}",
+            f"{candidate.recent_retailer_sales_value:,.2f}",
+            str(candidate.baseline_distinct_baskets),
+            str(candidate.recent_distinct_baskets),
+        )
+    console.print(table)
+    console.print(
+        f"{len(flagged):,} of {len(candidates):,} eligible households meet "
+        f"the {applied_threshold:.2f} threshold. This score is not a churn probability."
+    )
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        candidates_frame(flagged).to_csv(
+            output_dir / "decline_candidates.csv", index=False
+        )
+        sensitivity = sensitivity_diagnostics(
+            candidates, settings.detection.sensitivity_thresholds
+        )
+        candidates_frame(sensitivity).to_csv(
+            output_dir / "sensitivity.csv", index=False
+        )
+        console.print(f"Wrote detector artifacts to {output_dir}")
