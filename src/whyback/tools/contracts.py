@@ -1,0 +1,214 @@
+"""Strict, shared analytical tool contracts."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Any, Literal
+from uuid import UUID
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    model_validator,
+)
+
+from whyback import __version__
+from whyback.config import SOURCE_COMMIT
+
+
+class ToolName(StrEnum):
+    CUSTOMER_TREND = "customer_trend"
+    CATEGORY_DECOMPOSITION = "category_decomposition"
+    BASKET_BEHAVIOR = "basket_behavior"
+    PROMOTION_RESPONSE = "promotion_response"
+    COUPON_CAMPAIGN_HISTORY = "coupon_campaign_history"
+    PEER_COMPARISON = "peer_comparison"
+
+
+class ToolStatus(StrEnum):
+    OK = "ok"
+    PARTIAL = "partial"
+    MISSING_DATA = "missing_data"
+    INVALID_REQUEST = "invalid_request"
+    RETRYABLE_ERROR = "retryable_error"
+    FATAL_ERROR = "fatal_error"
+
+
+class AnalysisWindow(BaseModel):
+    """Inclusive analytical windows inherited from the detector."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    baseline_start: int = Field(ge=1, le=53)
+    baseline_end: int = Field(ge=1, le=53)
+    recent_start: int = Field(ge=1, le=53)
+    recent_end: int = Field(ge=1, le=53)
+
+    @model_validator(mode="after")
+    def validate_order(self) -> AnalysisWindow:
+        if not (
+            self.baseline_start
+            <= self.baseline_end
+            < self.recent_start
+            <= self.recent_end
+        ):
+            raise ValueError("Baseline and recent windows must be ordered and disjoint")
+        return self
+
+
+class HouseholdToolInput(BaseModel):
+    """Common model-visible input for customer analytical tools."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    household_id: str = Field(min_length=1)
+
+
+class CustomerTrendInput(HouseholdToolInput):
+    pass
+
+
+class CategoryDecompositionInput(HouseholdToolInput):
+    top_n: int = Field(default=8, ge=1, le=20)
+
+
+class BasketBehaviorInput(HouseholdToolInput):
+    pass
+
+
+class PromotionResponseInput(HouseholdToolInput):
+    top_n_categories: int = Field(default=5, ge=1, le=10)
+
+
+class CouponCampaignHistoryInput(HouseholdToolInput):
+    pass
+
+
+class PeerComparisonInput(HouseholdToolInput):
+    peer_count: int = Field(default=50, ge=5, le=100)
+
+
+class ToolExecutionContext(BaseModel):
+    """Application-owned values that the model cannot override."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    run_id: UUID
+    tool_call_id: str = Field(min_length=1)
+    household_id: str = Field(min_length=1)
+    window: AnalysisWindow
+    source_commit: str = SOURCE_COMMIT
+    source_hashes: dict[str, str] = Field(default_factory=dict)
+    application_version: str = __version__
+
+
+class EvidenceRecord(BaseModel):
+    """One immutable deterministic value eligible for report grounding."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    evidence_id: str = Field(min_length=1)
+    run_id: UUID
+    household_id: str = Field(min_length=1)
+    source_tool: ToolName
+    source_tool_call_id: str = Field(min_length=1)
+    metric: str = Field(min_length=1)
+    dimensions: dict[str, str] = Field(default_factory=dict)
+    baseline_value: float | None = None
+    recent_value: float | None = None
+    value: float | None = None
+    change: float | None = None
+    unit: str | None = None
+    limitations: tuple[str, ...] = ()
+    query_hash: str | None = None
+
+    @model_validator(mode="after")
+    def require_computed_value(self) -> EvidenceRecord:
+        if all(
+            value is None
+            for value in (
+                self.baseline_value,
+                self.recent_value,
+                self.value,
+                self.change,
+            )
+        ):
+            raise ValueError("Evidence must contain at least one computed value")
+        return self
+
+
+class ToolProvenance(BaseModel):
+    """Replay and integrity metadata for one deterministic invocation."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    dataset_source_commit: str = SOURCE_COMMIT
+    source_hashes: dict[str, str] = Field(default_factory=dict)
+    normalized_parameters: dict[str, JsonValue]
+    query_hash: str | None = None
+    rows_examined: int = Field(default=0, ge=0)
+    elapsed_ms: float = Field(default=0.0, ge=0.0)
+    cache_hit: bool = False
+    application_version: str = __version__
+    diagnostics: dict[str, JsonValue] = Field(default_factory=dict)
+
+
+SUCCESS_STATUSES = frozenset({ToolStatus.OK, ToolStatus.PARTIAL})
+
+
+class ToolResult(BaseModel):
+    """Common envelope returned by every analytical tool."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    tool_call_id: str = Field(min_length=1)
+    tool_name: ToolName
+    status: ToolStatus
+    model_summary: dict[str, JsonValue] = Field(default_factory=dict)
+    evidence: tuple[EvidenceRecord, ...] = ()
+    limitations: tuple[str, ...] = ()
+    retryable: bool = False
+    provenance: ToolProvenance
+
+    @model_validator(mode="after")
+    def validate_status_contract(self) -> ToolResult:
+        if self.status not in SUCCESS_STATUSES and self.evidence:
+            raise ValueError(
+                "Failed, missing, or invalid tool results cannot carry evidence"
+            )
+        if self.status is ToolStatus.PARTIAL and not self.limitations:
+            raise ValueError("Partial tool results must state a limitation")
+        if self.retryable != (self.status is ToolStatus.RETRYABLE_ERROR):
+            raise ValueError("Only retryable_error may set retryable=true")
+        if len({item.evidence_id for item in self.evidence}) != len(self.evidence):
+            raise ValueError("Evidence IDs must be unique within a tool result")
+        for item in self.evidence:
+            if item.source_tool is not self.tool_name:
+                raise ValueError("Evidence source tool does not match the result")
+            if item.source_tool_call_id != self.tool_call_id:
+                raise ValueError("Evidence source call does not match the result")
+        return self
+
+
+class ToolDefinition(BaseModel):
+    """Provider-neutral strict function definition."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: ToolName
+    description: str
+    input_schema: dict[str, Any]
+
+
+ToolInput = (
+    CustomerTrendInput
+    | CategoryDecompositionInput
+    | BasketBehaviorInput
+    | PromotionResponseInput
+    | CouponCampaignHistoryInput
+    | PeerComparisonInput
+)
+
+Confidence = Literal["low", "medium", "high"]
