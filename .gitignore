@@ -1,0 +1,44 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python and tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Complete Journey source and prepared data
+data/raw/
+data/prepared/
+data/*.duckdb
+data/*.duckdb.*
+*.rds
+*.rda
+*.parquet
+
+# Local run output (reviewer-facing committed fixtures are allow-listed below)
+artifacts/local/
+artifacts/live/
+*.tmp
+*.log
+
+# Optional telemetry state
+.phoenix/

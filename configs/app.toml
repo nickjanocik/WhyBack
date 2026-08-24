@@ -1,0 +1,25 @@
+[application]
+name = "WhyBack"
+agent_name = "WhyBack Investigator"
+tagline = "Find the why. Choose the way back."
+
+[data]
+source_repository = "bradleyboehmke/completejourney"
+source_commit = "5b5d06192b9856edd04e4d405787af2f2e4a1fef"
+baseline_weeks = 8
+recent_weeks = 8
+
+[detection]
+minimum_baseline_active_weeks = 4
+minimum_baseline_distinct_baskets = 6
+minimum_baseline_retailer_sales_value = 0.0
+decline_threshold = 0.30
+sensitivity_thresholds = [0.20, 0.30, 0.40]
+
+[agent]
+max_tool_executions = 5
+max_model_decisions = 6
+tool_timeout_seconds = 30.0
+max_retryable_retries = 1
+default_model = "gpt-5.6-sol"
+default_reasoning_effort = "medium"
