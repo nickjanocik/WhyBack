@@ -127,9 +127,13 @@ _CAUSAL_CLAIM = re.compile(
     r"\b(?:caus(?:e|ed|es|ing)|drove|driven\s+by|because\s+of|due\s+to|"
     r"attribut(?:e|ed|es|ing)\s+to|explains?|explained\s+by|trigger(?:ed|s)?|"
     r"produc(?:e|ed|es|ing)|result(?:ed|s)?\s+(?:from|in)|resulting\s+from|"
-    r"led\s+to|ma(?:de|kes?)\s+(?:the\s+)?(?:customer|household)|"
+    r"(?:led|leads?|leading)\s+to|ma(?:de|kes?)\s+(?:the\s+)?"
+    r"(?:customer|household)|"
     r"(?:prompt|forc|push)(?:ed|es?)\s+(?:the\s+)?(?:customer|household|"
-    r"decline|churn|disengagement)|brought\s+about|induc(?:e|ed|es|ing)|"
+    r"decline|churn|disengagement)|brought\s+(?:about|on)|gave\s+rise\s+to|"
+    r"(?:creat|spark)(?:e|ed|es|ing)\s+(?:the\s+)?(?:decline|churn|"
+    r"disengagement)|induc(?:e|ed|es|ing)|account(?:ed|s|ing)?\s+for|"
+    r"(?:arose|originat(?:e|ed|es|ing))\s+from|"
     r"as\s+(?:a\s+)?consequence\s+of|(?:is|are|was|were)\s+(?:the\s+)?"
     r"reason(?:\s+(?:for|that|why))?|(?:is|are|was|were)\s+why|"
     r"responsible\s+for|stems?\s+from|guarantee(?:d|s)?|ensures?|"
@@ -143,9 +147,15 @@ _NEGATED_CAUSAL_PREFIX = re.compile(
 )
 _UNCERTAIN_CAUSAL_PREFIX = re.compile(
     r"(?:\bno\s+(?:credible\s+)?evidence\s+(?:that|to\s+show\s+that|"
-    r"(?:indicates?|shows?|supports?)(?:\s+that)?)|"
+    r"(?:indicates?|shows?|supports?)(?:\s+that)?|"
+    r"(?:(?!(?:but|however|yet|although|though|nevertheless)\b)"
+    r"[\w'-]+\s+){0,12})|"
     r"\b(?:it\s+is\s+)?(?:unknown|unclear)\s+(?:whether|if))"
     r"(?:\s+[\w'-]+){0,12}\s*$",
+    re.IGNORECASE,
+)
+_NEGATED_CAUSAL_SUFFIX = re.compile(
+    r"^\s+(?:no\b|none\b|neither\b|not\s+(?!only\b)any\b)",
     re.IGNORECASE,
 )
 _EXPOSURE_CLAIM = re.compile(
@@ -237,8 +247,11 @@ def contains_unsupported_causal_claim(text: str) -> bool:
 
     for match in _CAUSAL_CLAIM.finditer(text):
         prefix = text[max(0, match.start() - 160) : match.start()]
-        if _NEGATED_CAUSAL_PREFIX.search(prefix) or _UNCERTAIN_CAUSAL_PREFIX.search(
-            prefix
+        suffix = text[match.end() : match.end() + 40]
+        if (
+            _NEGATED_CAUSAL_PREFIX.search(prefix)
+            or _UNCERTAIN_CAUSAL_PREFIX.search(prefix)
+            or _NEGATED_CAUSAL_SUFFIX.search(suffix)
         ):
             continue
         return True
