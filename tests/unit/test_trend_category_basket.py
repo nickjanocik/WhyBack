@@ -3,9 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import UUID
 
+import pandas as pd
+import pytest
+
 from tests.fixtures.source_frames import minimal_source_frames
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
+from whyback.methodology import ClaimType, ContextClassification, ContextPolicy
 from whyback.tools.basket import basket_behavior
 from whyback.tools.category import category_decomposition
 from whyback.tools.contracts import (
@@ -128,3 +132,203 @@ def test_trend_direct_metrics_ignore_transaction_row_order(tmp_path: Path) -> No
         )
 
     assert first_result.model_summary == second_result.model_summary
+
+
+def _category_population_frames() -> dict[str, pd.DataFrame]:
+    frames = minimal_source_frames()
+    rows: list[dict[str, object]] = []
+    for household in range(1, 8):
+        baseline_product = "2000" if household == 7 else "1000"
+        basket_number = 0
+        for week in range(1, 5):
+            for visit in range(2):
+                basket_number += 1
+                rows.append(
+                    {
+                        "household_id": str(household),
+                        "store_id": "10",
+                        "basket_id": f"{household}b{basket_number}",
+                        "product_id": baseline_product,
+                        "quantity": 1.0,
+                        "sales_value": 10.0,
+                        "retail_disc": 0.0,
+                        "coupon_disc": 0.0,
+                        "coupon_match_disc": 0.0,
+                        "week": week,
+                        "transaction_timestamp": (
+                            f"2017-01-{week * 2 + visit:02d}T10:00:00"
+                        ),
+                    }
+                )
+        recent_value = 4.0 if household == 1 else 22.0
+        for week in range(5, 9):
+            rows.append(
+                {
+                    "household_id": str(household),
+                    "store_id": "10",
+                    "basket_id": f"{household}r{week}",
+                    "product_id": "1000",
+                    "quantity": 1.0,
+                    "sales_value": recent_value,
+                    "retail_disc": 0.0,
+                    "coupon_disc": 0.0,
+                    "coupon_match_disc": 0.0,
+                    "week": week,
+                    "transaction_timestamp": f"2017-02-{week:02d}T10:00:00",
+                }
+            )
+    frames["transactions"] = pd.DataFrame(rows)
+    frames["promotions"] = pd.DataFrame(
+        [
+            {
+                "product_id": "1000",
+                "store_id": "10",
+                "display_location": "0",
+                "mailer_location": "A",
+                "week": 1,
+            }
+        ]
+    )
+    return frames
+
+
+def _category_population_context(
+    call_id: str, *, minimum_category_households: int = 5
+) -> ToolExecutionContext:
+    return ToolExecutionContext(
+        run_id=RUN_ID,
+        tool_call_id=call_id,
+        household_id="1",
+        window=AnalysisWindow(
+            baseline_start=1,
+            baseline_end=4,
+            recent_start=5,
+            recent_end=8,
+        ),
+        context_policy=ContextPolicy(
+            minimum_category_households=minimum_category_households
+        ),
+    )
+
+
+def test_category_context_is_target_excluded_and_exact(tmp_path: Path) -> None:
+    prepare_frames_for_tests(_category_population_frames(), tmp_path)
+    with DataRepository(tmp_path) as repository:
+        result = category_decomposition(
+            CategoryDecompositionInput(household_id="1", top_n=1),
+            _category_population_context("category-context"),
+            repository,
+        )
+
+    assert result.status is ToolStatus.OK
+    evidence = {item.metric: item for item in result.evidence}
+    category_value = evidence["category_retailer_sales_value"]
+    assert category_value.baseline_value == 80
+    assert category_value.recent_value == 16
+    assert category_value.change == -64
+    assert evidence["category_population_household_count"].value == 5
+    assert evidence["category_population_median_change"].value == pytest.approx(0.1)
+    assert evidence["category_population_declining_share"].value == 0
+    assert evidence["target_minus_category_population_median_change"].value == (
+        pytest.approx(-0.9)
+    )
+    classification = evidence["category_context_classification"]
+    assert classification.text_value == ContextClassification.CUSTOMER_SPECIFIC.value
+    assert classification.maximum_claim_type is ClaimType.ASSOCIATIONAL
+    assert classification.dimensions["department"] == "GROCERY"
+    assert classification.dimensions["product_category"] == "SOUP"
+    assert classification.dimensions["direction"] == "loss"
+    assert classification.dimensions["target_excluded"] == "true"
+    assert classification.dimensions["change_sign_convention"] == "lower_is_worse"
+    assert (
+        evidence["category_population_median_change"].maximum_claim_type
+        is ClaimType.DESCRIPTIVE
+    )
+    assert result.provenance.diagnostics["category_context_target_excluded"] is True
+    assert result.provenance.diagnostics["category_context_comparison_group_rows"] == 5
+    reconciliation = result.model_summary["reconciliation"]
+    assert isinstance(reconciliation, dict)
+    assert reconciliation["baseline_transaction_total"] == 80
+    assert reconciliation["recent_transaction_total"] == 16
+    assert reconciliation["baseline_reconciled"] is True
+    assert reconciliation["recent_reconciled"] is True
+
+
+def test_category_context_suppresses_undersized_population(tmp_path: Path) -> None:
+    prepare_frames_for_tests(_category_population_frames(), tmp_path)
+    with DataRepository(tmp_path) as repository:
+        result = category_decomposition(
+            CategoryDecompositionInput(household_id="1", top_n=1),
+            _category_population_context(
+                "category-small", minimum_category_households=6
+            ),
+            repository,
+        )
+
+    assert result.status is ToolStatus.PARTIAL
+    evidence = {item.metric: item for item in result.evidence}
+    assert evidence["category_retailer_sales_value"].baseline_value == 80
+    assert evidence["category_population_household_count"].value == 5
+    assert evidence["category_context_classification"].text_value == (
+        ContextClassification.INSUFFICIENT_CONTEXT.value
+    )
+    assert "category_population_median_change" not in evidence
+    assert "category_population_declining_share" not in evidence
+    assert "target_minus_category_population_median_change" not in evidence
+    assert any("policy requires at least 6" in item for item in result.limitations)
+
+
+def test_category_context_classifies_broad_contemporaneous_decline(
+    tmp_path: Path,
+) -> None:
+    frames = _category_population_frames()
+    transactions = frames["transactions"]
+    soup_recent = (transactions["week"] >= 5) & (
+        transactions["household_id"].isin([str(value) for value in range(1, 7)])
+    )
+    transactions.loc[soup_recent, "sales_value"] = 18.0
+    prepare_frames_for_tests(frames, tmp_path)
+    with DataRepository(tmp_path) as repository:
+        result = category_decomposition(
+            CategoryDecompositionInput(household_id="1", top_n=1),
+            _category_population_context("category-broad"),
+            repository,
+        )
+
+    evidence = {item.metric: item for item in result.evidence}
+    assert evidence["category_population_median_change"].value == pytest.approx(-0.1)
+    assert evidence["category_population_declining_share"].value == 1
+    assert evidence["category_context_classification"].text_value == (
+        ContextClassification.BROAD_CONTEXT.value
+    )
+
+
+def test_category_context_is_invariant_to_transaction_row_order(tmp_path: Path) -> None:
+    first_dir = tmp_path / "first-category"
+    second_dir = tmp_path / "second-category"
+    first = _category_population_frames()
+    second = _category_population_frames()
+    second["transactions"] = second["transactions"].sample(frac=1.0, random_state=27)
+    prepare_frames_for_tests(first, first_dir)
+    prepare_frames_for_tests(second, second_dir)
+
+    def run(prepared_dir: Path, call_id: str):
+        with DataRepository(prepared_dir) as repository:
+            return category_decomposition(
+                CategoryDecompositionInput(household_id="1", top_n=1),
+                _category_population_context(call_id),
+                repository,
+            )
+
+    first_result = run(first_dir, "category-first")
+    second_result = run(second_dir, "category-second")
+    first_evidence = [
+        (item.metric, item.value, item.text_value, dict(item.dimensions))
+        for item in first_result.evidence
+    ]
+    second_evidence = [
+        (item.metric, item.value, item.text_value, dict(item.dimensions))
+        for item in second_result.evidence
+    ]
+    assert first_result.model_summary == second_result.model_summary
+    assert first_evidence == second_evidence

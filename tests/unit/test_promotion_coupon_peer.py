@@ -4,10 +4,12 @@ from pathlib import Path
 from uuid import UUID
 
 import pandas as pd
+import pytest
 
 from tests.fixtures.source_frames import minimal_source_frames
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
+from whyback.methodology import ClaimType, ContextClassification, ContextPolicy
 from whyback.tools.contracts import (
     AnalysisWindow,
     CouponCampaignHistoryInput,
@@ -149,6 +151,10 @@ def test_peer_comparison_excludes_target_and_is_deterministic(tmp_path: Path) ->
             recent_start=5,
             recent_end=8,
         ),
+        context_policy=ContextPolicy(
+            minimum_population_households=5,
+            minimum_peer_households=5,
+        ),
     )
     with DataRepository(tmp_path) as repository:
         result = run_peer_comparison(
@@ -163,3 +169,125 @@ def test_peer_comparison_excludes_target_and_is_deterministic(tmp_path: Path) ->
     assert "1" not in peer_ids
     assert len(peer_ids) == 5
     assert result.provenance.diagnostics["target_excluded"] is True
+    assert result.provenance.diagnostics["population_target_excluded"] is True
+    assert result.provenance.diagnostics["robust_scaling_fit_target_excluded"] is True
+
+    evidence = {item.metric: item for item in result.evidence}
+    assert evidence["target_retailer_sales_change"].value == pytest.approx(-13 / 14)
+    assert evidence["population_household_count"].value == 6
+    assert evidence["population_median_retailer_sales_change"].value == pytest.approx(
+        -9.5 / 14
+    )
+    assert evidence["population_retailer_sales_change_q25"].value == pytest.approx(
+        -10.75 / 14
+    )
+    assert evidence["population_retailer_sales_change_q75"].value == pytest.approx(
+        -8.25 / 14
+    )
+    assert evidence["target_population_retailer_sales_change_percentile"].value == 0
+    assert evidence["population_declining_household_share"].value == 1
+    assert evidence["target_minus_population_median_change"].value == pytest.approx(
+        -3.5 / 14
+    )
+    assert evidence["peer_household_count"].value == 5
+    assert evidence["peer_median_retailer_sales_change"].value == pytest.approx(
+        -10 / 14
+    )
+    assert evidence["peer_retailer_sales_change_q25"].value == pytest.approx(-11 / 14)
+    assert evidence["peer_retailer_sales_change_q75"].value == pytest.approx(-9 / 14)
+    assert evidence["target_peer_retailer_sales_change_percentile"].value == 0
+    assert evidence["peer_declining_household_share"].value == 1
+    assert evidence["target_minus_peer_median_change"].value == pytest.approx(-3 / 14)
+    classification = evidence["context_classification"]
+    assert classification.text_value == ContextClassification.MIXED.value
+    assert classification.maximum_claim_type is ClaimType.ASSOCIATIONAL
+    assert classification.dimensions["target_excluded"] == "true"
+    assert classification.dimensions["change_sign_convention"] == "lower_is_worse"
+    assert (
+        evidence["population_median_retailer_sales_change"].maximum_claim_type
+        is ClaimType.DESCRIPTIVE
+    )
+
+
+def test_peer_comparison_suppresses_undersized_distributions(tmp_path: Path) -> None:
+    prepare_frames_for_tests(_peer_frames(), tmp_path)
+    context = ToolExecutionContext(
+        run_id=RUN_ID,
+        tool_call_id="peer-small",
+        household_id="1",
+        window=AnalysisWindow(
+            baseline_start=1,
+            baseline_end=4,
+            recent_start=5,
+            recent_end=8,
+        ),
+        context_policy=ContextPolicy(
+            minimum_population_households=7,
+            minimum_peer_households=6,
+        ),
+    )
+    with DataRepository(tmp_path) as repository:
+        result = run_peer_comparison(
+            PeerComparisonInput(household_id="1", peer_count=5),
+            context,
+            repository,
+        )
+
+    assert result.status is ToolStatus.PARTIAL
+    evidence = {item.metric: item for item in result.evidence}
+    assert evidence["population_household_count"].value == 6
+    assert evidence["peer_household_count"].value == 5
+    assert evidence["context_classification"].text_value == (
+        ContextClassification.INSUFFICIENT_CONTEXT.value
+    )
+    assert "population_median_retailer_sales_change" not in evidence
+    assert "peer_median_retailer_sales_change" not in evidence
+    assert any("policy requires at least 7" in item for item in result.limitations)
+    assert any("policy requires at least 6" in item for item in result.limitations)
+
+
+def test_peer_context_is_invariant_to_transaction_row_order(tmp_path: Path) -> None:
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first = _peer_frames()
+    second = _peer_frames()
+    second["transactions"] = second["transactions"].sample(frac=1.0, random_state=42)
+    prepare_frames_for_tests(first, first_dir)
+    prepare_frames_for_tests(second, second_dir)
+    policy = ContextPolicy(
+        minimum_population_households=5,
+        minimum_peer_households=5,
+    )
+
+    def run(prepared_dir: Path, call_id: str):
+        context = ToolExecutionContext(
+            run_id=RUN_ID,
+            tool_call_id=call_id,
+            household_id="1",
+            window=AnalysisWindow(
+                baseline_start=1,
+                baseline_end=4,
+                recent_start=5,
+                recent_end=8,
+            ),
+            context_policy=policy,
+        )
+        with DataRepository(prepared_dir) as repository:
+            return run_peer_comparison(
+                PeerComparisonInput(household_id="1", peer_count=5),
+                context,
+                repository,
+            )
+
+    first_result = run(first_dir, "first-order")
+    second_result = run(second_dir, "second-order")
+    first_evidence = [
+        (item.metric, item.value, item.text_value, dict(item.dimensions))
+        for item in first_result.evidence
+    ]
+    second_evidence = [
+        (item.metric, item.value, item.text_value, dict(item.dimensions))
+        for item in second_result.evidence
+    ]
+    assert first_result.model_summary == second_result.model_summary
+    assert first_evidence == second_evidence

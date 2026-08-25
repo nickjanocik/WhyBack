@@ -6,10 +6,12 @@ import math
 from dataclasses import dataclass
 from typing import Any, cast
 
+import numpy as np
 from pydantic import JsonValue
 
 from whyback.config import SOURCE_COMMIT
 from whyback.data.repository import DataRepository
+from whyback.methodology import ClaimType, ContextClassification, classify_context
 from whyback.tools.common import (
     EvidenceFactory,
     ToolTimer,
@@ -32,6 +34,11 @@ _PARTIAL_WEEK_LIMITATION = (
     "either week may not be like-for-like."
 )
 _RECONCILIATION_ABSOLUTE_TOLERANCE = 1e-6
+_CATEGORY_CONTEXT_LIMITATION = (
+    "Category comparison is a target-excluded household-level descriptive benchmark "
+    "among eligible households with meaningful baseline category activity. Broad "
+    "contemporaneous movement does not establish seasonality or causation."
+)
 
 _HOUSEHOLD_COUNTS_SQL = """
     SELECT COUNT(*)::BIGINT AS household_rows,
@@ -117,6 +124,118 @@ class _CategoryRow:
                 "loss_contribution_share": self.loss_contribution_share,
             }
         )
+
+
+@dataclass(frozen=True, slots=True)
+class _CategoryContext:
+    category: _CategoryRow
+    comparison_count: int
+    median_change: float | None
+    declining_share: float | None
+    target_minus_median_change: float | None
+    classification: ContextClassification
+    limitations: tuple[str, ...]
+
+    def as_summary(self) -> JsonValue:
+        return json_value(
+            {
+                "department": self.category.department,
+                "product_category": self.category.product_category,
+                "direction": "loss",
+                "target_category_change": self.category.percentage_change,
+                "comparison_household_count": self.comparison_count,
+                "population_median_change": self.median_change,
+                "population_declining_share": self.declining_share,
+                "target_minus_population_median_change": (
+                    self.target_minus_median_change
+                ),
+                "context_classification": self.classification.value,
+                "target_excluded": True,
+                "limitations": list(self.limitations),
+            }
+        )
+
+
+def _category_context_sql(category_count: int) -> str:
+    if category_count < 1:
+        raise ValueError("Category context requires at least one selected category")
+    selected_values = ", ".join("(?, ?)" for _ in range(category_count))
+    return f"""
+        WITH selected_categories(department, product_category) AS (
+            VALUES {selected_values}
+        ),
+        eligible AS (
+            SELECT household_id
+            FROM household_week
+            WHERE week BETWEEN ? AND ? AND household_id <> ?
+            GROUP BY household_id
+            HAVING COUNT(DISTINCT week) >= ?
+               AND SUM(distinct_baskets) >= ?
+               AND SUM(retailer_sales_value) > ?
+        ),
+        enriched AS (
+            SELECT t.household_id,
+                   t.week,
+                   CAST(t.retailer_sales_value AS DECIMAL(38, 6)) AS sales_value,
+                   COALESCE(
+                       NULLIF(TRIM(CAST(p.department AS VARCHAR)), ''),
+                       'UNKNOWN'
+                   ) AS department,
+                   COALESCE(
+                       NULLIF(TRIM(CAST(p.product_category AS VARCHAR)), ''),
+                       'UNKNOWN'
+                   ) AS product_category
+            FROM transactions t
+            JOIN eligible e USING (household_id)
+            LEFT JOIN products p ON p.product_id = t.product_id
+            WHERE t.week BETWEEN ? AND ?
+        ),
+        category_activity AS (
+            SELECT e.household_id,
+                   e.department,
+                   e.product_category,
+                   COALESCE(SUM(e.sales_value) FILTER (
+                       WHERE e.week BETWEEN ? AND ?
+                   ), 0)::DOUBLE AS baseline_value,
+                   COALESCE(SUM(e.sales_value) FILTER (
+                       WHERE e.week BETWEEN ? AND ?
+                   ), 0)::DOUBLE AS recent_value
+            FROM enriched e
+            JOIN selected_categories s
+              ON s.department = e.department
+             AND s.product_category = e.product_category
+            GROUP BY e.household_id, e.department, e.product_category
+        )
+        SELECT household_id,
+               department,
+               product_category,
+               baseline_value,
+               recent_value
+        FROM category_activity
+        WHERE baseline_value >= ?
+        ORDER BY department, product_category, household_id
+    """
+
+
+def _category_context_dimensions(
+    context: ToolExecutionContext, row: _CategoryRow
+) -> dict[str, str]:
+    window = context.window
+    return {
+        "department": row.department,
+        "product_category": row.product_category,
+        "direction": "loss",
+        "comparison_scope": "category_population",
+        "cohort_definition": (
+            "eligible target-excluded households with meaningful baseline category "
+            "retailer sales value"
+        ),
+        "target_excluded": "true",
+        "baseline_window": f"{window.baseline_start}-{window.baseline_end}",
+        "recent_window": f"{window.recent_start}-{window.recent_end}",
+        "change_definition": "(recent-baseline)/baseline",
+        "change_sign_convention": "lower_is_worse",
+    }
 
 
 def _failed_result(
@@ -325,6 +444,113 @@ def category_decomposition(
         ),
     )[: parameters.top_n]
 
+    policy = context.context_policy
+    context_sql: str | None = None
+    context_records: list[dict[str, Any]] = []
+    category_contexts: list[_CategoryContext] = []
+    context_limitations: list[str] = []
+    if losses:
+        context_sql = _category_context_sql(len(losses))
+        selected_parameters: list[object] = [
+            value for row in losses for value in (row.department, row.product_category)
+        ]
+        context_frame = repository.query(
+            context_sql,
+            [
+                *selected_parameters,
+                window.baseline_start,
+                window.baseline_end,
+                context.household_id,
+                policy.minimum_baseline_active_weeks,
+                policy.minimum_baseline_distinct_baskets,
+                policy.minimum_baseline_retailer_sales_value,
+                window.baseline_start,
+                window.recent_end,
+                window.baseline_start,
+                window.baseline_end,
+                window.recent_start,
+                window.recent_end,
+                policy.meaningful_category_baseline_retailer_sales_value,
+            ],
+        )
+        context_records = cast(
+            list[dict[str, Any]], context_frame.to_dict(orient="records")
+        )
+        if any(
+            str(record["household_id"]) == context.household_id
+            for record in context_records
+        ):
+            raise AssertionError(
+                "The target household appeared in a category comparison cohort"
+            )
+        records_by_category: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        for record in context_records:
+            key = (str(record["department"]), str(record["product_category"]))
+            records_by_category.setdefault(key, []).append(record)
+
+        category_policy = policy.model_copy(
+            update={
+                "minimum_population_households": policy.minimum_category_households,
+                "minimum_peer_households": policy.minimum_category_households,
+            }
+        )
+        for row in losses:
+            comparison_records = records_by_category.get(
+                (row.department, row.product_category), []
+            )
+            comparison_count = len(comparison_records)
+            sufficient = (
+                comparison_count >= policy.minimum_category_households
+                and row.percentage_change is not None
+            )
+            changes = np.asarray(
+                [
+                    (float(record["recent_value"]) - float(record["baseline_value"]))
+                    / float(record["baseline_value"])
+                    for record in comparison_records
+                ],
+                dtype=float,
+            )
+            median_change = float(np.median(changes)) if sufficient else None
+            declining_share = float(np.mean(changes < 0.0)) if sufficient else None
+            target_minus_median = (
+                row.percentage_change - median_change
+                if row.percentage_change is not None and median_change is not None
+                else None
+            )
+            classification = classify_context(
+                target_change=row.percentage_change,
+                population_median_change=median_change,
+                population_declining_share=declining_share,
+                peer_median_change=median_change,
+                peer_declining_share=declining_share,
+                population_count=comparison_count,
+                peer_count=comparison_count,
+                policy=category_policy,
+            )
+            category_limitations = [_CATEGORY_CONTEXT_LIMITATION]
+            if not sufficient:
+                limitation = (
+                    f"Category {row.department} / {row.product_category} has "
+                    f"{comparison_count} eligible target-excluded households with "
+                    "meaningful baseline activity; policy requires at least "
+                    f"{policy.minimum_category_households}, so category population "
+                    "distribution statistics are unavailable."
+                )
+                category_limitations.append(limitation)
+                context_limitations.append(limitation)
+            category_contexts.append(
+                _CategoryContext(
+                    category=row,
+                    comparison_count=comparison_count,
+                    median_change=median_change,
+                    declining_share=declining_share,
+                    target_minus_median_change=target_minus_median,
+                    classification=classification,
+                    limitations=tuple(category_limitations),
+                )
+            )
+
     line_items = int(totals["line_items"])
     mapped_line_items = int(totals["mapped_line_items"])
     distinct_products = int(totals["distinct_products"])
@@ -346,6 +572,8 @@ def category_decomposition(
 
     limitations: list[str] = []
     status = ToolStatus.OK
+    if category_contexts:
+        limitations.append(_CATEGORY_CONTEXT_LIMITATION)
     if baseline_rows == 0 or recent_rows == 0:
         empty_period = "baseline" if baseline_rows == 0 else "recent"
         limitations.append(
@@ -362,10 +590,14 @@ def category_decomposition(
         context, window.baseline_start, window.baseline_end
     ) or (_window_has_partial_week(context, window.recent_start, window.recent_end)):
         limitations.append(_PARTIAL_WEEK_LIMITATION)
+    if context_limitations:
+        limitations.extend(context_limitations)
+        status = ToolStatus.PARTIAL
 
-    sql_digest = query_hash(
-        _HOUSEHOLD_COUNTS_SQL, _CATEGORY_SQL, _TOTALS_AND_MAPPING_SQL
-    )
+    sql_queries = [_HOUSEHOLD_COUNTS_SQL, _CATEGORY_SQL, _TOTALS_AND_MAPPING_SQL]
+    if context_sql is not None:
+        sql_queries.append(context_sql)
+    sql_digest = query_hash(*sql_queries)
     evidence_factory = EvidenceFactory(context, ToolName.CATEGORY_DECOMPOSITION)
     evidence: list[EvidenceRecord] = [
         evidence_factory.add(
@@ -451,6 +683,63 @@ def category_decomposition(
                 )
             )
 
+    for category_context in category_contexts:
+        dimensions = _category_context_dimensions(context, category_context.category)
+        evidence.append(
+            evidence_factory.add(
+                "category_population_household_count",
+                dimensions=dimensions,
+                value=float(category_context.comparison_count),
+                unit="households",
+                limitations=category_context.limitations,
+                sql_hash=sql_digest,
+                maximum_claim_type=ClaimType.DESCRIPTIVE,
+            )
+        )
+        if category_context.median_change is not None:
+            evidence.extend(
+                [
+                    evidence_factory.add(
+                        "category_population_median_change",
+                        dimensions=dimensions,
+                        value=category_context.median_change,
+                        unit="proportion",
+                        limitations=category_context.limitations,
+                        sql_hash=sql_digest,
+                        maximum_claim_type=ClaimType.DESCRIPTIVE,
+                    ),
+                    evidence_factory.add(
+                        "category_population_declining_share",
+                        dimensions=dimensions,
+                        value=category_context.declining_share,
+                        unit="proportion",
+                        limitations=category_context.limitations,
+                        sql_hash=sql_digest,
+                        maximum_claim_type=ClaimType.DESCRIPTIVE,
+                    ),
+                    evidence_factory.add(
+                        "target_minus_category_population_median_change",
+                        dimensions=dimensions,
+                        value=category_context.target_minus_median_change,
+                        unit="proportion",
+                        limitations=category_context.limitations,
+                        sql_hash=sql_digest,
+                        maximum_claim_type=ClaimType.DESCRIPTIVE,
+                    ),
+                ]
+            )
+        evidence.append(
+            evidence_factory.add(
+                "category_context_classification",
+                dimensions=dimensions,
+                text_value=category_context.classification.value,
+                unit="classification",
+                limitations=category_context.limitations,
+                sql_hash=sql_digest,
+                maximum_claim_type=ClaimType.ASSOCIATIONAL,
+            )
+        )
+
     model_summary: dict[str, JsonValue] = {
         "baseline_total_retailer_sales_value": baseline_total,
         "recent_total_retailer_sales_value": recent_total,
@@ -458,6 +747,7 @@ def category_decomposition(
         "gross_lost_retailer_sales_value": gross_loss,
         "top_losses": [row.as_summary() for row in losses],
         "top_gains": [row.as_summary() for row in gains],
+        "category_context": [item.as_summary() for item in category_contexts],
         "mapping_coverage": json_value(
             {
                 "line_item_coverage": line_mapping_coverage,
@@ -500,13 +790,26 @@ def category_decomposition(
             parameters,
             timer=timer,
             sql_hash=sql_digest,
-            rows_examined=window_rows,
+            rows_examined=window_rows + len(context_records),
             diagnostics={
                 "category_group_count": len(category_rows),
                 "baseline_reconciled": baseline_reconciled,
                 "recent_reconciled": recent_reconciled,
                 "baseline_reconciliation_delta": baseline_delta,
                 "recent_reconciliation_delta": recent_delta,
+                "category_context_target_excluded": True,
+                "category_context_comparison_group_rows": len(context_records),
+                "category_context_policy": policy.model_dump(mode="json"),
+                "category_context": [
+                    {
+                        "department": item.category.department,
+                        "product_category": item.category.product_category,
+                        "comparison_household_count": item.comparison_count,
+                        "target_excluded": True,
+                        "context_classification": item.classification.value,
+                    }
+                    for item in category_contexts
+                ],
             },
         ),
     )

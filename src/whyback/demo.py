@@ -109,7 +109,11 @@ def synthetic_demo_frames() -> dict[str, pd.DataFrame]:
     """Create a compact, hand-auditable 16-week source-shaped dataset."""
 
     transactions: list[dict[str, object]] = []
-    households = ("101", "102", "103", "104", "105", "106")
+    # Twenty-four households keep the fixture compact while clearing the declared
+    # population/category cohort minimum of 20 after target exclusion. The first
+    # six retain the original hand-auditable decline profiles; the remainder form
+    # a stable contemporaneous comparison population.
+    households = tuple(str(identifier) for identifier in range(101, 125))
     recent_active_weeks = {
         "101": 2,
         "102": 3,
@@ -126,6 +130,12 @@ def synthetic_demo_frames() -> dict[str, pd.DataFrame]:
         "105": 9.5,
         "106": 10.0,
     }
+    recent_active_weeks.update(
+        {household_id: 8 for household_id in households if household_id >= "107"}
+    )
+    recent_values.update(
+        {household_id: 10.0 for household_id in households if household_id >= "107"}
+    )
     for household_index, household_id in enumerate(households, start=1):
         store_id = str(10 + household_index % 2)
         for week in range(1, 9):

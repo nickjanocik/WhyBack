@@ -66,8 +66,10 @@ TOOL_SPECS: tuple[RegisteredTool, ...] = (
         cast(ToolHandler, category_decomposition),
         "Use to identify departments/categories contributing to retailer sales value "
         "losses, gains, and share shifts. Requires household_id; top_n is optional. "
-        "Unmapped products remain UNKNOWN and totals must reconcile. Do not use this "
-        "tool to infer product preference causes.",
+        "Selected loss categories include target-excluded context among eligible "
+        "households with meaningful baseline activity. Unmapped products remain "
+        "UNKNOWN and totals must reconcile. Do not use this tool to infer product "
+        "preference causes.",
     ),
     RegisteredTool(
         ToolName.BASKET_BEHAVIOR,
@@ -100,10 +102,10 @@ TOOL_SPECS: tuple[RegisteredTool, ...] = (
         ToolName.PEER_COMPARISON,
         PeerComparisonInput,
         cast(ToolHandler, run_peer_comparison),
-        "Use when the target change is ambiguous and a behavioral benchmark helps. "
-        "Requires household_id; peer_count defaults to 50. Peers use robust-scaled "
-        "baseline behavior without demographics, always exclude the target, and are "
-        "descriptive rather than causal.",
+        "Use to compare the target with the full eligible household population and "
+        "behavioral peers. Requires household_id; peer_count defaults to 50. The "
+        "target is excluded from both distributions; peers use robust-scaled baseline "
+        "behavior without demographics. Context is descriptive rather than causal.",
     ),
 )
 

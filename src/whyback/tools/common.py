@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 from pydantic import BaseModel, JsonValue
 
+from whyback.methodology import ClaimType
 from whyback.tools.contracts import (
     EvidenceRecord,
     ToolExecutionContext,
@@ -91,8 +92,10 @@ class EvidenceFactory:
         baseline_value: float | None = None,
         recent_value: float | None = None,
         value: float | None = None,
+        text_value: str | None = None,
         change: float | None = None,
         unit: str | None = None,
+        maximum_claim_type: ClaimType = ClaimType.ASSOCIATIONAL,
         limitations: tuple[str, ...] = (),
         sql_hash: str | None = None,
     ) -> EvidenceRecord:
@@ -108,8 +111,10 @@ class EvidenceFactory:
             baseline_value=_finite_or_none(baseline_value),
             recent_value=_finite_or_none(recent_value),
             value=_finite_or_none(value),
+            text_value=text_value,
             change=_finite_or_none(change),
             unit=unit,
+            maximum_claim_type=maximum_claim_type,
             limitations=limitations,
             query_hash=sql_hash,
         )

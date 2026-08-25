@@ -17,6 +17,7 @@ from pydantic import (
 from whyback import __version__
 from whyback.config import SOURCE_COMMIT
 from whyback.immutability import frozen_mapping
+from whyback.methodology import ClaimType, ContextPolicy
 
 
 class ToolName(StrEnum):
@@ -103,6 +104,7 @@ class ToolExecutionContext(BaseModel):
     source_commit: str = SOURCE_COMMIT
     source_hashes: dict[str, str] = Field(default_factory=dict)
     application_version: str = __version__
+    context_policy: ContextPolicy = ContextPolicy()
 
     @model_validator(mode="after")
     def freeze_source_hashes(self) -> Self:
@@ -125,8 +127,10 @@ class EvidenceRecord(BaseModel):
     baseline_value: float | None = None
     recent_value: float | None = None
     value: float | None = None
+    text_value: str | None = Field(default=None, min_length=1)
     change: float | None = None
     unit: str | None = None
+    maximum_claim_type: ClaimType = ClaimType.ASSOCIATIONAL
     limitations: tuple[str, ...] = ()
     query_hash: str | None = None
 
@@ -138,6 +142,7 @@ class EvidenceRecord(BaseModel):
                 self.baseline_value,
                 self.recent_value,
                 self.value,
+                self.text_value,
                 self.change,
             )
         ):
