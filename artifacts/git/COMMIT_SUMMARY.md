@@ -6,7 +6,7 @@ below are taken from the corresponding commit messages; they are not
 retroactive claims that every historical check was rerun at every later
 commit.
 
-The implementation history through `a8b9a32` was pushed to
+The implementation history through `4e0da21` was pushed to
 `git@github.com:nickjanocik/WhyBack.git` without a force-push. The summary
 itself belongs to the final reviewer-artifact commit, so it cannot include its
 own hash.
@@ -28,24 +28,27 @@ own hash.
 | `76ac8de` | Generate verified reviewer artifacts and official controls | Five synthetic reports, persistent-failure evidence, official no-key status, official Type A control, machine-readable audit outputs | Complete gate, 187 passed and 1 credential-gated skip, 86.86% coverage, all three artifact profiles verified | pushed |
 | `dac5232` | Publish the final audit and Git history | Clean-tree gate evidence, milestone history, and completed OpenAI-era reviewer checklist | Complete gate, 187 passed and 1 credential-gated skip, 86.89% coverage, all three artifact profiles verified | pushed |
 | `a8b9a32` | Replace the live provider with Gemini | Stateless Gemini Interactions adapter, Gemini configuration/CLI/provenance, legacy artifact compatibility, and a labeled live synthetic request-boundary failure audit | Ruff, Pyright, 199 passed and 1 credential-gated skip, live analytical-call contract, live synthetic artifact verification | pushed |
+| `4e0da21` | Harden the Gemini migration after audit | Compatible Interactions SDK floor, explicit function types, Gemini credential redaction/presence hardening, credential-independent historical verification, and corrected provider documentation | Ruff, Pyright, 206 passed and 1 credential-gated skip, 24 tests at the `google-genai==2.3.0` floor | pushed |
 
 ## Final verification snapshot
 
-The Gemini migration quality gate started from a clean, pushed `a8b9a32` tree
+The final Gemini migration quality gate started from a clean, pushed `4e0da21` tree
 and completed with all 12 stages passing:
 
 - Ruff formatting and linting passed.
 - Pyright reported no errors.
-- Pytest recorded 200 tests: 199 passed and the live Gemini test was skipped
+- Pytest recorded 207 tests: 206 passed and the live Gemini test was skipped
   because `GEMINI_API_KEY` was deliberately absent from the credential-free
   gate.
-- Branch-aware coverage was 87.17%, above the required 85% threshold.
+- Branch-aware overall coverage was 87.18%, above the required 85% threshold.
 - Deterministic evaluations passed their scenario contracts.
 - Demo, live Gemini synthetic failure, historical official no-key, and
   official Type A artifacts passed strict verification.
 - The wheel and source distribution rebuilt successfully; the wheel contains
-  `GeminiFunctionCallingBackend` and a `google-genai` dependency, with no
+  `GeminiFunctionCallingBackend` and requires `google-genai>=2.3.0,<3`, with no
   OpenAI backend module or package dependency.
+- The adapter and foundation tests also passed in an isolated environment at
+  the declared `google-genai==2.3.0` floor (24 passed).
 
 The machine record is
 [`artifacts/tests/test_audit.json`](../tests/test_audit.json), with a readable
