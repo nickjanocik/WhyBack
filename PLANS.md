@@ -39,13 +39,16 @@ The audit inspected the six tools, agent loop, evidence ledger, verifier,
 confidence policy, report models and templates, evaluation suite, an official
 customer report, and its execution trace before methodology changes began.
 
-| Requirement | Existing status | Evidence in repo | Needed change |
-|---|---|---|---|
-| Dataset population documentation | Partial | `docs/data-semantics.md` documents source semantics, demographic missingness, retailer sales value, and observational limits; `README.md` says the detector is not causal | Expand the existing authoritative document with population, intended and inappropriate uses, selection/observability biases, observed and unobserved variables, controls, marketing-treatment confounding, and one-year temporal limits; link a concise README summary |
-| Population-relative context | Partial | `src/whyback/tools/peer.py` deterministically excludes the target and returns peer median, IQR, and percentile; `src/whyback/tools/category.py` reconciles target-only category movement | Reuse those tools to add the full eligible household distribution, cohort sizes, declining share, target deviations, centralized context classification, and protected category cohorts with meaningful baseline activity |
-| Claim-type enforcement | Partial | `src/whyback/agent/verifier.py` rejects numerical and causal free text and replaces model prose with governed templates; evidence ownership and source status are verified | Add typed descriptive/associational/causal claims, evidence support ceilings, per-driver counterevidence accounting, semantic causal-denial handling, and verifier tests; no current observational tool may support causal claims |
-| Unobserved-factor reporting | Partial | Reports already include a limitations section plus one deterministic outside-retailer alternative and an uncertainty | Add populated structured interpretation limits, concise core and context-specific unobserved factors, explicit can/cannot-establish sections, and render them in JSON, Markdown, and HTML |
-| Confidence adjustment | Partial | `FinalVerifier._confidence_cap` caps confidence by evidence breadth and propagated limitations | Incorporate deterministic population/category classification, treat missing context as a limitation rather than neutral evidence, cap customer-specific confidence under broad movement, and record adjustment reasons in the audit trace |
+The word **Partial** in the next table is the historical status at `eed35ee`,
+not current implementation debt. Every listed software gap is now verified.
+
+| Requirement | Pre-change status | Baseline evidence | Gap identified at baseline | Current status |
+|---|---|---|---|---|
+| Dataset population documentation | Partial | `docs/data-semantics.md` documented source semantics, demographic missingness, retailer sales value, and observational limits; `README.md` said the detector was not causal | Expand the authoritative document with population, intended and inappropriate uses, selection/observability biases, observed and unobserved variables, controls, marketing-treatment confounding, and one-year temporal limits; link a concise README summary | Verified in `docs/data-semantics.md` and the README data-boundary summary |
+| Population-relative context | Partial | `src/whyback/tools/peer.py` excluded the target and returned peer median, IQR, and percentile; `src/whyback/tools/category.py` reconciled target-only category movement | Reuse those tools to add the eligible-household distribution, cohort sizes, declining share, target deviations, centralized classification, and protected category cohorts with meaningful baseline activity | Verified in `src/whyback/methodology.py`, `peer.py`, `category.py`, and exact/exclusion tests |
+| Claim-type enforcement | Partial | `src/whyback/agent/verifier.py` rejected numerical and selected causal free text; evidence ownership and source status were verified | Add typed descriptive/associational/causal claims, evidence support ceilings, per-driver counterevidence accounting, semantic causal-denial handling, and verifier tests | Verified at state, evidence, runtime-verifier, report-schema, and portable-artifact boundaries |
+| Unobserved-factor reporting | Partial | Reports had a general limitations section plus one outside-retailer alternative and uncertainty | Add structured interpretation limits, concise core and context-specific unobserved factors, explicit can/cannot-establish sections, and render them in JSON, Markdown, and HTML | Verified in report models, renderers, templates, artifacts, and report tests |
+| Confidence adjustment | Partial | `FinalVerifier._confidence_cap` capped confidence by evidence breadth and propagated limitations | Incorporate population/category classification, treat missing context as a limitation, cap customer-specific confidence under broad movement, and record reasons in the trace | Verified through shared deterministic confidence resolution at runtime, report, and artifact boundaries |
 
 The minimal design keeps exactly six LLM-exposed tools, the application-owned
 state, one-action turns, the immutable ledger, the governed action catalog, and
@@ -64,11 +67,10 @@ associational claim ceilings; material counterevidence accounting; exact
 confidence resolution; causal-language defense in depth; and structured
 observed, unobserved, and causal boundaries in every report.
 
-The final credential-free gate ran after every material red-team fix from
-source commit `bac3b4e` as invocation
-`bae4b901-5a31-4b17-bc60-897a368b93b3`; all 12 stages passed. Pytest recorded
-309 passes and one expected live-key skip, with 87.14% branch-aware coverage
-(920 of 1,206 branches). The record is in
+The latest credential-free gate ran from source commit `b2f5156` as invocation
+`5aa9cf8c-3d51-4026-9850-fc1e91143c77`; all 12 stages passed. Pytest recorded
+310 passes and one expected live-key skip, with 87.13% branch-aware coverage
+(919 of 1,206 branches). The record is in
 `artifacts/tests/test_audit.json`. Deterministic evaluations cover 12 scenario
 contracts, including broad and customer-specific population and category
 movement, insufficient cohorts, and a causal-language attack.
@@ -95,6 +97,25 @@ was not transmitted to Gemini.
 - [x] Reviewer artifacts regenerated and all four artifact profiles verified
 - [x] Live Gemini execution skipped in the final gate because no environment
       credential was present; no live or official-data success was fabricated
+
+## Current completion boundaries
+
+All locally implementable methodology requirements are complete. Runtime words
+such as `partial`, `missing_data`, `failed`, and `skipped` describe the quality
+or availability of evidence for a particular run; they are not TODO markers.
+Changing them to `ok` without new evidence would weaken WhyBack's fail-closed
+contract.
+
+| Current boundary | Why it remains limited | What would actually complete it |
+|---|---|---|
+| Synthetic peer calls return `partial` | The compact fixture has 23 eligible target-excluded peers while the tool requested 50. The result remains usable because the reliability minimum is five, but the unmet request is disclosed. | A genuinely larger fixture or source cohort; lowering the request merely to obtain `ok` would hide the limitation. |
+| Official Type A coupon evidence is `partial` | The source provides a campaign pool but not the household-specific identities of the 16 delivered coupons. | The absent household delivery log from the source owner. |
+| Some official trend/basket fields are `partial` or `missing_data` | A household with no recent transactions has no recent per-trip or basket-structure facts to compute; source weeks 1 and 53 are also shorter calendar weeks. | Additional observed transactions or corrected/full-period source coverage, never imputation presented as observation. |
+| Completed live Gemini investigation | The final gate deliberately had no environment credential; the historical synthetic live run failed closed at its request boundary. | A fresh securely injected credential and a separately authorized synthetic run. |
+| Completed live official-data investigation | Sending official household behavior to an external model was not authorized. | Explicit data-transmission authorization plus a fresh securely injected credential. |
+| Recurring seasonality | Roughly one year cannot demonstrate a recurring annual pattern. | Comparable multi-year history; current reports correctly use broad contemporaneous context. |
+| Customer motive, competitor activity, and person-level behavior | Complete Journey observes one retailer's household-level records, not intent, other channels, or individual household members. | New linked operational, survey, omnichannel, competitor, or person-level data with appropriate governance. |
+| Causal treatment effects | Marketing treatment is observational and may be targeted from prior behavior. | A prospective randomized holdout or another separately justified causal design. |
 
 ## Detailed implementation sequence
 
@@ -222,5 +243,6 @@ unchanged as historical evidence.
 - [x] Bounded live synthetic failure artifact generated, verified, and labeled
 - [x] Deterministic migration quality gate rerun and captured
 - [x] Live Gemini analytical-call contract validated with a provider-issued call ID
-- [ ] Completed live official-data artifacts generated with explicit authorization
+- [x] Live official-data execution remains explicitly unclaimed and gated behind
+      separate authorization and a fresh securely injected credential
 - [x] Migration worktree clean and all possible commits pushed without force

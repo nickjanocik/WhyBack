@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from evals.run_evals import load_scenario_catalog
 from whyback import __version__
 from whyback.cli import app
 from whyback.config import SOURCE_COMMIT, load_settings
@@ -57,3 +58,17 @@ def test_cli_help_and_version() -> None:
     assert "Evidence-grounded" in help_result.stdout
     assert version_result.exit_code == 0
     assert version_result.stdout.strip() == f"WhyBack {__version__}"
+
+
+def test_current_docs_match_the_verified_methodology_status() -> None:
+    scenario_count = len(load_scenario_catalog().scenarios)
+    readme = Path("README.md").read_text(encoding="utf-8")
+    plans = Path("PLANS.md").read_text(encoding="utf-8")
+    productionization = Path("docs/productionization.md").read_text(encoding="utf-8")
+
+    assert scenario_count == 12
+    assert "Twelve behavioral scenarios" in readme
+    assert "twelve current behavioral scenarios" in productionization
+    assert "| Requirement | Pre-change status" in plans
+    assert "Every listed software gap is now verified." in plans
+    assert "## Current completion boundaries" in plans

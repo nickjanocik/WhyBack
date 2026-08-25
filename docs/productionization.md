@@ -222,7 +222,7 @@ Every detector, model, prompt, tool, verifier, or catalog release should pass:
 1. frozen build, static checks, deterministic tests, branch coverage, dependency
    and secret policy;
 2. golden trace and artifact integrity checks;
-3. the six baseline behavioral scenarios plus all historical incident cases;
+3. the twelve current behavioral scenarios plus all historical incident cases;
 4. replay on a versioned representative sample with budget, grounding,
    limitation, failure, action-distribution, cost, and latency thresholds;
 5. privacy/fairness checks and human review of material output changes;

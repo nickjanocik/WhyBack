@@ -86,6 +86,15 @@ Credential-free scripted investigations exercise the same runner, tools,
 verifier, report renderer, and trace writer; their manifests label the execution
 mode.
 
+All locally implementable methodology capabilities are complete. In reports,
+`partial`, `missing_data`, `failed`, and `skipped` are evidence-status terms,
+not unfinished features. For example, the compact synthetic fixture has 23
+eligible peers when 50 were requested, and the official source omits Type A
+household-specific delivered-coupon identities. WhyBack preserves those facts
+instead of weakening the request or inventing data. The current implementation
+versus external-data and experimental boundaries are itemized in
+[PLANS.md](PLANS.md#current-completion-boundaries).
+
 To run an explicitly authorized live investigation, keep the credential out of
 Git and run:
 
@@ -301,7 +310,7 @@ and [official Type A trace](artifacts/official-type-a/customer_181/trace.html).
 The baseline is independent of full data, Gemini, Phoenix, MCP, and other
 services. Tests cover hand-calculated analytics, data contracts, properties,
 prepared-data integration, bounded orchestration, evidence verification,
-failure injection, reports, and trace sanitation. Six behavioral scenarios
+failure injection, reports, and trace sanitation. Twelve behavioral scenarios
 score observable invariants rather than exact prose: relevant selection,
 unnecessary-call avoidance, budgets, verification, grounding, limitation
 propagation, graceful degradation, duplicates, and unsupported evidence.
