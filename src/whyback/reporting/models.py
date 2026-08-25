@@ -16,6 +16,7 @@ from pydantic import (
 from whyback.agent.actions import ActionId, load_action_catalog
 from whyback.agent.state import ConfidenceLevel, ResolvedConfidence, RunStatus
 from whyback.agent.verifier import (
+    is_relevant_counterevidence,
     required_context_counterevidence_ids,
     resolve_confidence_policy,
 )
@@ -424,7 +425,15 @@ class ReportData(BaseModel):
         supporting_by_id = {item.evidence_id: item for item in self.supporting_evidence}
         supporting_ids = set(supporting_by_id)
         counterevidence_ids = {item.evidence_id for item in self.counterevidence}
+        if len(supporting_ids) != len(self.supporting_evidence):
+            raise ValueError("Supporting evidence references must be unique")
+        if len(counterevidence_ids) != len(self.counterevidence):
+            raise ValueError("Counterevidence references must be unique")
+        driver_supporting_ids: set[str] = set()
+        driver_counterevidence_ids: set[str] = set()
         for driver in self.likely_drivers:
+            driver_supporting_ids.update(driver.supporting_evidence_ids)
+            driver_counterevidence_ids.update(driver.counterevidence_ids)
             if not set(driver.supporting_evidence_ids).issubset(supporting_ids):
                 raise ValueError(
                     "Driver citations must be accepted supporting evidence"
@@ -439,6 +448,23 @@ class ReportData(BaseModel):
                 for evidence_id in driver.supporting_evidence_ids
             ):
                 raise ValueError("Driver claim type exceeds its evidence support level")
+        if self.run_status is RunStatus.COMPLETED and (
+            not self.likely_drivers or not self.supporting_evidence
+        ):
+            raise ValueError(
+                "A completed report requires a grounded driver and supporting evidence"
+            )
+        if (
+            self.action is not None
+            and self.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE
+            and (
+                driver_supporting_ids != supporting_ids
+                or driver_counterevidence_ids != counterevidence_ids
+            )
+        ):
+            raise ValueError(
+                "Report evidence partitions must exactly match driver citations"
+            )
         if self.action is not None:
             try:
                 evidence_records = {
@@ -458,6 +484,16 @@ class ReportData(BaseModel):
                     evidence_records[evidence_id]
                     for evidence_id in driver.supporting_evidence_ids
                 )
+                for evidence_id in driver.counterevidence_ids:
+                    if not is_relevant_counterevidence(
+                        action_definition,
+                        evidence_records[evidence_id],
+                        driver_support,
+                    ):
+                        raise ValueError(
+                            "Driver counterevidence is not relevant to its action "
+                            "and support"
+                        )
                 required_context_ids = set(
                     required_context_counterevidence_ids(
                         action_definition,

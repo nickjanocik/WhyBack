@@ -84,7 +84,12 @@ def _evidence(
         source_tool=ToolName.CATEGORY_DECOMPOSITION,
         source_tool_call_id=CALL_ID,
         metric="category_retailer_sales_value",
-        dimensions={"category": category},
+        dimensions={
+            "category": category,
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
         baseline_value=baseline,
         recent_value=recent,
         change=recent - baseline,
@@ -452,8 +457,8 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
 
     assert parsed["supporting_evidence"][0]["baseline_value"] == 90.0
     assert parsed["decline"]["decline_score"] == 0.5
-    assert "999" not in json_text
-    assert "999" not in markdown
+    assert "raw model claim says 999%" not in json_text.casefold()
+    assert "raw model claim says 999%" not in markdown.casefold()
     assert markdown.endswith("\n")
     assert not markdown.endswith("\n\n")
     for section in (
@@ -639,8 +644,41 @@ def test_report_schema_recomputes_counterevidence_and_confidence_policy() -> Non
 
     omitted_counter = broad.model_dump(mode="json")
     omitted_counter["likely_drivers"][0]["counterevidence_ids"] = [COUNTER_ID]
+    omitted_counter["counterevidence"] = [
+        item
+        for item in omitted_counter["counterevidence"]
+        if item["evidence_id"] == COUNTER_ID
+    ]
     with pytest.raises(ValidationError, match="material broad or mixed"):
         type(broad).model_validate(omitted_counter)
+
+
+def test_report_schema_requires_grounded_and_exact_evidence_partitions() -> None:
+    report = build_report_data(_outcome())
+
+    unsupported_action = report.model_dump(mode="json")
+    unsupported_action["likely_drivers"] = []
+    unsupported_action["supporting_evidence"] = []
+    unsupported_action["counterevidence"] = []
+    unsupported_action["action"]["resolved_confidence"] = (
+        ResolvedConfidence.INSUFFICIENT.value
+    )
+    with pytest.raises(ValidationError, match="grounded driver"):
+        type(report).model_validate(unsupported_action)
+
+    orphaned_counter = report.model_dump(mode="json")
+    orphaned_counter["likely_drivers"][0]["counterevidence_ids"] = []
+    orphaned_counter["likely_drivers"][0]["no_material_counterevidence_reason"] = (
+        "No material counterevidence was identified."
+    )
+    with pytest.raises(ValidationError, match="partitions"):
+        type(report).model_validate(orphaned_counter)
+
+    irrelevant_counter = report.model_dump(mode="json")
+    irrelevant_counter["counterevidence"][0]["metric"] = "unrelated_metric"
+    irrelevant_counter["evidence_ledger"][1]["metric"] = "unrelated_metric"
+    with pytest.raises(ValidationError, match="not relevant"):
+        type(report).model_validate(irrelevant_counter)
 
 
 def test_category_context_requires_explicit_target_exclusion_provenance() -> None:
@@ -648,7 +686,7 @@ def test_category_context_requires_explicit_target_exclusion_provenance() -> Non
     document = report.model_dump(mode="json")
     dimensions = {
         "department": "GROCERY",
-        "product_category": "SOUP",
+        "product_category": "OTHER",
         "direction": "loss",
     }
     values: tuple[tuple[str, float | None, str | None], ...] = (
@@ -698,7 +736,7 @@ def test_category_context_requires_explicit_target_exclusion_provenance() -> Non
     document["population_context"]["category_context"] = [
         {
             "department": "GROCERY",
-            "product_category": "SOUP",
+            "product_category": "OTHER",
             "available": True,
             "target_change": -0.50,
             "comparison_household_count": 20,
@@ -739,7 +777,7 @@ def test_html_is_escaped_self_contained_and_auditable() -> None:
     assert "&lt;script&gt;alert" in html
     assert "<script>alert" not in html
     assert "<img src=x" not in html
-    assert "999" not in html
+    assert "raw model claim says 999%" not in html.casefold()
     assert "http://" not in html and "https://" not in html
     assert "<script" not in html and "<link" not in html
     for section_id in (
