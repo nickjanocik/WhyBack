@@ -6,7 +6,7 @@ below are taken from the corresponding commit messages; they are not
 retroactive claims that every historical check was rerun at every later
 commit.
 
-The implementation history through `211db13` was pushed to
+The implementation history through `45afc71` was pushed to
 `git@github.com:nickjanocik/WhyBack.git` without a force-push. The summary
 itself belongs to the final bookkeeping commit, so it cannot include its own
 hash.
@@ -43,16 +43,20 @@ hash.
 | `d87a6cd` | Bind public artifacts to verified trace state | Exact report limitation/verifier-issue reconstruction, unsafe trace-prose checks, coordinated-tamper defenses, and migrated historical artifact | Ruff, 158 focused tests, four artifact profiles verified | pushed |
 | `bac3b4e` | Require grounded report evidence partitions | Standalone report schema now requires grounded drivers, exact evidence partitions, and relevant counterevidence | Ruff, 45 focused tests | pushed |
 | `211db13` | Publish verified methodology artifacts | Regenerated synthetic, evaluation, official Type A, and machine quality records for the settled methodology implementation | Complete gate, 309 passed and 1 credential-gated skip, 87.14% branch-aware coverage, four artifact profiles verified | pushed |
+| `b7881c8` | Record the completed methodology audit | Verified milestone status, final methodology gate record, and commit history through the regenerated artifacts | Staged diff check; documentation-only after the source gate | pushed |
+| `b2f5156` | Make the dashboard an internal investigation workspace | Focused internal operator surface with sanitized live audit progress and preserved evidence/governance controls | Dashboard check, one-household endpoint smoke, independent UI and live-trace security audits | pushed |
+| `45afc71` | Clarify completed methodology boundaries | Historical-versus-current gap status, explicit evidence/external completion boundaries, corrected scenario counts, and a documentation consistency regression | Complete gate, 310 passed and 1 credential-gated skip, 87.13% branch-aware coverage, four artifact profiles verified | pushed |
 
 ## Final verification snapshot
 
-The final methodology quality gate ran from settled source commit `bac3b4e` as
-invocation `bae4b901-5a31-4b17-bc60-897a368b93b3` and completed all 12 stages:
+The latest methodology quality gate ran from source commit `b2f5156` with the
+completion-boundary changes staged, as invocation
+`5aa9cf8c-3d51-4026-9850-fc1e91143c77`, and completed all 12 stages:
 
 - Frozen dependency sync, Ruff formatting/linting, and Pyright passed.
-- Pytest recorded 310 tests: 309 passed and the live Gemini test was skipped
+- Pytest recorded 311 tests: 310 passed and the live Gemini test was skipped
   because `GEMINI_API_KEY` was deliberately absent.
-- Branch-aware coverage was 87.14386211748153%: 920 of 1,206 branches and
+- Branch-aware coverage was 87.1262750615547%: 919 of 1,206 branches and
   4,035 of 4,480 lines were covered, above the required 85% threshold.
 - All 12 deterministic methodology scenario contracts passed, with no
   unsupported evidence citations across 26 evaluated citations.
