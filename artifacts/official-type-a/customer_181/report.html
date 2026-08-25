@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack investigation report — household 181</title>
+  <style>
+    :root { color-scheme: light; --ink:#16211d; --muted:#607068; --line:#dce5df; --paper:#fbfdfb; --panel:#fff; --green:#185c45; --mint:#dff4e9; --amber:#8a5814; --amber-bg:#fff4dc; --red:#8f312b; --red-bg:#fdecea; --blue:#265d78; --blue-bg:#eaf5fa; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(145deg,#edf6f0 0,#fbfdfb 35rem); color:var(--ink); font:15px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1120px,calc(100% - 32px)); margin:32px auto 64px; }
+    header { padding:34px; color:white; border-radius:22px; background:linear-gradient(130deg,#123d31,#1f7255); box-shadow:0 18px 45px rgba(22,60,48,.18); }
+    .brand { font-size:13px; letter-spacing:.14em; text-transform:uppercase; opacity:.82; }
+    h1 { margin:.15em 0 0; font-size:clamp(30px,5vw,50px); line-height:1.05; }
+    header p { margin:10px 0 0; font-size:18px; opacity:.9; }
+    .meta,.grid,.metric-grid { display:grid; gap:14px; }
+    .meta { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; }
+    .meta div { padding:12px 14px; border:1px solid rgba(255,255,255,.22); border-radius:12px; background:rgba(255,255,255,.08); overflow-wrap:anywhere; }
+    .meta span,.eyebrow { display:block; color:inherit; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.72; }
+    section { margin-top:20px; padding:26px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.94); box-shadow:0 8px 30px rgba(29,56,45,.06); }
+    h2 { margin:0 0 18px; font-size:22px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:8px 0; }
+    .metric-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .metric { padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .metric strong { display:block; margin-top:4px; font-size:20px; }
+    .metric small { color:var(--muted); }
+    .score { background:var(--mint); border-color:#b9dfcc; }
+    .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .step,.evidence,.driver,.warning,.action { padding:17px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .step + .step,.driver + .driver,.warning + .warning { margin-top:11px; }
+    .step-head,.evidence-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .badge { display:inline-block; padding:3px 9px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+    .badge.partial,.badge.retryable_error { color:var(--amber); background:var(--amber-bg); }
+    .badge.missing_data,.badge.invalid_request,.badge.fatal_error { color:var(--red); background:var(--red-bg); }
+    .badge.context { color:var(--blue); background:var(--blue-bg); }
+    .details { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:11px; color:var(--muted); font-size:13px; }
+    code { padding:2px 6px; border-radius:6px; background:#edf2ef; color:#244a3d; overflow-wrap:anywhere; }
+    dl { display:grid; grid-template-columns:max-content 1fr; gap:5px 14px; margin:12px 0 0; }
+    dt { color:var(--muted); } dd { margin:0; font-weight:650; }
+    ul { padding-left:20px; } li + li { margin-top:7px; }
+    .callout { padding:18px; border-left:5px solid var(--green); border-radius:10px; background:var(--mint); }
+    .warning { border-color:#edcf98; background:var(--amber-bg); }
+    .human { color:white; background:linear-gradient(130deg,#172d26,#274a3d); border:0; }
+    .human h2,.human p { color:white; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:11px; letter-spacing:.07em; text-transform:uppercase; }
+    .empty { color:var(--muted); font-style:italic; }
+    footer { padding:22px 6px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:760px) { .meta,.metric-grid,.grid.two { grid-template-columns:1fr; } header,section { padding:20px; } .step-head,.evidence-head { display:block; } .badge { margin-top:8px; } table { display:block; overflow-x:auto; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } header,section { box-shadow:none; break-inside:avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack Investigator</div>
+    <h1>WhyBack</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="meta">
+      <div><span>Household</span>181</div>
+      <div><span>Run</span>2e442f80-a9d4-5642-9cf3-b66cfc423aa6</div>
+      <div><span>Status</span>Completed</div>
+      <div><span>Dataset</span>Official Complete Journey</div>
+      <div><span>Execution</span>Scripted Control</div>
+      <div><span>Model</span>scripted/whyback-v1</div>
+    </div>
+  </header>
+
+  <section id="provenance">
+    <span class="eyebrow">Standalone provenance</span><h2>Execution provenance</h2>
+    <dl>
+      <dt>Source</dt><dd><code>bradleyboehmke/completejourney</code> @ <code>5b5d06192b9856edd04e4d405787af2f2e4a1fef</code></dd>
+      <dt>Backend</dt><dd><code>scripted</code></dd>
+      <dt>Application</dt><dd><code>0.1.0</code></dd>
+      <dt>Prompt</dt><dd><code>whyback-investigator-v1</code> / <code>3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b</code></dd>
+      <dt>Generated</dt><dd><code>2026-08-25T01:35:02.469894+00:00</code></dd>
+      <dt>Timing</dt><dd>Actual Utc And Monotonic</dd>
+      <dt>Bound hashes</dt><dd>Immutable file identities are embedded in the structured JSON report.</dd>
+    </dl>
+  </section>
+
+  <section id="decline-summary">
+    <span class="eyebrow">Detection</span><h2>Decline summary</h2>
+    <p>Baseline weeks <strong>38–45</strong> compared with recent weeks <strong>46–53</strong>.</p>
+    <p class="details">Detector evidence <code>detector_2e442f80-a9d4-5642-9cf3-b66cfc423aa6</code> is owned by this run and household.</p>
+    <div class="metric-grid">
+      <div class="metric"><small>Retailer sales value</small><strong>$304.19 → $0.00</strong><small>100.0% recorded drop</small></div>
+      <div class="metric"><small>Distinct baskets</small><strong>7 → 0</strong><small>100.0% recorded drop</small></div>
+      <div class="metric"><small>Active weeks</small><strong>5 → 0</strong><small>100.0% recorded drop</small></div>
+      <div class="metric score"><small>Decline score</small><strong>1</strong><small>Weighted heuristic, not a probability</small></div>
+    </div>
+    <div class="details"><span>Eligible: <strong>yes</strong></span><span>Flagged: <strong>yes</strong></span></div>
+  </section>
+
+  <section id="investigation-path">
+    <span class="eyebrow">Bounded analysis</span><h2>Investigation path</h2>
+    <article class="step">
+      <div class="step-head"><div><h3>1. Coupon campaign history</h3><p>What campaign and coupon information is known or unavailable?</p></div><span class="badge partial">Partial</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 24.2009 ms</span><span>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_001</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_002</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_003</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_004</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_005</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_006</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_007</code> </span></div>
+    </article>
+    <article class="step">
+      <div class="step-head"><div><h3>2. Customer trend</h3><p>Is the decline primarily frequency or value related?</p></div><span class="badge partial">Partial</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 50.4382 ms</span><span>Evidence <code>ev_call-2e442f80a9-02-customer_trend_001</code> <code>ev_call-2e442f80a9-02-customer_trend_002</code> <code>ev_call-2e442f80a9-02-customer_trend_003</code> <code>ev_call-2e442f80a9-02-customer_trend_004</code> <code>ev_call-2e442f80a9-02-customer_trend_005</code> <code>ev_call-2e442f80a9-02-customer_trend_006</code> <code>ev_call-2e442f80a9-02-customer_trend_007</code> <code>ev_call-2e442f80a9-02-customer_trend_008</code> <code>ev_call-2e442f80a9-02-customer_trend_009</code> <code>ev_call-2e442f80a9-02-customer_trend_010</code> <code>ev_call-2e442f80a9-02-customer_trend_011</code> <code>ev_call-2e442f80a9-02-customer_trend_012</code> <code>ev_call-2e442f80a9-02-customer_trend_013</code> <code>ev_call-2e442f80a9-02-customer_trend_014</code> <code>ev_call-2e442f80a9-02-customer_trend_015</code> <code>ev_call-2e442f80a9-02-customer_trend_016</code> <code>ev_call-2e442f80a9-02-customer_trend_017</code> <code>ev_call-2e442f80a9-02-customer_trend_018</code> <code>ev_call-2e442f80a9-02-customer_trend_019</code> <code>ev_call-2e442f80a9-02-customer_trend_020</code> <code>ev_call-2e442f80a9-02-customer_trend_021</code> <code>ev_call-2e442f80a9-02-customer_trend_022</code> <code>ev_call-2e442f80a9-02-customer_trend_023</code> <code>ev_call-2e442f80a9-02-customer_trend_024</code> <code>ev_call-2e442f80a9-02-customer_trend_025</code> <code>ev_call-2e442f80a9-02-customer_trend_026</code> </span></div>
+    </article>
+    <article class="step">
+      <div class="step-head"><div><h3>3. Basket behavior</h3><p>Did basket size, cadence, or store behavior change?</p></div><span class="badge partial">Partial</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 9.85104 ms</span><span>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_001</code> <code>ev_call-2e442f80a9-03-basket_behavior_002</code> <code>ev_call-2e442f80a9-03-basket_behavior_003</code> <code>ev_call-2e442f80a9-03-basket_behavior_004</code> <code>ev_call-2e442f80a9-03-basket_behavior_005</code> <code>ev_call-2e442f80a9-03-basket_behavior_006</code> <code>ev_call-2e442f80a9-03-basket_behavior_007</code> <code>ev_call-2e442f80a9-03-basket_behavior_008</code> <code>ev_call-2e442f80a9-03-basket_behavior_009</code> <code>ev_call-2e442f80a9-03-basket_behavior_010</code> <code>ev_call-2e442f80a9-03-basket_behavior_011</code> <code>ev_call-2e442f80a9-03-basket_behavior_012</code> <code>ev_call-2e442f80a9-03-basket_behavior_013</code> <code>ev_call-2e442f80a9-03-basket_behavior_014</code> </span></div>
+    </article>
+  </section>
+
+  <section id="likely-drivers">
+    <span class="eyebrow">Verified interpretation</span><h2>Likely drivers</h2>
+    <article class="driver"><p>Reduced recorded visit cadence is a plausible contributor to the observed engagement decline.</p><div class="details"><span>Grounded by <code>ev_call-2e442f80a9-02-customer_trend_002</code> <code>ev_call-2e442f80a9-03-basket_behavior_001</code> </span></div></article>
+  </section>
+
+  <section id="supporting-evidence">
+    <span class="eyebrow">Immutable ledger</span><h2>Supporting evidence</h2>
+<div class="grid two">    <article class="evidence">
+      <div class="evidence-head"><div><code>ev_call-2e442f80a9-02-customer_trend_002</code><h3>Distinct Trips</h3></div><span class="badge partial">Partial</span></div>
+      <dl><dt>Baseline</dt><dd>7 Count</dd><dt>Recent</dt><dd>0 Count</dd><dt>Change</dt><dd>-7 Count</dd></dl>
+      <div class="details"><span>Tool <code>customer_trend</code></span><span>Call <code>call-2e442f80a9-02-customer_trend</code></span></div>
+    </article>
+    <article class="evidence">
+      <div class="evidence-head"><div><code>ev_call-2e442f80a9-03-basket_behavior_001</code><h3>Basket Count</h3></div><span class="badge partial">Partial</span></div>
+      <dl><dt>Baseline</dt><dd>7 Count</dd><dt>Recent</dt><dd>0 Count</dd><dt>Change</dt><dd>-7 Count</dd></dl>
+      <div class="details"><span>Tool <code>basket_behavior</code></span><span>Call <code>call-2e442f80a9-03-basket_behavior</code></span></div>
+    </article>
+</div>  </section>
+
+  <section id="counterevidence-alternatives">
+    <span class="eyebrow">Challenge the hypothesis</span><h2>Counterevidence and alternative explanations</h2>
+<ul><li><code>ev_call-2e442f80a9-01-coupon_campaign_history_001</code> — Campaign Participation Count; source status Partial. Value 2. Limitations: Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable..</li></ul><ul><li>Recorded evidence does not distinguish the observed signal from unobserved activity outside this retailer.</li></ul>  </section>
+
+  <section id="next-best-action">
+    <span class="eyebrow">Catalog governed</span><h2>Next Best Action</h2>
+<div class="action callout"><h3>VISIT_FREQUENCY_REACTIVATION</h3><p>Recommend a human-reviewed reactivation test focused on restoring shopping cadence when visit-frequency evidence, rather than basket value alone, supports the decline.</p><p>The cited records satisfy the selected catalog action&#39;s machine-checkable evidence policy; the recommendation remains a human-reviewed test.</p><div class="details"><span>Resolved confidence <strong>Medium</strong></span><span>Deterministic confidence cap applied</span></div></div>  </section>
+
+  <section id="measurement-plan">
+    <span class="eyebrow">Learn safely</span><h2>Measurement plan</h2>
+<div class="grid two"><div class="evidence"><h3>Success metric</h3><p>Change in distinct shopping trips per week relative to an eligible holdout over the evaluation window.</p></div><div class="evidence"><h3>Suggested experiment</h3><p>Randomize eligible households between a reviewer-approved cadence treatment and no treatment, then compare distinct trips per week.</p></div></div>  </section>
+
+  <section id="limitations">
+    <span class="eyebrow">Use with care</span><h2>Limitations</h2>
+<ul><li>Source week 53 contains fewer calendar days than an ordinary week.</li><li>Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.</li><li>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</li><li>No recent transactions were observed; per-trip statistics for that period are unavailable.</li><li>Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.</li><li>No recent baskets were observed; basket structure and cadence for that period are unavailable.</li><li>Customer intent and activity outside the recorded retailer data are not observed.</li></ul>  </section>
+
+  <section id="failures-partial-warnings">
+    <span class="eyebrow">Reliability record</span><h2>Failures and partial-result warnings</h2>
+<article class="warning"><h3>Coupon Campaign History — Partial</h3><div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 24.2009 ms</span></div><ul><li>Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.</li></ul></article><article class="warning"><h3>Customer Trend — Partial</h3><div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 50.4382 ms</span></div><ul><li>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</li><li>No recent transactions were observed; per-trip statistics for that period are unavailable.</li><li>Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.</li></ul></article><article class="warning"><h3>Basket Behavior — Partial</h3><div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 9.85104 ms</span></div><ul><li>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</li><li>No recent baskets were observed; basket structure and cadence for that period are unavailable.</li><li>Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.</li></ul></article>  </section>
+
+  <section id="human-review" class="human">
+    <span class="eyebrow">Required control</span><h2>Human-review requirement</h2>
+    <p><strong>Human review is required before any action.</strong> WhyBack recommends catalog-governed actions for review; it does not contact customers, mutate a CRM, or execute outreach.</p>
+  </section>
+
+  <section id="evidence-ledger">
+    <span class="eyebrow">Audit index</span><h2>Evidence ledger</h2>
+<table><thead><tr><th>Evidence ID</th><th>Role</th><th>Tool</th><th>Status</th><th>Metric</th><th>Limitations</th></tr></thead><tbody><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_001</code></td><td>Counterevidence</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Campaign Participation Count</td><td>Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_002</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Coupon Redemption Count</td><td>Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_003</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Transaction Coupon Baskets</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_004</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Recorded Coupon Discount</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_005</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Campaign Participation</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_006</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Known Delivered Campaign Coupon Count</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-01-coupon_campaign_history_007</code></td><td>Context</td><td><code>coupon_campaign_history</code></td><td>Partial</td><td>Campaign Participation</td><td>Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_001</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_002</code></td><td>Supporting</td><td><code>customer_trend</code></td><td>Partial</td><td>Distinct Trips</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_003</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Active Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_004</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Average Retailer Sales Value Per Trip</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_005</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Median Retailer Sales Value Per Trip</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_006</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Recorded Quantity</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_007</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Distinct Products</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_008</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Recency Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_009</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value Slope</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_010</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_011</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_012</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_013</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_014</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_015</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_016</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_017</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_018</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_019</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_020</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_021</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_022</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_023</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_024</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_025</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-02-customer_trend_026</code></td><td>Context</td><td><code>customer_trend</code></td><td>Partial</td><td>Full Window Weekly Retailer Sales Value Slope</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_001</code></td><td>Supporting</td><td><code>basket_behavior</code></td><td>Partial</td><td>Basket Count</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_002</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Active Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_003</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Baskets Per Calendar Week</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_004</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Mean Basket Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_005</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Median Basket Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_006</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Mean Recorded Quantity Per Basket</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_007</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Median Recorded Quantity Per Basket</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_008</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Mean Distinct Products Per Basket</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_009</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Mean Distinct Categories Per Basket</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_010</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Mean Basket Interval Days</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_011</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Median Basket Interval Days</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_012</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Primary Store Share</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_013</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Stores Visited</td><td>None recorded</td></tr><tr><td><code>ev_call-2e442f80a9-03-basket_behavior_014</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Partial</td><td>Consecutive Store Switch Rate</td><td>None recorded</td></tr></tbody></table>  </section>
+
+  <footer>WhyBack · Find the why. Choose the way back. · Deterministic evidence report</footer>
+</main>
+</body>
+</html>

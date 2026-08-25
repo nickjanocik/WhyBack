@@ -1,0 +1,7 @@
+household_id,baseline_start_week,baseline_end_week,recent_start_week,recent_end_week,baseline_retailer_sales_value,recent_retailer_sales_value,baseline_distinct_baskets,recent_distinct_baskets,baseline_active_weeks,recent_active_weeks,sales_drop,trip_drop,active_week_drop,decline_score,eligible,flagged,partial_week_limitation
+101,1,8,9,16,160.0,12.0,16,2,8,2,0.925,0.875,0.75,0.8750000000000001,True,True,
+102,1,8,9,16,160.0,21.0,16,3,8,3,0.86875,0.8125,0.625,0.803125,True,True,
+103,1,8,9,16,160.0,32.0,16,4,8,4,0.8,0.75,0.5,0.725,True,True,
+104,1,8,9,16,160.0,45.0,16,5,8,5,0.71875,0.6875,0.375,0.640625,True,True,
+105,1,8,9,16,160.0,57.0,16,6,8,6,0.64375,0.625,0.25,0.5593750000000001,True,True,
+106,1,8,9,16,160.0,80.0,16,8,8,8,0.5,0.5,0.0,0.4,True,True,

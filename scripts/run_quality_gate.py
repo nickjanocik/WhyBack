@@ -719,7 +719,7 @@ def render_audit_markdown(audit: Mapping[str, object]) -> str:
                 "",
                 f"Command: `{command}`",
                 "",
-                f"Started: `{step.get('started_at')}`  ",
+                f"Started: `{step.get('started_at')}`",
                 f"Completed: `{step.get('completed_at')}`",
                 "",
                 "Stdout:",

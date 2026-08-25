@@ -1,0 +1,203 @@
+{
+  "schema_version": 2,
+  "passed": true,
+  "provenance": {
+    "normalized_input_sha256": "4dee3ae1ad832e0f6ed1f0242302c1355bae3ad8fb3f172a74f08036d02704f3",
+    "scenario_catalog_sha256": "9b9340cd3c6f742847be59e19d90fbe4f03a4bfe7c86849fa968681e6d9d52e6",
+    "input_materialization": "file_bytes",
+    "dataset_kind": "synthetic",
+    "backend": "scripted_control",
+    "execution_mode": "deterministic_evaluation_no_model",
+    "model_invoked": false
+  },
+  "scenario_catalog_ids": [
+    "frequency_decline",
+    "category_collapse",
+    "promotion_associated_decline",
+    "ambiguous_peer_comparison",
+    "type_a_coupon_exposure_gap",
+    "persistent_promotion_timeout"
+  ],
+  "missing_scenario_ids": [],
+  "runs": [
+    {
+      "scenario_id": "frequency_decline",
+      "run_id": "6fb0aadd-11c3-55e3-abba-8b880fe5baf8",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": false,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": false,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 2,
+      "actual_tool_executions": 2,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 1,
+      "unsupported_evidence_count": 0
+    },
+    {
+      "scenario_id": "category_collapse",
+      "run_id": "f73874c3-fcdc-510e-b270-a6f38d670e39",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": false,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": false,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 1,
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 0,
+      "unsupported_evidence_count": 0
+    },
+    {
+      "scenario_id": "promotion_associated_decline",
+      "run_id": "009237e7-2e22-56d7-b9d4-9c4517383fb0",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": true,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": false,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 1,
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 1,
+      "unsupported_evidence_count": 0
+    },
+    {
+      "scenario_id": "ambiguous_peer_comparison",
+      "run_id": "952d6280-895c-58f5-9c75-795bac78b0af",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": true,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": false,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 1,
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 1,
+      "unsupported_evidence_count": 0
+    },
+    {
+      "scenario_id": "type_a_coupon_exposure_gap",
+      "run_id": "1d7736e9-d9d0-5694-a8ba-eb2042103b49",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": true,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": false,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 2,
+      "actual_tool_executions": 2,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 2,
+      "unsupported_evidence_count": 0
+    },
+    {
+      "scenario_id": "persistent_promotion_timeout",
+      "run_id": "48cfac8d-391a-553c-a662-da6976803989",
+      "relevant_tool_selected": true,
+      "irrelevant_mandatory_calls_avoided": true,
+      "tool_budget_respected": true,
+      "verification_passed": true,
+      "evidence_grounded": true,
+      "limitation_propagation_applicable": false,
+      "limitation_propagated": true,
+      "graceful_degradation_applicable": true,
+      "graceful_degradation_succeeded": true,
+      "partial_contract_satisfied": true,
+      "failure_contract_satisfied": true,
+      "scenario_contract_passed": true,
+      "selected_tool_decisions": 2,
+      "actual_tool_executions": 3,
+      "duplicate_call_count": 0,
+      "referenced_evidence_count": 1,
+      "unsupported_evidence_count": 0
+    }
+  ],
+  "aggregate": {
+    "run_count": 6,
+    "scenario_contract_pass_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "relevant_tool_selection_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "irrelevant_mandatory_call_avoidance_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "tool_budget_compliance_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "final_verification_pass_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "evidence_grounding_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "limitation_propagation_rate": {
+      "numerator": 3,
+      "denominator": 3,
+      "rate": 1.0
+    },
+    "graceful_degradation_success_rate": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0
+    },
+    "duplicate_call_rate": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0
+    },
+    "unsupported_evidence_rate": {
+      "numerator": 0,
+      "denominator": 6,
+      "rate": 0.0
+    }
+  }
+}

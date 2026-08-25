@@ -204,6 +204,8 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
     assert parsed["decline"]["decline_score"] == 0.5
     assert "999" not in json_text
     assert "999" not in markdown
+    assert markdown.endswith("\n")
+    assert not markdown.endswith("\n\n")
     for section in (
         "Decline summary",
         "Investigation path",

@@ -374,11 +374,12 @@ def render_report_json(report: ReportData) -> str:
 def render_report_markdown(report: ReportData) -> str:
     """Render a portable reviewer-facing Markdown report."""
 
-    return (
+    rendered = (
         _environment(trim_blocks=False)
         .get_template("report.md.j2")
         .render(report=report)
     )
+    return f"{rendered.rstrip()}\n"
 
 
 def render_report_html(report: ReportData) -> str:

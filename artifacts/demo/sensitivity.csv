@@ -1,0 +1,4 @@
+threshold,eligible_households,flagged_households,flagged_share
+0.2,6,6,1.0
+0.3,6,6,1.0
+0.4,6,6,1.0

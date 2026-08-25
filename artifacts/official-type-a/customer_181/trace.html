@@ -1,0 +1,2477 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack trace viewer — household 181</title>
+  <style>
+    :root { color-scheme:light; --ink:#17221e; --muted:#68766f; --paper:#f7faf8; --panel:#fff; --line:#dbe5df; --green:#176046; --mint:#e1f4ea; --blue:#285f79; --blue-bg:#eaf5fa; --amber:#8a5814; --amber-bg:#fff3db; --red:#93362f; --red-bg:#fdecea; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1040px,calc(100% - 30px)); margin:28px auto 60px; }
+    header { padding:28px; border-radius:18px; color:white; background:linear-gradient(130deg,#173d31,#236b51); }
+    h1 { margin:4px 0 0; font-size:34px; } header p { margin:5px 0 0; opacity:.85; }
+    .brand { font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; opacity:.75; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:18px; }
+    .summary div { padding:11px; border:1px solid rgba(255,255,255,.2); border-radius:10px; background:rgba(255,255,255,.08); }
+    .summary span { display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.7; }
+    .identity { margin-top:10px; overflow-wrap:anywhere; font-size:12px; opacity:.8; }
+    .timeline { position:relative; margin-top:24px; padding-left:28px; }
+    .timeline::before { content:""; position:absolute; left:8px; top:9px; bottom:9px; width:2px; background:var(--line); }
+    article { position:relative; margin:0 0 14px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 6px 20px rgba(35,62,51,.05); }
+    article::before { content:""; position:absolute; left:-26px; top:23px; width:11px; height:11px; border:3px solid var(--paper); border-radius:50%; background:var(--green); }
+    article.tool::before { background:var(--blue); } article.retry::before { background:var(--amber); } article.verifier::before { background:#6f4b92; } article.evidence::before { background:#3a7b35; }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h2 { margin:0; font-size:17px; } time { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .code { margin-top:2px; color:var(--muted); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .chip { padding:4px 8px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:700; }
+    .chip.tool { color:var(--blue); background:var(--blue-bg); } .chip.retry { color:var(--amber); background:var(--amber-bg); } .chip.failed,.chip.rejected { color:var(--red); background:var(--red-bg); }
+    code { padding:2px 5px; border-radius:5px; background:#eef3f0; color:#23503f; overflow-wrap:anywhere; }
+    details { margin-top:13px; border-top:1px solid var(--line); padding-top:10px; } summary { color:var(--muted); cursor:pointer; font-weight:650; }
+    pre { max-height:360px; margin:10px 0 0; padding:12px; overflow:auto; border-radius:9px; background:#18221e; color:#dff2e8; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .empty { margin-top:24px; padding:30px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; }
+    footer { padding:20px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:700px) { .summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .top { display:block; } time { display:block; margin-top:4px; } header { padding:20px; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } article { box-shadow:none; break-inside:avoid; } details { display:none; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack audit</div>
+    <h1>Trace viewer</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="summary">
+      <div><span>Events</span>69</div>
+      <div><span>Decisions</span>4</div>
+      <div><span>Tool attempts</span>3</div>
+      <div><span>Retries</span>0</div>
+    </div>
+    <div class="identity">Run 2e442f80-a9d4-5642-9cf3-b66cfc423aa6 · Household 181 · Verifier passed · Final action VISIT_FREQUENCY_REACTIVATION</div>
+  </header>
+
+<div class="timeline">    <article class="run">
+      <div class="top"><div><h2>1. Investigation started</h2><div class="code">run_started</div></div><time>2026-08-25T01:35:02.350686Z</time></div>
+      <div class="chips">
+        <span class="chip">run</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;application_version&#34;: &#34;0.1.0&#34;,
+  &#34;dataset_kind&#34;: &#34;official_complete_journey&#34;,
+  &#34;dataset_source_commit&#34;: &#34;5b5d06192b9856edd04e4d405787af2f2e4a1fef&#34;,
+  &#34;dataset_source_repository&#34;: &#34;bradleyboehmke/completejourney&#34;,
+  &#34;decline_score&#34;: 1.0,
+  &#34;demo_fault&#34;: null,
+  &#34;detector_snapshot&#34;: {
+    &#34;active_week_drop&#34;: 1.0,
+    &#34;baseline_active_weeks&#34;: 5,
+    &#34;baseline_distinct_baskets&#34;: 7,
+    &#34;baseline_end_week&#34;: 45,
+    &#34;baseline_retailer_sales_value&#34;: 304.19,
+    &#34;baseline_start_week&#34;: 38,
+    &#34;decline_score&#34;: 1.0,
+    &#34;eligible&#34;: true,
+    &#34;flagged&#34;: true,
+    &#34;household_id&#34;: &#34;181&#34;,
+    &#34;partial_week_limitation&#34;: &#34;Source week 53 contains fewer calendar days than an ordinary week.&#34;,
+    &#34;recent_active_weeks&#34;: 0,
+    &#34;recent_distinct_baskets&#34;: 0,
+    &#34;recent_end_week&#34;: 53,
+    &#34;recent_retailer_sales_value&#34;: 0.0,
+    &#34;recent_start_week&#34;: 46,
+    &#34;sales_drop&#34;: 1.0,
+    &#34;trip_drop&#34;: 1.0
+  },
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;remaining_turn_budget&#34;: 6,
+  &#34;timing_mode&#34;: &#34;actual_utc_and_monotonic&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>2. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T01:35:02.352047Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;remaining_turn_budget&#34;: 6,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>3. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T01:35:02.352233Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool coupon_campaign_history</span><span class="chip">latency 0.0 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Inspect coupon_campaign_history deterministic evidence.&#34;,
+  &#34;input_tokens&#34;: 0,
+  &#34;investigation_question&#34;: &#34;What campaign and coupon information is known or unavailable?&#34;,
+  &#34;latency_ms&#34;: 0.0,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;output_tokens&#34;: 0,
+  &#34;provider_call_id&#34;: &#34;scripted-001&#34;,
+  &#34;selected_tool&#34;: &#34;coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>4. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T01:35:02.352325Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool coupon_campaign_history</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;What campaign and coupon information is known or unavailable?&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;tool_name&#34;: &#34;coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>5. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T01:35:02.352399Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool coupon_campaign_history</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+  &#34;tool_name&#34;: &#34;coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>6. Tool returned partial evidence</h2><div class="code">tool_partial</div></div><time>2026-08-25T01:35:02.384475Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool coupon_campaign_history</span><span class="chip partial">status partial</span><span class="chip">latency 24.200874846428633 ms</span>      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_001</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_002</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_003</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_004</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_005</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_006</code> <code>ev_call-2e442f80a9-01-coupon_campaign_history_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;coupon_bridge_deduplicated&#34;: true,
+    &#34;redemption_join_keys&#34;: [
+      &#34;coupon_upc&#34;,
+      &#34;campaign_id&#34;
+    ],
+    &#34;type_a_present&#34;: true
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_001&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_002&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_003&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_004&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_005&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_006&#34;,
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_007&#34;
+  ],
+  &#34;latency_ms&#34;: 24.200874846428633,
+  &#34;limitations&#34;: [
+    &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+  ],
+  &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 237,
+  &#34;status&#34;: &#34;partial&#34;,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+  &#34;tool_name&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_001&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+        ],
+        &#34;metric&#34;: &#34;campaign_participation_count&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;campaigns&#34;,
+        &#34;value&#34;: 2.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_002&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+        ],
+        &#34;metric&#34;: &#34;coupon_redemption_count&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;redemptions&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_003&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;transaction_coupon_baskets&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;baskets&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_004&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;recorded_coupon_discount&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;retailer_discount_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;campaign_id&#34;: &#34;26&#34;,
+          &#34;campaign_type&#34;: &#34;Type B&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_005&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;campaign_participation&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;participation&#34;,
+        &#34;value&#34;: 1.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;campaign_id&#34;: &#34;26&#34;,
+          &#34;campaign_type&#34;: &#34;Type B&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_006&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;known_delivered_campaign_coupon_count&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;distinct_coupon_upcs&#34;,
+        &#34;value&#34;: 33.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;campaign_id&#34;: &#34;27&#34;,
+          &#34;campaign_type&#34;: &#34;Type A&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_007&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+        ],
+        &#34;metric&#34;: &#34;campaign_participation&#34;,
+        &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+        &#34;unit&#34;: &#34;participation&#34;,
+        &#34;value&#34;: 1.0
+      }
+    ],
+    &#34;limitations&#34;: [
+      &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+    ],
+    &#34;model_summary&#34;: {
+      &#34;baseline_transaction_coupon_baskets&#34;: 0,
+      &#34;campaign_count&#34;: 2,
+      &#34;campaigns&#34;: [
+        {
+          &#34;campaign_coupon_count&#34;: 33,
+          &#34;campaign_id&#34;: &#34;26&#34;,
+          &#34;campaign_type&#34;: &#34;Type B&#34;,
+          &#34;delivered_coupon_set_known&#34;: true,
+          &#34;end_date&#34;: &#34;2017-02-19T00:00:00&#34;,
+          &#34;start_date&#34;: &#34;2016-12-28T00:00:00&#34;
+        },
+        {
+          &#34;campaign_coupon_count&#34;: 181,
+          &#34;campaign_id&#34;: &#34;27&#34;,
+          &#34;campaign_type&#34;: &#34;Type A&#34;,
+          &#34;delivered_coupon_set_known&#34;: false,
+          &#34;end_date&#34;: &#34;2017-03-26T00:00:00&#34;,
+          &#34;start_date&#34;: &#34;2017-02-08T00:00:00&#34;
+        }
+      ],
+      &#34;recent_transaction_coupon_baskets&#34;: 0,
+      &#34;redemption_count&#34;: 0,
+      &#34;redemptions&#34;: [],
+      &#34;type_a_delivered_identities_available&#34;: false
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;5b5d06192b9856edd04e4d405787af2f2e4a1fef&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;coupon_bridge_deduplicated&#34;: true,
+        &#34;redemption_join_keys&#34;: [
+          &#34;coupon_upc&#34;,
+          &#34;campaign_id&#34;
+        ],
+        &#34;type_a_present&#34;: true
+      },
+      &#34;elapsed_ms&#34;: 24.200874846428633,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 45,
+          &#34;baseline_start&#34;: 38,
+          &#34;recent_end&#34;: 53,
+          &#34;recent_start&#34;: 46
+        },
+        &#34;household_id&#34;: &#34;181&#34;
+      },
+      &#34;query_hash&#34;: &#34;520b10862f1192477c2d70d1af8dbba70ff5a0cc84111e580765748e1a1758c3&#34;,
+      &#34;rows_examined&#34;: 237,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;d5a361534a2a4c70a4eb94a65c21143f90b07e2df781d71aab3f0f72efc0f308&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;75fcdc22a7ffbe99a28d2d33164420be0417c24f22329a123a7677b4b3e28ea4&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;84f7fa81c8a73659a9f0e4136b0ac99a1cac5f0c72fadae067346832acbdf352&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;664d2cdfdfa52d4902bb2002c3387ccd69f01392a0b02e22721ad9aa9cade3d6&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;c3f89bd018c5e32c983a7a970774010dbe5c4ed13eec93ed50f6befcf93bf00e&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;741b1f9aba167760e6b417bb0c77ec4631b057e731f052b478e4b3dc1f4f2575&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;0d6809a02a9907a29f951d801f687517f42b6efe1897c6810be651f37f9caeb8&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;c73553e7be44749ca8e536f3ddd22e2c762dbdf025bea492959c93bd3f5439df&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;e7d9b1dede14dd2848695c6b784f3d42321c977fb665b09fbadab9327e7b9592&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d586f7ec968d384cdf9e08e9a5562aa992b4544569b4252f9998d0cd8a7b6fac&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;08bc0f6cfaa064533f7e910d4c2b3bde0f42901b197f4077ccc16fb85d74c797&#34;,
+        &#34;source/campaign_descriptions.rda&#34;: &#34;601bd17ea1a6de92cc288f393164813fbaf293b997d44054dcf1f3ebbe8dacee&#34;,
+        &#34;source/campaigns.rda&#34;: &#34;33c7b3dc1bc722d465f97416fb1327c6a9a640190e464c73e354bce8c001a772&#34;,
+        &#34;source/coupon_redemptions.rda&#34;: &#34;4b68148175ed19300bb2615d68d1a0300a5f971db3240819ab5d92e5919e1598&#34;,
+        &#34;source/coupons.rda&#34;: &#34;4d87effce5b8813c0934b581a83292707347577743320ca746878de89cc16f34&#34;,
+        &#34;source/demographics.rda&#34;: &#34;8b80455bc841003b64e47f5e5c2221f6093b995e923d59e72a1f852c7e268980&#34;,
+        &#34;source/products.rda&#34;: &#34;a80c6df33623b4af296ae9f317a6647e369db7e8ce7e7baed0e1bf44b9d979e5&#34;,
+        &#34;source/promotions.rds&#34;: &#34;15a729fdad31b10d3afedb058da31bcd6e9e68cb0207a43b3121264cd80198ba&#34;,
+        &#34;source/transactions.rds&#34;: &#34;1fa0700033f1e5d9bb6b09e2be063d8d68474d346e95c50f2833e09d083e0007&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;partial&#34;,
+    &#34;tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;,
+    &#34;tool_name&#34;: &#34;coupon_campaign_history&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>7. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385329Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_001&#34;,
+  &#34;limitations&#34;: [
+    &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+  ],
+  &#34;metric&#34;: &#34;campaign_participation_count&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>8. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385388Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_002&#34;,
+  &#34;limitations&#34;: [
+    &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+  ],
+  &#34;metric&#34;: &#34;coupon_redemption_count&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>9. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385437Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;transaction_coupon_baskets&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>10. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385475Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;recorded_coupon_discount&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>11. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385510Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;campaign_participation&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>12. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385544Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_006&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;known_delivered_campaign_coupon_count&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>13. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.385579Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-01-coupon_campaign_history_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-01-coupon_campaign_history_007&#34;,
+  &#34;limitations&#34;: [
+    &#34;Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.&#34;
+  ],
+  &#34;metric&#34;: &#34;campaign_participation&#34;,
+  &#34;source_tool&#34;: &#34;coupon_campaign_history&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-01-coupon_campaign_history&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>14. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T01:35:02.386184Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 4,
+  &#34;remaining_turn_budget&#34;: 5,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>15. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T01:35:02.386298Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool customer_trend</span><span class="chip">latency 0.0 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Inspect customer_trend deterministic evidence.&#34;,
+  &#34;input_tokens&#34;: 0,
+  &#34;investigation_question&#34;: &#34;Is the decline primarily frequency or value related?&#34;,
+  &#34;latency_ms&#34;: 0.0,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;output_tokens&#34;: 0,
+  &#34;provider_call_id&#34;: &#34;scripted-002&#34;,
+  &#34;selected_tool&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>16. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T01:35:02.386368Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;Is the decline primarily frequency or value related?&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;tool_name&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>17. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T01:35:02.386431Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;remaining_tool_budget&#34;: 4,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+  &#34;tool_name&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>18. Tool returned partial evidence</h2><div class="code">tool_partial</div></div><time>2026-08-25T01:35:02.444556Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span><span class="chip partial">status partial</span><span class="chip">latency 50.43820897117257 ms</span>      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_001</code> <code>ev_call-2e442f80a9-02-customer_trend_002</code> <code>ev_call-2e442f80a9-02-customer_trend_003</code> <code>ev_call-2e442f80a9-02-customer_trend_004</code> <code>ev_call-2e442f80a9-02-customer_trend_005</code> <code>ev_call-2e442f80a9-02-customer_trend_006</code> <code>ev_call-2e442f80a9-02-customer_trend_007</code> <code>ev_call-2e442f80a9-02-customer_trend_008</code> <code>ev_call-2e442f80a9-02-customer_trend_009</code> <code>ev_call-2e442f80a9-02-customer_trend_010</code> <code>ev_call-2e442f80a9-02-customer_trend_011</code> <code>ev_call-2e442f80a9-02-customer_trend_012</code> <code>ev_call-2e442f80a9-02-customer_trend_013</code> <code>ev_call-2e442f80a9-02-customer_trend_014</code> <code>ev_call-2e442f80a9-02-customer_trend_015</code> <code>ev_call-2e442f80a9-02-customer_trend_016</code> <code>ev_call-2e442f80a9-02-customer_trend_017</code> <code>ev_call-2e442f80a9-02-customer_trend_018</code> <code>ev_call-2e442f80a9-02-customer_trend_019</code> <code>ev_call-2e442f80a9-02-customer_trend_020</code> <code>ev_call-2e442f80a9-02-customer_trend_021</code> <code>ev_call-2e442f80a9-02-customer_trend_022</code> <code>ev_call-2e442f80a9-02-customer_trend_023</code> <code>ev_call-2e442f80a9-02-customer_trend_024</code> <code>ev_call-2e442f80a9-02-customer_trend_025</code> <code>ev_call-2e442f80a9-02-customer_trend_026</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;baseline_transaction_rows&#34;: 124,
+    &#34;recent_transaction_rows&#34;: 0,
+    &#34;zero_filled_week_count&#34;: 16
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-02-customer_trend_001&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_002&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_003&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_004&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_005&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_006&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_007&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_008&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_009&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_010&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_011&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_012&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_013&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_014&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_015&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_016&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_017&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_018&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_019&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_020&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_021&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_022&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_023&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_024&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_025&#34;,
+    &#34;ev_call-2e442f80a9-02-customer_trend_026&#34;
+  ],
+  &#34;latency_ms&#34;: 50.43820897117257,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;,
+    &#34;No recent transactions were observed; per-trip statistics for that period are unavailable.&#34;,
+    &#34;Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.&#34;
+  ],
+  &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 124,
+  &#34;status&#34;: &#34;partial&#34;,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+  &#34;tool_name&#34;: &#34;customer_trend&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: 304.19,
+        &#34;change&#34;: -304.19,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_001&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 7.0,
+        &#34;change&#34;: -7.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_002&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;distinct_trips&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 5.0,
+        &#34;change&#34;: -5.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_003&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;active_weeks&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 43.455714285714286,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_004&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;average_retailer_sales_value_per_trip&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_trip&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 46.03,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_005&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_retailer_sales_value_per_trip&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_trip&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 18066.0,
+        &#34;change&#34;: -18066.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_006&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;recorded_quantity&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 114.0,
+        &#34;change&#34;: -114.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_007&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;distinct_products&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: 8.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_008&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;recency_weeks&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 8.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: -1.1655952380952386,
+        &#34;change&#34;: 1.1655952380952386,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_009&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value_slope&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_week&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;38&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_010&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 64.98
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;39&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_011&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 65.73
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;40&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_012&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;41&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_013&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;42&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_014&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 62.13
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;43&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_015&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;44&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_016&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 77.99
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;45&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_017&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 33.36
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;46&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_018&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;47&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_019&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;48&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_020&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;49&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_021&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;50&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_022&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;51&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_023&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;52&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_024&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;53&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_025&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_026&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;full_window_weekly_retailer_sales_value_slope&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_week&#34;,
+        &#34;value&#34;: -3.7226911764705886
+      }
+    ],
+    &#34;limitations&#34;: [
+      &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;,
+      &#34;No recent transactions were observed; per-trip statistics for that period are unavailable.&#34;,
+      &#34;Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.&#34;
+    ],
+    &#34;model_summary&#34;: {
+      &#34;baseline&#34;: {
+        &#34;active_weeks&#34;: 5,
+        &#34;average_retailer_sales_value_per_trip&#34;: 43.455714285714286,
+        &#34;distinct_products&#34;: 114,
+        &#34;median_retailer_sales_value_per_trip&#34;: 46.03,
+        &#34;recency_weeks&#34;: 0,
+        &#34;recorded_quantity&#34;: 18066.0,
+        &#34;retailer_sales_value&#34;: 304.19,
+        &#34;trips&#34;: 7,
+        &#34;weekly_retailer_sales_value_slope&#34;: -1.1655952380952386
+      },
+      &#34;changes&#34;: {
+        &#34;active_weeks&#34;: {
+          &#34;absolute_change&#34;: -5.0,
+          &#34;baseline&#34;: 5,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;average_retailer_sales_value_per_trip&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 43.455714285714286,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;distinct_products&#34;: {
+          &#34;absolute_change&#34;: -114.0,
+          &#34;baseline&#34;: 114,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;distinct_trips&#34;: {
+          &#34;absolute_change&#34;: -7.0,
+          &#34;baseline&#34;: 7,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;median_retailer_sales_value_per_trip&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 46.03,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;recency_weeks&#34;: {
+          &#34;absolute_change&#34;: 8.0,
+          &#34;baseline&#34;: 0,
+          &#34;recent&#34;: 8,
+          &#34;relative_change&#34;: null
+        },
+        &#34;recorded_quantity&#34;: {
+          &#34;absolute_change&#34;: -18066.0,
+          &#34;baseline&#34;: 18066.0,
+          &#34;recent&#34;: 0.0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: -304.19,
+          &#34;baseline&#34;: 304.19,
+          &#34;recent&#34;: 0.0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;weekly_retailer_sales_value_slope&#34;: {
+          &#34;absolute_change&#34;: 1.1655952380952386,
+          &#34;baseline&#34;: -1.1655952380952386,
+          &#34;recent&#34;: 0.0,
+          &#34;relative_change&#34;: 1.0
+        }
+      },
+      &#34;full_window_weekly_retailer_sales_value_slope&#34;: -3.7226911764705886,
+      &#34;recent&#34;: {
+        &#34;active_weeks&#34;: 0,
+        &#34;average_retailer_sales_value_per_trip&#34;: null,
+        &#34;distinct_products&#34;: 0,
+        &#34;median_retailer_sales_value_per_trip&#34;: null,
+        &#34;recency_weeks&#34;: 8,
+        &#34;recorded_quantity&#34;: 0.0,
+        &#34;retailer_sales_value&#34;: 0.0,
+        &#34;trips&#34;: 0,
+        &#34;weekly_retailer_sales_value_slope&#34;: 0.0
+      },
+      &#34;weekly_series&#34;: [
+        {
+          &#34;distinct_products&#34;: 27,
+          &#34;recorded_quantity&#34;: 29.0,
+          &#34;retailer_sales_value&#34;: 64.98,
+          &#34;trips&#34;: 1,
+          &#34;week&#34;: 38
+        },
+        {
+          &#34;distinct_products&#34;: 28,
+          &#34;recorded_quantity&#34;: 9418.0,
+          &#34;retailer_sales_value&#34;: 65.73,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 39
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 40
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 41
+        },
+        {
+          &#34;distinct_products&#34;: 32,
+          &#34;recorded_quantity&#34;: 43.0,
+          &#34;retailer_sales_value&#34;: 62.13,
+          &#34;trips&#34;: 1,
+          &#34;week&#34;: 42
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 43
+        },
+        {
+          &#34;distinct_products&#34;: 32,
+          &#34;recorded_quantity&#34;: 8571.0,
+          &#34;retailer_sales_value&#34;: 77.99,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 44
+        },
+        {
+          &#34;distinct_products&#34;: 5,
+          &#34;recorded_quantity&#34;: 5.0,
+          &#34;retailer_sales_value&#34;: 33.36,
+          &#34;trips&#34;: 1,
+          &#34;week&#34;: 45
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 46
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 47
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 48
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 49
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 50
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 51
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 52
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 53
+        }
+      ]
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;5b5d06192b9856edd04e4d405787af2f2e4a1fef&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;baseline_transaction_rows&#34;: 124,
+        &#34;recent_transaction_rows&#34;: 0,
+        &#34;zero_filled_week_count&#34;: 16
+      },
+      &#34;elapsed_ms&#34;: 50.43820897117257,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 45,
+          &#34;baseline_start&#34;: 38,
+          &#34;recent_end&#34;: 53,
+          &#34;recent_start&#34;: 46
+        },
+        &#34;household_id&#34;: &#34;181&#34;
+      },
+      &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+      &#34;rows_examined&#34;: 124,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;d5a361534a2a4c70a4eb94a65c21143f90b07e2df781d71aab3f0f72efc0f308&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;75fcdc22a7ffbe99a28d2d33164420be0417c24f22329a123a7677b4b3e28ea4&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;84f7fa81c8a73659a9f0e4136b0ac99a1cac5f0c72fadae067346832acbdf352&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;664d2cdfdfa52d4902bb2002c3387ccd69f01392a0b02e22721ad9aa9cade3d6&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;c3f89bd018c5e32c983a7a970774010dbe5c4ed13eec93ed50f6befcf93bf00e&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;741b1f9aba167760e6b417bb0c77ec4631b057e731f052b478e4b3dc1f4f2575&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;0d6809a02a9907a29f951d801f687517f42b6efe1897c6810be651f37f9caeb8&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;c73553e7be44749ca8e536f3ddd22e2c762dbdf025bea492959c93bd3f5439df&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;e7d9b1dede14dd2848695c6b784f3d42321c977fb665b09fbadab9327e7b9592&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d586f7ec968d384cdf9e08e9a5562aa992b4544569b4252f9998d0cd8a7b6fac&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;08bc0f6cfaa064533f7e910d4c2b3bde0f42901b197f4077ccc16fb85d74c797&#34;,
+        &#34;source/campaign_descriptions.rda&#34;: &#34;601bd17ea1a6de92cc288f393164813fbaf293b997d44054dcf1f3ebbe8dacee&#34;,
+        &#34;source/campaigns.rda&#34;: &#34;33c7b3dc1bc722d465f97416fb1327c6a9a640190e464c73e354bce8c001a772&#34;,
+        &#34;source/coupon_redemptions.rda&#34;: &#34;4b68148175ed19300bb2615d68d1a0300a5f971db3240819ab5d92e5919e1598&#34;,
+        &#34;source/coupons.rda&#34;: &#34;4d87effce5b8813c0934b581a83292707347577743320ca746878de89cc16f34&#34;,
+        &#34;source/demographics.rda&#34;: &#34;8b80455bc841003b64e47f5e5c2221f6093b995e923d59e72a1f852c7e268980&#34;,
+        &#34;source/products.rda&#34;: &#34;a80c6df33623b4af296ae9f317a6647e369db7e8ce7e7baed0e1bf44b9d979e5&#34;,
+        &#34;source/promotions.rds&#34;: &#34;15a729fdad31b10d3afedb058da31bcd6e9e68cb0207a43b3121264cd80198ba&#34;,
+        &#34;source/transactions.rds&#34;: &#34;1fa0700033f1e5d9bb6b09e2be063d8d68474d346e95c50f2833e09d083e0007&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;partial&#34;,
+    &#34;tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;,
+    &#34;tool_name&#34;: &#34;customer_trend&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>19. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446779Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_001&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>20. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446832Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_002&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;distinct_trips&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>21. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446869Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;active_weeks&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>22. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446902Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;average_retailer_sales_value_per_trip&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>23. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446936Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_retailer_sales_value_per_trip&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>24. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.446968Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_006&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;recorded_quantity&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>25. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447008Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_007&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;distinct_products&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>26. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447040Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_008</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_008&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;recency_weeks&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>27. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447074Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_009</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_009&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value_slope&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>28. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447112Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_010</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_010&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>29. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447146Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_011</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_011&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>30. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447182Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_012</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_012&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>31. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447216Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_013</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_013&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>32. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447249Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_014&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>33. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447306Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_015</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_015&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>34. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447385Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_016&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>35. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447431Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_017</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_017&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>36. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447470Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_018</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_018&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>37. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447506Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_019</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_019&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>38. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447541Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_020</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_020&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>39. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447575Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_021</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_021&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>40. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447610Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_022</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_022&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>41. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447649Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_023</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_023&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>42. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447684Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_024</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_024&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>43. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447718Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_025</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_025&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>44. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.447751Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_026</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-02-customer_trend_026&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;full_window_weekly_retailer_sales_value_slope&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-02-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>45. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T01:35:02.448580Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 3,
+  &#34;remaining_turn_budget&#34;: 4,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>46. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T01:35:02.448730Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool basket_behavior</span><span class="chip">latency 0.0 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Inspect basket_behavior deterministic evidence.&#34;,
+  &#34;input_tokens&#34;: 0,
+  &#34;investigation_question&#34;: &#34;Did basket size, cadence, or store behavior change?&#34;,
+  &#34;latency_ms&#34;: 0.0,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;output_tokens&#34;: 0,
+  &#34;provider_call_id&#34;: &#34;scripted-003&#34;,
+  &#34;selected_tool&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>47. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T01:35:02.448807Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;Did basket size, cadence, or store behavior change?&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>48. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T01:35:02.448906Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;181&#34;
+  },
+  &#34;remaining_tool_budget&#34;: 3,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>49. Tool returned partial evidence</h2><div class="code">tool_partial</div></div><time>2026-08-25T01:35:02.466876Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span><span class="chip partial">status partial</span><span class="chip">latency 9.851042181253433 ms</span>      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_001</code> <code>ev_call-2e442f80a9-03-basket_behavior_002</code> <code>ev_call-2e442f80a9-03-basket_behavior_003</code> <code>ev_call-2e442f80a9-03-basket_behavior_004</code> <code>ev_call-2e442f80a9-03-basket_behavior_005</code> <code>ev_call-2e442f80a9-03-basket_behavior_006</code> <code>ev_call-2e442f80a9-03-basket_behavior_007</code> <code>ev_call-2e442f80a9-03-basket_behavior_008</code> <code>ev_call-2e442f80a9-03-basket_behavior_009</code> <code>ev_call-2e442f80a9-03-basket_behavior_010</code> <code>ev_call-2e442f80a9-03-basket_behavior_011</code> <code>ev_call-2e442f80a9-03-basket_behavior_012</code> <code>ev_call-2e442f80a9-03-basket_behavior_013</code> <code>ev_call-2e442f80a9-03-basket_behavior_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;baseline_baskets&#34;: 7,
+    &#34;recent_baskets&#34;: 0
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-03-basket_behavior_001&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_002&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_003&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_004&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_005&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_006&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_007&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_008&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_009&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_010&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_011&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_012&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_013&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_014&#34;
+  ],
+  &#34;latency_ms&#34;: 9.851042181253433,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;,
+    &#34;No recent baskets were observed; basket structure and cadence for that period are unavailable.&#34;,
+    &#34;Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.&#34;
+  ],
+  &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 7,
+  &#34;status&#34;: &#34;partial&#34;,
+  &#34;tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: 7.0,
+        &#34;change&#34;: -7.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_001&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;basket_count&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 5.0,
+        &#34;change&#34;: -5.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_002&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;active_weeks&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.875,
+        &#34;change&#34;: -0.875,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_003&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;baskets_per_calendar_week&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;baskets_per_week&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 43.45571428571428,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_004&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_basket_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 46.03,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_005&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_basket_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 2580.8571428571427,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_006&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;mean_recorded_quantity_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 37.0,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_007&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;median_recorded_quantity_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 17.714285714285715,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_008&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_distinct_products_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;products_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 12.714285714285714,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_009&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_distinct_categories_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;categories_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 8.345628858024691,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_010&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_basket_interval_days&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;days&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 8.052696759259259,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_011&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_basket_interval_days&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;days&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.8571428571428571,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_012&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;primary_store_share&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 2.0,
+        &#34;change&#34;: -2.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_013&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;stores_visited&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.16666666666666666,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_014&#34;,
+        &#34;household_id&#34;: &#34;181&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;consecutive_store_switch_rate&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;2e442f80-a9d4-5642-9cf3-b66cfc423aa6&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      }
+    ],
+    &#34;limitations&#34;: [
+      &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;,
+      &#34;No recent baskets were observed; basket structure and cadence for that period are unavailable.&#34;,
+      &#34;Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.&#34;
+    ],
+    &#34;model_summary&#34;: {
+      &#34;baseline&#34;: {
+        &#34;active_weeks&#34;: 5,
+        &#34;basket_count&#34;: 7,
+        &#34;baskets_per_calendar_week&#34;: 0.875,
+        &#34;consecutive_store_switch_rate&#34;: 0.16666666666666666,
+        &#34;mean_basket_interval_days&#34;: 8.345628858024691,
+        &#34;mean_basket_retailer_sales_value&#34;: 43.45571428571428,
+        &#34;mean_distinct_categories_per_basket&#34;: 12.714285714285714,
+        &#34;mean_distinct_products_per_basket&#34;: 17.714285714285715,
+        &#34;mean_recorded_quantity_per_basket&#34;: 2580.8571428571427,
+        &#34;median_basket_interval_days&#34;: 8.052696759259259,
+        &#34;median_basket_retailer_sales_value&#34;: 46.03,
+        &#34;median_recorded_quantity_per_basket&#34;: 37.0,
+        &#34;primary_store_id&#34;: &#34;327&#34;,
+        &#34;primary_store_share&#34;: 0.8571428571428571,
+        &#34;stores_visited&#34;: 2
+      },
+      &#34;changes&#34;: {
+        &#34;active_weeks&#34;: {
+          &#34;absolute_change&#34;: -5.0,
+          &#34;baseline&#34;: 5,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;basket_count&#34;: {
+          &#34;absolute_change&#34;: -7.0,
+          &#34;baseline&#34;: 7,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;baskets_per_calendar_week&#34;: {
+          &#34;absolute_change&#34;: -0.875,
+          &#34;baseline&#34;: 0.875,
+          &#34;recent&#34;: 0.0,
+          &#34;relative_change&#34;: -1.0
+        },
+        &#34;consecutive_store_switch_rate&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 0.16666666666666666,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_basket_interval_days&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 8.345628858024691,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_basket_retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 43.45571428571428,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_distinct_categories_per_basket&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 12.714285714285714,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_distinct_products_per_basket&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 17.714285714285715,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_recorded_quantity_per_basket&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 2580.8571428571427,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;median_basket_interval_days&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 8.052696759259259,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;median_basket_retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 46.03,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;median_recorded_quantity_per_basket&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 37.0,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;primary_store_share&#34;: {
+          &#34;absolute_change&#34;: null,
+          &#34;baseline&#34;: 0.8571428571428571,
+          &#34;recent&#34;: null,
+          &#34;relative_change&#34;: null
+        },
+        &#34;stores_visited&#34;: {
+          &#34;absolute_change&#34;: -2.0,
+          &#34;baseline&#34;: 2,
+          &#34;recent&#34;: 0,
+          &#34;relative_change&#34;: -1.0
+        }
+      },
+      &#34;recent&#34;: {
+        &#34;active_weeks&#34;: 0,
+        &#34;basket_count&#34;: 0,
+        &#34;baskets_per_calendar_week&#34;: 0.0,
+        &#34;consecutive_store_switch_rate&#34;: null,
+        &#34;mean_basket_interval_days&#34;: null,
+        &#34;mean_basket_retailer_sales_value&#34;: null,
+        &#34;mean_distinct_categories_per_basket&#34;: null,
+        &#34;mean_distinct_products_per_basket&#34;: null,
+        &#34;mean_recorded_quantity_per_basket&#34;: null,
+        &#34;median_basket_interval_days&#34;: null,
+        &#34;median_basket_retailer_sales_value&#34;: null,
+        &#34;median_recorded_quantity_per_basket&#34;: null,
+        &#34;primary_store_id&#34;: null,
+        &#34;primary_store_share&#34;: null,
+        &#34;stores_visited&#34;: 0
+      },
+      &#34;store_switching&#34;: {
+        &#34;baseline_primary_store_id&#34;: &#34;327&#34;,
+        &#34;primary_store_changed&#34;: null,
+        &#34;recent_baskets_at_new_store_share&#34;: null,
+        &#34;recent_primary_store_id&#34;: null
+      }
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;5b5d06192b9856edd04e4d405787af2f2e4a1fef&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;baseline_baskets&#34;: 7,
+        &#34;recent_baskets&#34;: 0
+      },
+      &#34;elapsed_ms&#34;: 9.851042181253433,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 45,
+          &#34;baseline_start&#34;: 38,
+          &#34;recent_end&#34;: 53,
+          &#34;recent_start&#34;: 46
+        },
+        &#34;household_id&#34;: &#34;181&#34;
+      },
+      &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+      &#34;rows_examined&#34;: 7,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;d5a361534a2a4c70a4eb94a65c21143f90b07e2df781d71aab3f0f72efc0f308&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;75fcdc22a7ffbe99a28d2d33164420be0417c24f22329a123a7677b4b3e28ea4&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;84f7fa81c8a73659a9f0e4136b0ac99a1cac5f0c72fadae067346832acbdf352&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;664d2cdfdfa52d4902bb2002c3387ccd69f01392a0b02e22721ad9aa9cade3d6&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;c3f89bd018c5e32c983a7a970774010dbe5c4ed13eec93ed50f6befcf93bf00e&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;741b1f9aba167760e6b417bb0c77ec4631b057e731f052b478e4b3dc1f4f2575&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;0d6809a02a9907a29f951d801f687517f42b6efe1897c6810be651f37f9caeb8&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;c73553e7be44749ca8e536f3ddd22e2c762dbdf025bea492959c93bd3f5439df&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;e7d9b1dede14dd2848695c6b784f3d42321c977fb665b09fbadab9327e7b9592&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d586f7ec968d384cdf9e08e9a5562aa992b4544569b4252f9998d0cd8a7b6fac&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;08bc0f6cfaa064533f7e910d4c2b3bde0f42901b197f4077ccc16fb85d74c797&#34;,
+        &#34;source/campaign_descriptions.rda&#34;: &#34;601bd17ea1a6de92cc288f393164813fbaf293b997d44054dcf1f3ebbe8dacee&#34;,
+        &#34;source/campaigns.rda&#34;: &#34;33c7b3dc1bc722d465f97416fb1327c6a9a640190e464c73e354bce8c001a772&#34;,
+        &#34;source/coupon_redemptions.rda&#34;: &#34;4b68148175ed19300bb2615d68d1a0300a5f971db3240819ab5d92e5919e1598&#34;,
+        &#34;source/coupons.rda&#34;: &#34;4d87effce5b8813c0934b581a83292707347577743320ca746878de89cc16f34&#34;,
+        &#34;source/demographics.rda&#34;: &#34;8b80455bc841003b64e47f5e5c2221f6093b995e923d59e72a1f852c7e268980&#34;,
+        &#34;source/products.rda&#34;: &#34;a80c6df33623b4af296ae9f317a6647e369db7e8ce7e7baed0e1bf44b9d979e5&#34;,
+        &#34;source/promotions.rds&#34;: &#34;15a729fdad31b10d3afedb058da31bcd6e9e68cb0207a43b3121264cd80198ba&#34;,
+        &#34;source/transactions.rds&#34;: &#34;1fa0700033f1e5d9bb6b09e2be063d8d68474d346e95c50f2833e09d083e0007&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;partial&#34;,
+    &#34;tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;,
+    &#34;tool_name&#34;: &#34;basket_behavior&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>50. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468357Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_001&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;basket_count&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>51. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468403Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_002&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;active_weeks&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>52. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468437Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;baskets_per_calendar_week&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>53. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468470Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_basket_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>54. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468502Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_basket_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>55. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468533Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_006&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;mean_recorded_quantity_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>56. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468573Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_007&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;median_recorded_quantity_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>57. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468612Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_008</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_008&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_distinct_products_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>58. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468648Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_009</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_009&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_distinct_categories_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>59. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468684Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_010</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_010&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_basket_interval_days&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>60. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468717Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_011</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_011&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_basket_interval_days&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>61. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468751Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_012</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_012&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;primary_store_share&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>62. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468784Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_013</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_013&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;stores_visited&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>63. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T01:35:02.468816Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-2e442f80a9-03-basket_behavior_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-2e442f80a9-03-basket_behavior_014&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;consecutive_store_switch_rate&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-2e442f80a9-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>64. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T01:35:02.469370Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 2,
+  &#34;remaining_turn_budget&#34;: 3,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>65. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T01:35:02.469491Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip">latency 0.0 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;finish&#34;,
+  &#34;decision_summary&#34;: &#34;Submit a cadence hypothesis for deterministic review.&#34;,
+  &#34;input_tokens&#34;: 0,
+  &#34;investigation_question&#34;: &#34;Is the available evidence sufficient to finish?&#34;,
+  &#34;latency_ms&#34;: 0.0,
+  &#34;model&#34;: &#34;scripted/whyback-v1&#34;,
+  &#34;output_tokens&#34;: 0,
+  &#34;provider_call_id&#34;: &#34;scripted-004&#34;,
+  &#34;selected_tool&#34;: null
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>66. Finish proposed</h2><div class="code">finish_requested</div></div><time>2026-08-25T01:35:02.469545Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip">final action VISIT_FREQUENCY_REACTIVATION</span>      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_002</code> <code>ev_call-2e442f80a9-03-basket_behavior_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;counterevidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_001&#34;
+  ],
+  &#34;next_best_action_id&#34;: &#34;VISIT_FREQUENCY_REACTIVATION&#34;,
+  &#34;proposed_confidence&#34;: &#34;high&#34;,
+  &#34;supporting_evidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-02-customer_trend_002&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_001&#34;
+  ]
+}</pre></details>
+    </article>
+    <article class="verifier">
+      <div class="top"><div><h2>67. Deterministic verification started</h2><div class="code">verification_started</div></div><time>2026-08-25T01:35:02.469591Z</time></div>
+      <div class="chips">
+        <span class="chip">verifier</span>
+<span class="chip started">verifier started</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;referenced_evidence_count&#34;: 3,
+  &#34;repair_attempted&#34;: false
+}</pre></details>
+    </article>
+    <article class="verifier">
+      <div class="top"><div><h2>68. Verification passed</h2><div class="code">verification_passed</div></div><time>2026-08-25T01:35:02.469721Z</time></div>
+      <div class="chips">
+        <span class="chip">verifier</span>
+<span class="chip passed">verifier passed</span><span class="chip">final action VISIT_FREQUENCY_REACTIVATION</span>      </div>
+<p>Evidence <code>ev_call-2e442f80a9-02-customer_trend_002</code> <code>ev_call-2e442f80a9-03-basket_behavior_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;confidence_cap_applied&#34;: true,
+  &#34;counterevidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-01-coupon_campaign_history_001&#34;
+  ],
+  &#34;next_best_action_id&#34;: &#34;VISIT_FREQUENCY_REACTIVATION&#34;,
+  &#34;resolved_confidence&#34;: &#34;medium&#34;,
+  &#34;supporting_evidence_ids&#34;: [
+    &#34;ev_call-2e442f80a9-02-customer_trend_002&#34;,
+    &#34;ev_call-2e442f80a9-03-basket_behavior_001&#34;
+  ]
+}</pre></details>
+    </article>
+    <article class="run">
+      <div class="top"><div><h2>69. Investigation completed</h2><div class="code">run_completed</div></div><time>2026-08-25T01:35:02.469777Z</time></div>
+      <div class="chips">
+        <span class="chip">run</span>
+<span class="chip completed">status completed</span><span class="chip">final action VISIT_FREQUENCY_REACTIVATION</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;human_review_required&#34;: true,
+  &#34;next_best_action_id&#34;: &#34;VISIT_FREQUENCY_REACTIVATION&#34;,
+  &#34;status&#34;: &#34;completed&#34;
+}</pre></details>
+    </article>
+</div>  <footer>Static, self-contained viewer · chronological append-only events · no network connection required</footer>
+</main>
+</body>
+</html>

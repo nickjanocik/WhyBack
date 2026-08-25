@@ -216,16 +216,38 @@ the official top-five selection and no-key skip status, without manufacturing
 customer reports. The artifact manifest is the authoritative record of
 execution mode, source, hashes, and omissions.
 
+| Scripted control | Decline score | Verified action | Report | Trace |
+| --- | ---: | --- | --- | --- |
+| Synthetic household 101 | 0.875 | `VISIT_FREQUENCY_REACTIVATION` | [HTML](artifacts/demo/customer_101/report.html) · [JSON](artifacts/demo/customer_101/report.json) | [HTML](artifacts/demo/customer_101/trace.html) · [JSONL](artifacts/demo/customer_101/trace.jsonl) |
+| Synthetic household 102 | 0.803 | `VISIT_FREQUENCY_REACTIVATION` | [HTML](artifacts/demo/customer_102/report.html) · [JSON](artifacts/demo/customer_102/report.json) | [HTML](artifacts/demo/customer_102/trace.html) · [JSONL](artifacts/demo/customer_102/trace.jsonl) |
+| Synthetic household 103 | 0.725 | `VISIT_FREQUENCY_REACTIVATION` | [HTML](artifacts/demo/customer_103/report.html) · [JSON](artifacts/demo/customer_103/report.json) | [HTML](artifacts/demo/customer_103/trace.html) · [JSONL](artifacts/demo/customer_103/trace.jsonl) |
+| Synthetic household 104 | 0.641 | `VISIT_FREQUENCY_REACTIVATION` | [HTML](artifacts/demo/customer_104/report.html) · [JSON](artifacts/demo/customer_104/report.json) | [HTML](artifacts/demo/customer_104/trace.html) · [JSONL](artifacts/demo/customer_104/trace.jsonl) |
+| Synthetic household 105 | 0.559 | `VISIT_FREQUENCY_REACTIVATION` | [HTML](artifacts/demo/customer_105/report.html) · [JSON](artifacts/demo/customer_105/report.json) | [HTML](artifacts/demo/customer_105/trace.html) · [JSONL](artifacts/demo/customer_105/trace.jsonl) |
+
+Reviewer entry points:
+
+- [Synthetic five-customer results](artifacts/demo/RESULTS.md) and
+  [strict artifact manifest](artifacts/demo/manifest.json).
+- [Persistent retry-failure report](artifacts/demo/failure_example/report.html)
+  and [trace](artifacts/demo/failure_example/trace.html).
+- [Official full-data no-key status](artifacts/official/live_model_status.json)
+  and [manifest](artifacts/official/manifest.json).
+- [Official Type A household 181 report](artifacts/official-type-a/customer_181/report.html),
+  [trace](artifacts/official-type-a/customer_181/trace.html), and
+  [embedded data provenance](artifacts/official-type-a/data_provenance.json).
+- [Deterministic evaluation summary](artifacts/evals/EVAL_SUMMARY.md),
+  [quality-gate audit](artifacts/tests/TEST_AUDIT.md), and
+  [Git commit summary](artifacts/git/COMMIT_SUMMARY.md).
+
 ## Complete execution trace
 
 Each run writes an append-only `trace.jsonl` with sanitized external decision
 records, complete typed tool-result envelopes, retries, evidence additions,
 verifier events, and final status. It never stores hidden reasoning.
-`trace.html` is a self-contained,
-offline timeline with the same validated events. Start with the demo manifest
-and `artifacts/demo/customer_*/trace.html`; the persistent-failure path is under
-`artifacts/demo/failure_example/`, and the Type A limited-data path is under
-`artifacts/demo/type_a_partial_example/`.
+`trace.html` is a self-contained, offline timeline with the same validated
+events. Start with the [household 101 trace](artifacts/demo/customer_101/trace.html),
+then inspect the [persistent-failure trace](artifacts/demo/failure_example/trace.html)
+and [official Type A trace](artifacts/official-type-a/customer_181/trace.html).
 
 ## Testing and evaluations
 

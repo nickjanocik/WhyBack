@@ -1,0 +1,22 @@
+{
+  "checked_files": [
+    ".whyback-owned-artifact-root.json",
+    "RESULTS.md",
+    "customer_181/report.html",
+    "customer_181/report.json",
+    "customer_181/report.md",
+    "customer_181/trace.html",
+    "customer_181/trace.jsonl",
+    "data_provenance.json",
+    "decline_candidates.csv",
+    "manifest.json",
+    "results.json"
+  ],
+  "execution_modes": [
+    "scripted"
+  ],
+  "issues": [],
+  "passed": true,
+  "root": "/Users/nickjanocik/Documents/WhyBack/artifacts/official-type-a",
+  "schema_version": 1
+}

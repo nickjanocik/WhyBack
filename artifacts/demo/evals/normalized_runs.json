@@ -1,0 +1,293 @@
+{
+  "provenance": {
+    "backend": "scripted_control",
+    "dataset_kind": "synthetic",
+    "execution_mode": "deterministic_evaluation_no_model",
+    "model_invoked": false
+  },
+  "runs": [
+    {
+      "actual_tool_executions": 2,
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-6fb0aadd11-01-customer_trend_001",
+        "ev_call-6fb0aadd11-01-customer_trend_002",
+        "ev_call-6fb0aadd11-01-customer_trend_003",
+        "ev_call-6fb0aadd11-01-customer_trend_004",
+        "ev_call-6fb0aadd11-01-customer_trend_005",
+        "ev_call-6fb0aadd11-01-customer_trend_006",
+        "ev_call-6fb0aadd11-01-customer_trend_007",
+        "ev_call-6fb0aadd11-01-customer_trend_008",
+        "ev_call-6fb0aadd11-01-customer_trend_009",
+        "ev_call-6fb0aadd11-01-customer_trend_010",
+        "ev_call-6fb0aadd11-01-customer_trend_011",
+        "ev_call-6fb0aadd11-01-customer_trend_012",
+        "ev_call-6fb0aadd11-01-customer_trend_013",
+        "ev_call-6fb0aadd11-01-customer_trend_014",
+        "ev_call-6fb0aadd11-01-customer_trend_015",
+        "ev_call-6fb0aadd11-01-customer_trend_016",
+        "ev_call-6fb0aadd11-01-customer_trend_017",
+        "ev_call-6fb0aadd11-01-customer_trend_018",
+        "ev_call-6fb0aadd11-01-customer_trend_019",
+        "ev_call-6fb0aadd11-01-customer_trend_020",
+        "ev_call-6fb0aadd11-01-customer_trend_021",
+        "ev_call-6fb0aadd11-01-customer_trend_022",
+        "ev_call-6fb0aadd11-01-customer_trend_023",
+        "ev_call-6fb0aadd11-01-customer_trend_024",
+        "ev_call-6fb0aadd11-01-customer_trend_025",
+        "ev_call-6fb0aadd11-01-customer_trend_026",
+        "ev_call-6fb0aadd11-02-basket_behavior_001",
+        "ev_call-6fb0aadd11-02-basket_behavior_002",
+        "ev_call-6fb0aadd11-02-basket_behavior_003",
+        "ev_call-6fb0aadd11-02-basket_behavior_004",
+        "ev_call-6fb0aadd11-02-basket_behavior_005",
+        "ev_call-6fb0aadd11-02-basket_behavior_006",
+        "ev_call-6fb0aadd11-02-basket_behavior_007",
+        "ev_call-6fb0aadd11-02-basket_behavior_008",
+        "ev_call-6fb0aadd11-02-basket_behavior_009",
+        "ev_call-6fb0aadd11-02-basket_behavior_010",
+        "ev_call-6fb0aadd11-02-basket_behavior_011",
+        "ev_call-6fb0aadd11-02-basket_behavior_012",
+        "ev_call-6fb0aadd11-02-basket_behavior_013",
+        "ev_call-6fb0aadd11-02-basket_behavior_014",
+        "ev_call-6fb0aadd11-02-basket_behavior_015",
+        "ev_call-6fb0aadd11-02-basket_behavior_016"
+      ],
+      "model_decisions": 3,
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "propagated_limitations": [],
+      "referenced_evidence_ids": [
+        "ev_call-6fb0aadd11-01-customer_trend_002"
+      ],
+      "run_id": "6fb0aadd-11c3-55e3-abba-8b880fe5baf8",
+      "run_status": "completed",
+      "scenario_id": "frequency_decline",
+      "selected_tools": [
+        "customer_trend",
+        "basket_behavior"
+      ],
+      "source_limitations": [],
+      "verification_passed": true
+    },
+    {
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-f73874c3fc-01-category_decomposition_001",
+        "ev_call-f73874c3fc-01-category_decomposition_002",
+        "ev_call-f73874c3fc-01-category_decomposition_003",
+        "ev_call-f73874c3fc-01-category_decomposition_004",
+        "ev_call-f73874c3fc-01-category_decomposition_005",
+        "ev_call-f73874c3fc-01-category_decomposition_006",
+        "ev_call-f73874c3fc-01-category_decomposition_007",
+        "ev_call-f73874c3fc-01-category_decomposition_008",
+        "ev_call-f73874c3fc-01-category_decomposition_009",
+        "ev_call-f73874c3fc-01-category_decomposition_010",
+        "ev_call-f73874c3fc-01-category_decomposition_011",
+        "ev_call-f73874c3fc-01-category_decomposition_012",
+        "ev_call-f73874c3fc-01-category_decomposition_013",
+        "ev_call-f73874c3fc-01-category_decomposition_014",
+        "ev_call-f73874c3fc-01-category_decomposition_015",
+        "ev_call-f73874c3fc-01-category_decomposition_016"
+      ],
+      "model_decisions": 3,
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "propagated_limitations": [],
+      "referenced_evidence_ids": [],
+      "run_id": "f73874c3-fcdc-510e-b270-a6f38d670e39",
+      "run_status": "insufficient_evidence",
+      "scenario_id": "category_collapse",
+      "selected_tools": [
+        "category_decomposition"
+      ],
+      "source_limitations": [],
+      "verification_passed": true
+    },
+    {
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-009237e72e-01-promotion_response_001",
+        "ev_call-009237e72e-01-promotion_response_002",
+        "ev_call-009237e72e-01-promotion_response_003",
+        "ev_call-009237e72e-01-promotion_response_004",
+        "ev_call-009237e72e-01-promotion_response_005",
+        "ev_call-009237e72e-01-promotion_response_006",
+        "ev_call-009237e72e-01-promotion_response_007"
+      ],
+      "model_decisions": 2,
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "propagated_limitations": [
+        "Promotion records indicate availability for a product at a store during a week; they do not establish that this household saw a display or mailer.",
+        "Observed promotion-associated purchasing is descriptive and does not establish that promotion availability caused the behavioral change."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-009237e72e-01-promotion_response_001"
+      ],
+      "run_id": "009237e7-2e22-56d7-b9d4-9c4517383fb0",
+      "run_status": "completed",
+      "scenario_id": "promotion_associated_decline",
+      "selected_tools": [
+        "promotion_response"
+      ],
+      "source_limitations": [
+        "Promotion records indicate availability for a product at a store during a week; they do not establish that this household saw a display or mailer.",
+        "Observed promotion-associated purchasing is descriptive and does not establish that promotion availability caused the behavioral change."
+      ],
+      "verification_passed": true
+    },
+    {
+      "actual_tool_executions": 1,
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-952d628089-01-peer_comparison_001",
+        "ev_call-952d628089-01-peer_comparison_002",
+        "ev_call-952d628089-01-peer_comparison_003",
+        "ev_call-952d628089-01-peer_comparison_004",
+        "ev_call-952d628089-01-peer_comparison_005"
+      ],
+      "model_decisions": 2,
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "propagated_limitations": [
+        "Peer similarity is descriptive, depends on the selected baseline features, and does not establish a causal benchmark."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-952d628089-01-peer_comparison_001"
+      ],
+      "run_id": "952d6280-895c-58f5-9c75-795bac78b0af",
+      "run_status": "completed",
+      "scenario_id": "ambiguous_peer_comparison",
+      "selected_tools": [
+        "peer_comparison"
+      ],
+      "source_limitations": [
+        "Peer similarity is descriptive, depends on the selected baseline features, and does not establish a causal benchmark."
+      ],
+      "verification_passed": true
+    },
+    {
+      "actual_tool_executions": 2,
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_001",
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_002",
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_003",
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_004",
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_005",
+        "ev_call-1d7736e9d9-02-customer_trend_001",
+        "ev_call-1d7736e9d9-02-customer_trend_002",
+        "ev_call-1d7736e9d9-02-customer_trend_003",
+        "ev_call-1d7736e9d9-02-customer_trend_004",
+        "ev_call-1d7736e9d9-02-customer_trend_005",
+        "ev_call-1d7736e9d9-02-customer_trend_006",
+        "ev_call-1d7736e9d9-02-customer_trend_007",
+        "ev_call-1d7736e9d9-02-customer_trend_008",
+        "ev_call-1d7736e9d9-02-customer_trend_009",
+        "ev_call-1d7736e9d9-02-customer_trend_010",
+        "ev_call-1d7736e9d9-02-customer_trend_011",
+        "ev_call-1d7736e9d9-02-customer_trend_012",
+        "ev_call-1d7736e9d9-02-customer_trend_013",
+        "ev_call-1d7736e9d9-02-customer_trend_014",
+        "ev_call-1d7736e9d9-02-customer_trend_015",
+        "ev_call-1d7736e9d9-02-customer_trend_016",
+        "ev_call-1d7736e9d9-02-customer_trend_017",
+        "ev_call-1d7736e9d9-02-customer_trend_018",
+        "ev_call-1d7736e9d9-02-customer_trend_019",
+        "ev_call-1d7736e9d9-02-customer_trend_020",
+        "ev_call-1d7736e9d9-02-customer_trend_021",
+        "ev_call-1d7736e9d9-02-customer_trend_022",
+        "ev_call-1d7736e9d9-02-customer_trend_023",
+        "ev_call-1d7736e9d9-02-customer_trend_024",
+        "ev_call-1d7736e9d9-02-customer_trend_025",
+        "ev_call-1d7736e9d9-02-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "normalization_source": "outcome",
+      "partial_tools": [
+        "coupon_campaign_history"
+      ],
+      "propagated_limitations": [
+        "Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-1d7736e9d9-02-customer_trend_002",
+        "ev_call-1d7736e9d9-01-coupon_campaign_history_001"
+      ],
+      "run_id": "1d7736e9-d9d0-5694-a8ba-eb2042103b49",
+      "run_status": "completed",
+      "scenario_id": "type_a_coupon_exposure_gap",
+      "selected_tools": [
+        "coupon_campaign_history",
+        "customer_trend"
+      ],
+      "source_limitations": [
+        "Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable."
+      ],
+      "verification_passed": true
+    },
+    {
+      "actual_tool_executions": 3,
+      "duplicate_call_count": 0,
+      "failed_tools": [
+        "promotion_response"
+      ],
+      "ledger_evidence_ids": [
+        "ev_call-48cfac8d39-03-customer_trend_001",
+        "ev_call-48cfac8d39-03-customer_trend_002",
+        "ev_call-48cfac8d39-03-customer_trend_003",
+        "ev_call-48cfac8d39-03-customer_trend_004",
+        "ev_call-48cfac8d39-03-customer_trend_005",
+        "ev_call-48cfac8d39-03-customer_trend_006",
+        "ev_call-48cfac8d39-03-customer_trend_007",
+        "ev_call-48cfac8d39-03-customer_trend_008",
+        "ev_call-48cfac8d39-03-customer_trend_009",
+        "ev_call-48cfac8d39-03-customer_trend_010",
+        "ev_call-48cfac8d39-03-customer_trend_011",
+        "ev_call-48cfac8d39-03-customer_trend_012",
+        "ev_call-48cfac8d39-03-customer_trend_013",
+        "ev_call-48cfac8d39-03-customer_trend_014",
+        "ev_call-48cfac8d39-03-customer_trend_015",
+        "ev_call-48cfac8d39-03-customer_trend_016",
+        "ev_call-48cfac8d39-03-customer_trend_017",
+        "ev_call-48cfac8d39-03-customer_trend_018",
+        "ev_call-48cfac8d39-03-customer_trend_019",
+        "ev_call-48cfac8d39-03-customer_trend_020",
+        "ev_call-48cfac8d39-03-customer_trend_021",
+        "ev_call-48cfac8d39-03-customer_trend_022",
+        "ev_call-48cfac8d39-03-customer_trend_023",
+        "ev_call-48cfac8d39-03-customer_trend_024",
+        "ev_call-48cfac8d39-03-customer_trend_025",
+        "ev_call-48cfac8d39-03-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "propagated_limitations": [
+        "promotion_response is unavailable after its bounded retry policy was exhausted.",
+        "Demo-only injected promotion_response timeout; no analytical query was executed for this attempt."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-48cfac8d39-03-customer_trend_002"
+      ],
+      "run_id": "48cfac8d-391a-553c-a662-da6976803989",
+      "run_status": "completed",
+      "scenario_id": "persistent_promotion_timeout",
+      "selected_tools": [
+        "promotion_response",
+        "customer_trend"
+      ],
+      "source_limitations": [],
+      "verification_passed": true
+    }
+  ],
+  "schema_version": 1
+}

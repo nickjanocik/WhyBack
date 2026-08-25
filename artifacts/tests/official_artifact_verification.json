@@ -1,0 +1,19 @@
+{
+  "checked_files": [
+    ".whyback-owned-artifact-root.json",
+    "RESULTS.md",
+    "data_provenance.json",
+    "decline_candidates.csv",
+    "live_model_status.json",
+    "manifest.json",
+    "results.json",
+    "sensitivity.csv"
+  ],
+  "execution_modes": [
+    "skipped"
+  ],
+  "issues": [],
+  "passed": true,
+  "root": "/Users/nickjanocik/Documents/WhyBack/artifacts/official",
+  "schema_version": 1
+}

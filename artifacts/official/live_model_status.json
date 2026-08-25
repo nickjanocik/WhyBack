@@ -1,0 +1,15 @@
+{
+  "exact_command": "uv run whyback demo --customers 5 --backend openai",
+  "execution_mode": "skipped",
+  "model": "gpt-5.6-sol",
+  "reason": "OPENAI_API_KEY was absent; no live model call was attempted.",
+  "reports_generated": false,
+  "selected_household_ids": [
+    "5",
+    "181",
+    "423",
+    "472",
+    "682"
+  ],
+  "status": "skipped_no_api_key"
+}
