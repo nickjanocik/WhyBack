@@ -157,9 +157,17 @@ def _decisions(
             _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),
             _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 13),
         )
+        counterevidence = (
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 26),
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 31),
+        )
         steps = (
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
-            _finish(action=ActionId.CATEGORY_WINBACK, supporting=support),
+            _finish(
+                action=ActionId.CATEGORY_WINBACK,
+                supporting=support,
+                counterevidence=counterevidence,
+            ),
         )
     elif scenario_id == "promotion_associated_decline":
         support = (_evidence_id(run_id, 1, ToolName.PROMOTION_RESPONSE, 1),)
@@ -203,6 +211,11 @@ def _decisions(
         "insufficient_comparison_population",
     }:
         support = (_evidence_id(run_id, 2, ToolName.CUSTOMER_TREND, 2),)
+        counterevidence = (
+            (_evidence_id(run_id, 1, ToolName.PEER_COMPARISON, 17),)
+            if scenario_id == "broad_decline"
+            else ()
+        )
         steps = (
             _tool(
                 ToolName.PEER_COMPARISON,
@@ -213,6 +226,7 @@ def _decisions(
             _finish(
                 action=ActionId.VISIT_FREQUENCY_REACTIVATION,
                 supporting=support,
+                counterevidence=counterevidence,
                 proposed_confidence=ConfidenceLevel.HIGH,
             ),
         )
@@ -224,11 +238,20 @@ def _decisions(
             _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),
             _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 13),
         )
+        counterevidence = (
+            (
+                _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 26),
+                _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 31),
+            )
+            if scenario_id == "broad_category_decline"
+            else ()
+        )
         steps = (
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
             _finish(
                 action=ActionId.CATEGORY_WINBACK,
                 supporting=support,
+                counterevidence=counterevidence,
                 proposed_confidence=ConfidenceLevel.HIGH,
             ),
         )

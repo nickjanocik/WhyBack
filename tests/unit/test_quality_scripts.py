@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from pydantic import ValidationError
 
 import scripts.run_quality_gate as quality_gate
 from scripts.run_quality_gate import (
@@ -661,6 +662,7 @@ def _write_live_artifacts(root: Path) -> None:
             event=AuditEventName.FINISH_REQUESTED,
             details={
                 "next_best_action_id": "INSUFFICIENT_EVIDENCE",
+                "proposed_confidence": "low",
                 "supporting_evidence_ids": [],
                 "counterevidence_ids": [],
                 "driver_claim_types": [],
@@ -1107,7 +1109,7 @@ def test_completed_trace_requires_passing_verdict_and_matching_confidence(
     _write_live_artifacts(confidence_root)
     report_path = confidence_root / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    report["action"]["resolved_confidence"] = "low"
+    report["action"]["confidence_cap_applied"] = False
     _write_exact_report_bundle(report_path, report)
     _write_results_files(confidence_root)
     _rehash_manifest(confidence_root)
@@ -1124,15 +1126,37 @@ def test_artifact_verifier_reconciles_context_confidence_adjustments(
     report["action"]["confidence_adjustments"][0]["reason"] = (
         "A tampered confidence-adjustment reason."
     )
+    with pytest.raises(
+        ValidationError,
+        match="Confidence adjustments do not match deterministic evidence policy",
+    ):
+        _write_exact_report_bundle(report_path, report)
+
+
+def test_artifact_verifier_recomputes_coordinated_confidence_tampering(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    report_path = tmp_path / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["action"]["confidence_cap_applied"] = False
     _write_exact_report_bundle(report_path, report)
+
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [json.loads(line) for line in trace_path.read_text().splitlines()]
+    for row in rows:
+        if row["event"] == AuditEventName.VERIFICATION_PASSED.value:
+            row["details"]["confidence_cap_applied"] = False
+    _rewrite_trace_rows(trace_path, rows)
     _write_results_files(tmp_path)
     _rehash_manifest(tmp_path)
 
     result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
 
-    assert "report_confidence_adjustment_mismatch" in {
-        item.code for item in result.issues
-    }
+    issue_codes = {item.code for item in result.issues}
+    assert "report_verdict_mismatch" not in issue_codes
+    assert "report_deterministic_confidence_mismatch" in issue_codes
+    assert "trace_deterministic_confidence_mismatch" in issue_codes
 
 
 def test_artifact_verifier_reconstructs_methodology_sections_from_trace(

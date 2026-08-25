@@ -126,7 +126,7 @@ class DriverClaim(BaseModel):
     # driver, so a narrower per-driver bound would make a schema-valid proposal
     # fail during deterministic resolution.
     supporting_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=12)
-    counterevidence_ids: tuple[str, ...] = Field(default=(), max_length=8)
+    counterevidence_ids: tuple[str, ...] = Field(default=(), max_length=12)
     no_material_counterevidence_reason: str | None = Field(
         default=None,
         min_length=1,
@@ -167,7 +167,7 @@ class FinishProposal(BaseModel):
     driver_summary: tuple[DriverClaim, ...] = Field(max_length=4)
     proposed_confidence: ConfidenceLevel
     supporting_evidence_ids: tuple[str, ...] = Field(max_length=12)
-    counterevidence_ids: tuple[str, ...] = Field(max_length=8)
+    counterevidence_ids: tuple[str, ...] = Field(max_length=12)
     next_best_action_id: ActionId
     rationale: str = Field(min_length=1, max_length=800)
     alternative_explanations: tuple[str, ...] = Field(min_length=1, max_length=4)

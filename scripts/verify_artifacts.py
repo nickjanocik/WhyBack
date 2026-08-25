@@ -20,15 +20,23 @@ from typing import Literal, cast
 from pydantic import ValidationError
 
 from whyback.agent.actions import ActionCatalogError, ActionId, load_action_catalog
+from whyback.agent.state import ConfidenceLevel
 from whyback.agent.verifier import (
     is_relevant_counterevidence,
     is_report_safe_qualitative,
+    required_context_counterevidence_ids,
+    resolve_confidence_policy,
 )
 from whyback.data.download import SOURCE_FILES
 from whyback.data.manifest import DataManifest, preparation_code_sha256
 from whyback.detection.decline import DeclineSnapshot
 from whyback.methodology import ClaimType
-from whyback.observability import AuditEvent, AuditEventName, read_audit_events
+from whyback.observability import (
+    AuditEvent,
+    AuditEventName,
+    read_audit_events,
+    sanitize_public_text,
+)
 from whyback.reporting import (
     build_interpretation_limits,
     build_population_context,
@@ -196,6 +204,17 @@ class ProposedDriverTrace:
     claim_type: ClaimType
     supporting_evidence_ids: tuple[str, ...]
     counterevidence_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class FinishRequestTrace:
+    """Confidence and evidence accounting from one structured finish request."""
+
+    next_best_action_id: ActionId
+    proposed_confidence: ConfidenceLevel
+    supporting_evidence_ids: tuple[str, ...]
+    counterevidence_ids: tuple[str, ...]
+    drivers: tuple[ProposedDriverTrace, ...]
 
 
 def sha256_file(path: Path) -> str:
@@ -1566,25 +1585,53 @@ def _accepted_evidence_ids(
     return (), ()
 
 
-def _proposed_drivers(
-    events: Sequence[AuditEvent],
-) -> tuple[ProposedDriverTrace, ...] | None:
-    """Recover per-driver evidence accounting from the accepted finish request."""
+def _finish_request(events: Sequence[AuditEvent]) -> FinishRequestTrace | None:
+    """Recover typed confidence and evidence accounting from the last finish."""
 
     for event in reversed(events):
         if event.event is not AuditEventName.FINISH_REQUESTED:
             continue
+        try:
+            action_id = ActionId(event.details.get("next_best_action_id"))
+            proposed_confidence = ConfidenceLevel(
+                event.details.get("proposed_confidence")
+            )
+        except (TypeError, ValueError):
+            return None
+        raw_proposal_support = event.details.get("supporting_evidence_ids")
+        raw_proposal_counter = event.details.get("counterevidence_ids")
         raw_claim_types = event.details.get("driver_claim_types")
         raw_supporting = event.details.get("driver_supporting_evidence_ids")
         raw_counterevidence = event.details.get("driver_counterevidence_ids")
         if not all(
             isinstance(item, list)
-            for item in (raw_claim_types, raw_supporting, raw_counterevidence)
+            for item in (
+                raw_proposal_support,
+                raw_proposal_counter,
+                raw_claim_types,
+                raw_supporting,
+                raw_counterevidence,
+            )
         ):
             return None
+        assert isinstance(raw_proposal_support, list)
+        assert isinstance(raw_proposal_counter, list)
         assert isinstance(raw_claim_types, list)
         assert isinstance(raw_supporting, list)
         assert isinstance(raw_counterevidence, list)
+        if any(
+            not isinstance(item, str)
+            for item in (*raw_proposal_support, *raw_proposal_counter)
+        ):
+            return None
+        proposal_support = tuple(cast(str, item) for item in raw_proposal_support)
+        proposal_counter = tuple(cast(str, item) for item in raw_proposal_counter)
+        if (
+            len(proposal_support) != len(set(proposal_support))
+            or len(proposal_counter) != len(set(proposal_counter))
+            or set(proposal_support).intersection(proposal_counter)
+        ):
+            return None
         if not (
             len(raw_claim_types) == len(raw_supporting) == len(raw_counterevidence)
         ):
@@ -1613,7 +1660,35 @@ def _proposed_drivers(
                     counterevidence_ids=tuple(cast(str, item) for item in counters),
                 )
             )
-        return tuple(drivers)
+        if any(
+            len(driver.supporting_evidence_ids)
+            != len(set(driver.supporting_evidence_ids))
+            or len(driver.counterevidence_ids) != len(set(driver.counterevidence_ids))
+            or set(driver.supporting_evidence_ids).intersection(
+                driver.counterevidence_ids
+            )
+            or not set(driver.supporting_evidence_ids).issubset(proposal_support)
+            or not set(driver.counterevidence_ids).issubset(proposal_counter)
+            for driver in drivers
+        ):
+            return None
+        if {
+            evidence_id
+            for driver in drivers
+            for evidence_id in driver.supporting_evidence_ids
+        } != set(proposal_support) or {
+            evidence_id
+            for driver in drivers
+            for evidence_id in driver.counterevidence_ids
+        } != set(proposal_counter):
+            return None
+        return FinishRequestTrace(
+            next_best_action_id=action_id,
+            proposed_confidence=proposed_confidence,
+            supporting_evidence_ids=proposal_support,
+            counterevidence_ids=proposal_counter,
+            drivers=tuple(drivers),
+        )
     return None
 
 
@@ -1658,6 +1733,9 @@ def _expected_investigation_records(
         question = _string_detail(event, "investigation_question")
         if tool_name not in _TOOL_LABELS or question is None:
             continue
+        safe_question = sanitize_public_text(question)
+        if not is_report_safe_qualitative(safe_question):
+            safe_question = f"Investigate {_TOOL_LABELS[tool_name].lower()}."
         end = next(
             (
                 offset
@@ -1730,7 +1808,7 @@ def _expected_investigation_records(
             decision_number=decision_number,
             tool_name=normalized_tool,
             tool_label=_TOOL_LABELS[tool_name],
-            investigation_question=question,
+            investigation_question=safe_question,
             final_status=final_status,
             attempt_count=attempt_count,
             retry_count=retry_count,
@@ -1763,6 +1841,7 @@ def _validate_report_trace_pair(
     trace: TraceValidation,
 ) -> list[VerificationIssue]:
     issues: list[VerificationIssue] = []
+    confidence_policy = None
     expected_steps, expected_warnings = _expected_investigation_records(trace.events)
     if report.investigation_path != expected_steps:
         issues.append(
@@ -1954,17 +2033,20 @@ def _validate_report_trace_pair(
         driver_supporting_ids = tuple(
             record.evidence_id for record in driver_supporting
         )
-        proposed_drivers = _proposed_drivers(trace.events)
-        if (
-            report.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE
-            and proposed_drivers is None
+        finish_request = _finish_request(trace.events)
+        proposed_drivers = (
+            finish_request.drivers if finish_request is not None else None
+        )
+        if report.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE and (
+            finish_request is None
+            or finish_request.next_best_action_id is not report.action.action_id
         ):
             issues.append(
                 _issue(
                     trace_path,
                     root,
                     "trace_driver_provenance_missing",
-                    "A supported action requires complete per-driver finish provenance",
+                    "A supported action requires complete, matching finish provenance",
                 )
             )
         contributing_drivers = tuple(
@@ -1999,6 +2081,28 @@ def _validate_report_trace_pair(
                     root,
                     "trace_irrelevant_counterevidence",
                     "A resolved driver labels unrelated evidence as counterevidence",
+                )
+            )
+        if any(
+            set(
+                required_context_counterevidence_ids(
+                    action_definition,
+                    tuple(
+                        trace_records_by_id[evidence_id]
+                        for evidence_id in driver.supporting_evidence_ids
+                        if evidence_id in trace_records_by_id
+                    ),
+                    trace_records,
+                )
+            ).difference(driver.counterevidence_ids)
+            for driver in contributing_drivers
+        ):
+            issues.append(
+                _issue(
+                    trace_path,
+                    root,
+                    "trace_material_counterevidence_omitted",
+                    "A resolved driver omits material broad or mixed context",
                 )
             )
         if report.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE and (
@@ -2077,6 +2181,108 @@ def _validate_report_trace_pair(
                     "verifier-owned templates",
                 )
             )
+
+        policy_proposed_confidence: ConfidenceLevel | None
+        policy_proposal_support_ids: tuple[str, ...]
+        policy_referenced_ids: tuple[str, ...]
+        if report.action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
+            policy_proposed_confidence = ConfidenceLevel.LOW
+            policy_proposal_support_ids = ()
+            policy_referenced_ids = ()
+        elif (
+            finish_request is not None
+            and finish_request.next_best_action_id is report.action.action_id
+        ):
+            policy_proposed_confidence = finish_request.proposed_confidence
+            policy_proposal_support_ids = finish_request.supporting_evidence_ids
+            policy_referenced_ids = (
+                *finish_request.supporting_evidence_ids,
+                *finish_request.counterevidence_ids,
+            )
+        else:
+            policy_proposed_confidence = None
+            policy_proposal_support_ids = ()
+            policy_referenced_ids = ()
+
+        if policy_proposed_confidence is not None:
+            missing_policy_records = set(policy_referenced_ids).difference(
+                trace_records_by_id
+            )
+            if missing_policy_records:
+                issues.append(
+                    _issue(
+                        trace_path,
+                        root,
+                        "trace_confidence_provenance_missing",
+                        "Confidence policy references evidence absent from successful "
+                        "ToolResults",
+                    )
+                )
+            results_by_call = {
+                result.tool_call_id: result for result in trace.tool_results
+            }
+            policy_limitations: list[str] = []
+            for evidence_id in policy_referenced_ids:
+                record = trace_records_by_id.get(evidence_id)
+                if record is None:
+                    continue
+                policy_limitations.extend(record.limitations)
+                result = results_by_call.get(record.source_tool_call_id)
+                if result is not None and result.status is ToolStatus.PARTIAL:
+                    policy_limitations.extend(result.limitations)
+            for warning in expected_warnings:
+                if not warning.unavailable:
+                    continue
+                policy_limitations.append(
+                    f"{warning.tool_name.value} is unavailable after its bounded "
+                    "retry policy was exhausted."
+                )
+                policy_limitations.extend(warning.limitations)
+            confidence_policy = resolve_confidence_policy(
+                action=action_definition,
+                proposed_confidence=policy_proposed_confidence,
+                proposal_supporting_records=tuple(
+                    trace_records_by_id[evidence_id]
+                    for evidence_id in policy_proposal_support_ids
+                    if evidence_id in trace_records_by_id
+                ),
+                resolved_supporting_records=driver_supporting,
+                full_ledger_records=trace_records,
+                support_limitations=tuple(dict.fromkeys(policy_limitations)),
+            )
+            if confidence_policy.issues:
+                issues.append(
+                    _issue(
+                        trace_path,
+                        root,
+                        "trace_confidence_policy_invalid",
+                        "Trace evidence violates deterministic confidence policy",
+                    )
+                )
+            expected_policy_adjustments = [
+                item.model_dump(mode="json")
+                for item in confidence_policy.confidence_adjustments
+            ]
+            actual_report_adjustments = [
+                item.model_dump(mode="json")
+                for item in report.action.confidence_adjustments
+            ]
+            if (
+                report.action.resolved_confidence
+                is not confidence_policy.resolved_confidence
+                or report.action.confidence_cap_applied
+                is not confidence_policy.confidence_cap_applied
+                or actual_report_adjustments != expected_policy_adjustments
+            ):
+                issues.append(
+                    _issue(
+                        report_path,
+                        root,
+                        "report_deterministic_confidence_mismatch",
+                        "Report confidence is not the deterministic reconstruction "
+                        "of finish provenance and trace evidence",
+                    )
+                )
 
     completion = trace.events[-1]
     raw_snapshot = trace.events[0].details.get("detector_snapshot")
@@ -2180,6 +2386,28 @@ def _validate_report_trace_pair(
                     "Report confidence adjustments do not match VERIFICATION_PASSED",
                 )
             )
+        if confidence_policy is not None:
+            deterministic_adjustments = [
+                item.model_dump(mode="json")
+                for item in confidence_policy.confidence_adjustments
+            ]
+            if (
+                passing_verdict.details.get("resolved_confidence")
+                != confidence_policy.resolved_confidence.value
+                or passing_verdict.details.get("confidence_cap_applied")
+                is not confidence_policy.confidence_cap_applied
+                or passing_verdict.details.get("confidence_adjustments")
+                != deterministic_adjustments
+            ):
+                issues.append(
+                    _issue(
+                        trace_path,
+                        root,
+                        "trace_deterministic_confidence_mismatch",
+                        "VERIFICATION_PASSED confidence is not the deterministic "
+                        "reconstruction of finish provenance and evidence",
+                    )
+                )
         try:
             definition = load_action_catalog().get(report.action.action_id)
         except ActionCatalogError as error:

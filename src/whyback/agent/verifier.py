@@ -53,6 +53,7 @@ class VerificationIssueCode(StrEnum):
     INVALID_CONTEXT_EVIDENCE = "invalid_context_evidence"
     COUNTEREVIDENCE_CONFLICT = "counterevidence_conflict"
     IRRELEVANT_COUNTEREVIDENCE = "irrelevant_counterevidence"
+    MATERIAL_COUNTEREVIDENCE_OMITTED = "material_counterevidence_omitted"
     PEER_SELF_COMPARISON = "peer_self_comparison"
     CATEGORY_RECONCILIATION = "category_reconciliation"
     PROMOTION_MULTIPLICATION = "promotion_multiplication"
@@ -75,6 +76,19 @@ class ConfidenceAdjustment(BaseModel):
     maximum_confidence: ResolvedConfidence
     reason: str = Field(min_length=1)
     evidence_ids: tuple[str, ...] = ()
+
+
+class ConfidencePolicyResolution(BaseModel):
+    """Deterministic confidence result reusable at runtime and artifact review."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    resolved_confidence: ResolvedConfidence
+    confidence_cap_applied: bool
+    confidence_adjustments: tuple[ConfidenceAdjustment, ...] = ()
+    context_limitations: tuple[str, ...] = ()
+    category_context_limitations: tuple[str, ...] = ()
+    issues: tuple[VerificationIssue, ...] = ()
 
 
 class VerifiedFinalDecision(BaseModel):
@@ -132,9 +146,12 @@ _CAUSAL_CLAIM = re.compile(
     r"(?:prompt|forc|push)(?:ed|es?)\s+(?:the\s+)?(?:customer|household|"
     r"decline|churn|disengagement)|brought\s+(?:about|on)|gave\s+rise\s+to|"
     r"(?:creat|spark)(?:e|ed|es|ing)\s+(?:the\s+)?(?:decline|churn|"
-    r"disengagement)|induc(?:e|ed|es|ing)|account(?:ed|s|ing)?\s+for|"
+    r"disengagement)|induc(?:e|ed|es|ing)|account(?:ed|s|ing)?\s+for\s+"
+    r"(?:(?:the\s+)?(?:customer|household)(?:'s)?\s+)?(?:the\s+)?"
+    r"(?:decline|churn|disengagement)|"
     r"(?:arose|originat(?:e|ed|es|ing))\s+from|"
-    r"as\s+(?:a\s+)?consequence\s+of|(?:is|are|was|were)\s+(?:the\s+)?"
+    r"as\s+(?:a\s+)?(?:consequence|result)\s+of|"
+    r"(?:is|are|was|were)\s+(?:the\s+)?"
     r"reason(?:\s+(?:for|that|why))?|(?:is|are|was|were)\s+why|"
     r"responsible\s+for|stems?\s+from|guarantee(?:d|s)?|ensures?|"
     r"(?:will|expected\s+to)\s+(?:boost|raise|grow|increase|improve|restore|retain|"
@@ -414,6 +431,67 @@ def is_relevant_counterevidence(
     ) in supported_categories
 
 
+def required_context_counterevidence_ids(
+    action: ActionDefinition,
+    supporting_records: tuple[EvidenceRecord, ...],
+    full_ledger_records: tuple[EvidenceRecord, ...],
+) -> tuple[str, ...]:
+    """Return material broad or mixed context a driver must acknowledge.
+
+    Category context is more specific than the run-wide population comparison, so
+    a category action uses matching category classifications when they are
+    available. Otherwise, broad or mixed run-wide context remains material. The
+    function never manufactures a balancing record: it only requires already
+    computed context that directly qualifies the cited action evidence.
+    """
+
+    material_values = (
+        ContextClassification.BROAD_CONTEXT.value,
+        ContextClassification.MIXED.value,
+    )
+
+    def canonical_material_id(
+        records: Sequence[EvidenceRecord],
+    ) -> str | None:
+        for classification in material_values:
+            for record in records:
+                if record.text_value == classification:
+                    return record.evidence_id
+        return None
+
+    if action.action_id is ActionId.CATEGORY_WINBACK:
+        dimension_keys = ("department", "product_category", "direction")
+        supported_categories = {
+            tuple(record.dimensions.get(key) for key in dimension_keys)
+            for record in _action_matching_records(action, supporting_records)
+            if all(record.dimensions.get(key) is not None for key in dimension_keys)
+        }
+        records_by_category: dict[tuple[str | None, ...], list[EvidenceRecord]] = {}
+        for record in full_ledger_records:
+            category = tuple(record.dimensions.get(key) for key in dimension_keys)
+            if (
+                record.metric == _CATEGORY_CONTEXT_CLASSIFICATION_METRIC
+                and category in supported_categories
+            ):
+                records_by_category.setdefault(category, []).append(record)
+        category_context = tuple(
+            evidence_id
+            for records in records_by_category.values()
+            if (evidence_id := canonical_material_id(records)) is not None
+        )
+        if category_context:
+            return category_context
+
+    global_context_id = canonical_material_id(
+        tuple(
+            record
+            for record in full_ledger_records
+            if record.metric == _CONTEXT_CLASSIFICATION_METRIC
+        )
+    )
+    return (global_context_id,) if global_context_id is not None else ()
+
+
 def _opposes_evidence_predicate(
     predicate: EvidencePredicate,
     record: EvidenceRecord,
@@ -669,6 +747,52 @@ def _cap_confidence(
     return cap, True
 
 
+def resolve_confidence_policy(
+    *,
+    action: ActionDefinition,
+    proposed_confidence: ConfidenceLevel,
+    proposal_supporting_records: tuple[EvidenceRecord, ...],
+    resolved_supporting_records: tuple[EvidenceRecord, ...],
+    full_ledger_records: tuple[EvidenceRecord, ...],
+    support_limitations: tuple[str, ...],
+) -> ConfidencePolicyResolution:
+    """Recompute the complete evidence-owned confidence policy.
+
+    Keeping this resolver independent of report or trace fields prevents a
+    self-consistent but policy-invalid artifact from becoming authoritative.
+    """
+
+    issues: list[VerificationIssue] = []
+    classification, evidence_ids, context_limitations = _context_assessment(
+        full_ledger_records,
+        issues,
+    )
+    adjustments = _context_confidence_adjustments(classification, evidence_ids)
+    category_adjustments, category_context_limitations = _category_context_adjustments(
+        action,
+        proposal_supporting_records,
+        full_ledger_records,
+        issues,
+    )
+    adjustments = (*adjustments, *category_adjustments)
+    cap = _confidence_cap(resolved_supporting_records, support_limitations)
+    for adjustment in adjustments:
+        cap = _lower_confidence_cap(cap, adjustment.maximum_confidence)
+    if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
+        resolved = ResolvedConfidence.INSUFFICIENT
+        cap_applied = True
+    else:
+        resolved, cap_applied = _cap_confidence(proposed_confidence, cap)
+    return ConfidencePolicyResolution(
+        resolved_confidence=resolved,
+        confidence_cap_applied=cap_applied,
+        confidence_adjustments=adjustments,
+        context_limitations=context_limitations,
+        category_context_limitations=category_context_limitations,
+        issues=tuple(issues),
+    )
+
+
 def _resolved_drivers(
     action: ActionDefinition,
     supporting_records: tuple[EvidenceRecord, ...],
@@ -836,12 +960,9 @@ class FinalVerifier:
                     "Context evidence did not originate from a successful invocation: "
                     f"{record.evidence_id}",
                 )
-        context_classification, context_evidence_ids, context_limitations = (
-            _context_assessment(full_ledger_records, issues)
-        )
-        confidence_adjustments = _context_confidence_adjustments(
-            context_classification,
-            context_evidence_ids,
+        context_classification, _, context_limitations = _context_assessment(
+            full_ledger_records,
+            issues,
         )
 
         support_id_set = set(proposal.supporting_evidence_ids)
@@ -944,6 +1065,23 @@ class FinalVerifier:
                             "Driver counterevidence is not a deterministic qualifier "
                             f"for {action.action_id.value}: {evidence_id}",
                         )
+                required_context_ids = set(
+                    required_context_counterevidence_ids(
+                        action,
+                        driver_support,
+                        full_ledger_records,
+                    )
+                )
+                omitted_context_ids = required_context_ids.difference(
+                    driver.counterevidence_ids
+                )
+                if omitted_context_ids:
+                    _append_issue(
+                        issues,
+                        VerificationIssueCode.MATERIAL_COUNTEREVIDENCE_OMITTED,
+                        "Driver omits material broad or mixed context: "
+                        + ", ".join(sorted(omitted_context_ids)),
+                    )
             if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
                 if proposal.supporting_evidence_ids or proposal.driver_summary:
                     _append_issue(
@@ -1065,20 +1203,13 @@ class FinalVerifier:
                             "a cited cadence window is missing.",
                         )
 
-        category_adjustments: tuple[ConfidenceAdjustment, ...] = ()
         category_context_limitations: tuple[str, ...] = ()
         if action is not None:
-            category_adjustments, category_context_limitations = (
-                _category_context_adjustments(
-                    action,
-                    supporting_records,
-                    full_ledger_records,
-                    issues,
-                )
-            )
-            confidence_adjustments = (
-                *confidence_adjustments,
-                *category_adjustments,
+            _, category_context_limitations = _category_context_adjustments(
+                action,
+                supporting_records,
+                full_ledger_records,
+                issues,
             )
 
         used_limitations: list[str] = []
@@ -1161,20 +1292,25 @@ class FinalVerifier:
                 for evidence_id in driver.counterevidence_ids
             ]
         )
-        cap = _confidence_cap(resolved_supporting_records, support_limitations)
-        for adjustment in confidence_adjustments:
-            cap = _lower_confidence_cap(cap, adjustment.maximum_confidence)
-        if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
-            resolved = ResolvedConfidence.INSUFFICIENT
-            cap_applied = True
-        else:
-            resolved, cap_applied = _cap_confidence(proposal.proposed_confidence, cap)
+        confidence_policy = resolve_confidence_policy(
+            action=action,
+            proposed_confidence=proposal.proposed_confidence,
+            proposal_supporting_records=supporting_records,
+            resolved_supporting_records=resolved_supporting_records,
+            full_ledger_records=full_ledger_records,
+            support_limitations=support_limitations,
+        )
+        if confidence_policy.issues:
+            return VerificationResult(
+                passed=False,
+                issues=confidence_policy.issues,
+            )
         final = VerifiedFinalDecision(
             drivers=resolved_drivers,
             proposed_confidence=proposal.proposed_confidence,
-            resolved_confidence=resolved,
-            confidence_cap_applied=cap_applied,
-            confidence_adjustments=confidence_adjustments,
+            resolved_confidence=confidence_policy.resolved_confidence,
+            confidence_cap_applied=confidence_policy.confidence_cap_applied,
+            confidence_adjustments=confidence_policy.confidence_adjustments,
             supporting_evidence_ids=resolved_supporting_ids,
             counterevidence_ids=resolved_counterevidence_ids,
             next_best_action_id=action.action_id,

@@ -176,6 +176,7 @@ def _state(
 def _proposal(
     *,
     evidence_ids: tuple[str, ...] = ("ev-1",),
+    counterevidence_ids: tuple[str, ...] = (),
     action: ActionId = ActionId.MONITOR,
     confidence: ConfidenceLevel = ConfidenceLevel.HIGH,
     summary: str = "The observed change warrants cautious monitoring.",
@@ -186,8 +187,11 @@ def _proposal(
                 summary=summary,
                 claim_type=ClaimType.ASSOCIATIONAL,
                 supporting_evidence_ids=evidence_ids,
+                counterevidence_ids=counterevidence_ids,
                 no_material_counterevidence_reason=(
-                    "No material counterevidence was identified."
+                    None
+                    if counterevidence_ids
+                    else "No material counterevidence was identified."
                 ),
                 limitations=("The evidence is observational.",),
             ),
@@ -199,7 +203,7 @@ def _proposal(
         driver_summary=drivers,
         proposed_confidence=confidence,
         supporting_evidence_ids=evidence_ids,
-        counterevidence_ids=(),
+        counterevidence_ids=counterevidence_ids,
         next_best_action_id=action,
         rationale="The recorded pattern supports human review.",
         alternative_explanations=(
@@ -484,11 +488,22 @@ def test_broad_category_context_caps_category_driver_at_low() -> None:
         ),
     )
 
-    verdict = FinalVerifier(load_action_catalog()).verify(
+    omitted = FinalVerifier(load_action_catalog()).verify(
         state,
         _proposal(evidence_ids=("ev-category",), action=ActionId.CATEGORY_WINBACK),
     )
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(
+            evidence_ids=("ev-category",),
+            counterevidence_ids=("ev-category-context",),
+            action=ActionId.CATEGORY_WINBACK,
+        ),
+    )
 
+    assert VerificationIssueCode.MATERIAL_COUNTEREVIDENCE_OMITTED in {
+        issue.code for issue in omitted.issues
+    }
     assert verdict.passed and verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
     adjustment = verdict.final.confidence_adjustments[0]
@@ -544,7 +559,11 @@ def test_conflicting_category_context_uses_conservative_low_cap() -> None:
 
     verdict = FinalVerifier(load_action_catalog()).verify(
         state,
-        _proposal(evidence_ids=("ev-category",), action=ActionId.CATEGORY_WINBACK),
+        _proposal(
+            evidence_ids=("ev-category",),
+            counterevidence_ids=("ev-category-broad",),
+            action=ActionId.CATEGORY_WINBACK,
+        ),
     )
 
     assert verdict.passed and verdict.final is not None
@@ -555,6 +574,65 @@ def test_conflicting_category_context_uses_conservative_low_cap() -> None:
         "ev-category-insufficient",
         "ev-category-broad",
     )
+
+
+def test_material_category_context_remains_citable_for_nine_categories() -> None:
+    category_records = tuple(
+        _evidence(
+            f"ev-category-{index}",
+            tool=ToolName.CATEGORY_DECOMPOSITION,
+            call_id="call-category",
+            metric="category_retailer_sales_value",
+            baseline_value=10.0,
+            recent_value=5.0,
+            dimensions={
+                "department": "GROCERY",
+                "product_category": f"CATEGORY_{index}",
+                "direction": "loss",
+            },
+        )
+        for index in range(9)
+    )
+    context_records = tuple(
+        _category_context_evidence(
+            ContextClassification.BROAD_CONTEXT,
+            evidence_id=f"ev-category-context-{index}",
+        ).model_copy(
+            update={
+                "dimensions": {
+                    "department": "GROCERY",
+                    "product_category": f"CATEGORY_{index}",
+                    "direction": "loss",
+                    "target_excluded": "true",
+                }
+            }
+        )
+        for index in range(9)
+    )
+    support_ids = tuple(record.evidence_id for record in category_records)
+    counter_ids = tuple(record.evidence_id for record in context_records)
+    state = _state(
+        (*category_records, *context_records),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(
+            evidence_ids=support_ids,
+            counterevidence_ids=counter_ids,
+            action=ActionId.CATEGORY_WINBACK,
+        ),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.counterevidence_ids == counter_ids
 
 
 def test_missing_category_context_caps_and_propagates_limitation() -> None:
@@ -796,6 +874,11 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
         ("Reduced promotions were the reason for the decline.", False),
         ("Reduced promotions are why the customer left.", False),
         ("The decline occurred as a consequence of reduced promotions.", False),
+        ("Engagement fell as a result of fewer visits.", False),
+        (
+            "There is no evidence engagement fell as a result of fewer visits.",
+            True,
+        ),
         ("Reduced promotions brought about the decline.", False),
         ("Reduced promotions induced the decline.", False),
         ("Reduced promotions lead to disengagement.", False),
@@ -806,6 +889,10 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
         ("Reduced promotions gave rise to the decline.", False),
         ("Reduced promotions sparked the decline.", False),
         ("Reduced promotions account for the decline.", False),
+        (
+            "Which product categories account for the lost retailer sales value?",
+            True,
+        ),
         ("The decline arose from reduced promotions.", False),
         ("The decline originated from reduced promotions.", False),
     ),
@@ -1121,7 +1208,7 @@ def test_resolved_driver_never_upgrades_descriptive_context_evidence() -> None:
         value=-0.50,
     ).model_copy(update={"maximum_claim_type": ClaimType.DESCRIPTIVE})
     context = _context_evidence(ContextClassification.BROAD_CONTEXT)
-    proposal = _proposal()
+    proposal = _proposal(counterevidence_ids=("ev-context",))
     descriptive = proposal.driver_summary[0].model_copy(
         update={"claim_type": ClaimType.DESCRIPTIVE}
     )
@@ -1220,7 +1307,7 @@ def test_context_classification_uses_central_signed_change_policy(
     assert classify_context(**kwargs, policy=ContextPolicy()) is expected  # type: ignore[arg-type]
 
 
-def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
+def test_verifier_rejects_omitted_material_broad_context() -> None:
     context = _context_evidence(ContextClassification.BROAD_CONTEXT)
     state = _state(
         (_evidence("ev-1"), context),
@@ -1235,6 +1322,31 @@ def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
     )
 
     verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+
+    assert not verdict.passed
+    assert VerificationIssueCode.MATERIAL_COUNTEREVIDENCE_OMITTED in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
+    context = _context_evidence(ContextClassification.BROAD_CONTEXT)
+    state = _state(
+        (_evidence("ev-1"), context),
+        (
+            _history(),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(counterevidence_ids=("ev-context",)),
+    )
 
     assert verdict.passed and verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
@@ -1265,7 +1377,10 @@ def test_conflicting_context_records_resolve_conservatively() -> None:
         ),
     )
 
-    verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(counterevidence_ids=("ev-context-broad",)),
+    )
 
     assert verdict.passed and verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.LOW

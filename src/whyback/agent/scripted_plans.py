@@ -136,35 +136,37 @@ def build_scripted_plan(
     if plan is ScriptedPlan.STANDARD:
         trend_call = 1
         basket_call = 3
+        peer_call = 4
         decisions: list[ModelDecision] = [
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
             _tool(ToolName.PEER_COMPARISON, household_id),
         ]
-        counterevidence: tuple[str, ...] = ()
     elif plan is ScriptedPlan.TYPE_A_PARTIAL:
         trend_call = 2
         basket_call = 3
+        peer_call = 4
         decisions = [
             _tool(ToolName.COUPON_CAMPAIGN_HISTORY, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
             _tool(ToolName.PEER_COMPARISON, household_id),
         ]
-        counterevidence = ()
     else:
         # The injected promotion call consumes two execution attempts before the
         # independent analytical calls. Both timeout modes use the same call indexes.
         trend_call = 3
         basket_call = 4
+        peer_call = 5
         decisions = [
             _tool(ToolName.PROMOTION_RESPONSE, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
             _tool(ToolName.PEER_COMPARISON, household_id),
         ]
-        counterevidence = ()
+
+    counterevidence = (_evidence_id(run_id, peer_call, ToolName.PEER_COMPARISON, 17),)
 
     decisions.append(
         _supported_finish(

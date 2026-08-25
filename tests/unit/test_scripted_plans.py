@@ -65,6 +65,14 @@ def test_scripted_plans_are_explicit_and_end_with_safe_repair(
     finishes = [item for item in decisions if isinstance(item, FinishDecision)]
     assert tools == expected_tools
     assert len(finishes) == 2
+    peer_call_index = 5 if plan is ScriptedPlan.PROMOTION_TIMEOUT else 4
+    expected_context_id = (
+        f"ev_{make_tool_call_id(RUN_ID, peer_call_index, ToolName.PEER_COMPARISON)}_017"
+    )
+    assert finishes[0].final.counterevidence_ids == (expected_context_id,)
+    assert finishes[0].final.driver_summary[0].counterevidence_ids == (
+        expected_context_id,
+    )
     assert finishes[-1].final.next_best_action_id == "INSUFFICIENT_EVIDENCE"
     assert all(
         item.arguments["household_id"] == "181"

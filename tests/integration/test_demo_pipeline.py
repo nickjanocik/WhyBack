@@ -105,7 +105,9 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
         )
     )
     assert partial["tool_warnings"][0]["final_status"] == "partial"
-    assert partial["counterevidence"] == []
+    assert len(partial["counterevidence"]) == 1
+    assert partial["counterevidence"][0]["source_tool"] == "peer_comparison"
+    assert partial["counterevidence"][0]["metric"] == "context_classification"
     assert any("delivered coupon identities" in item for item in partial["limitations"])
 
     verification = verify_artifact_tree(tmp_path, allow_live_skipped=True)

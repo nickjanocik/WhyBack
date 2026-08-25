@@ -155,7 +155,18 @@ def _outcome() -> InvestigationOutcome:
             ConfidenceAdjustment(
                 context_classification=ContextClassification.INSUFFICIENT_CONTEXT,
                 maximum_confidence=ResolvedConfidence.MEDIUM,
-                reason="Comparison context is insufficient.",
+                reason=(
+                    "Population or peer context is insufficient, so missing "
+                    "comparison evidence cannot be treated as neutral."
+                ),
+            ),
+            ConfidenceAdjustment(
+                context_classification=ContextClassification.INSUFFICIENT_CONTEXT,
+                maximum_confidence=ResolvedConfidence.MEDIUM,
+                reason=(
+                    "The category comparison cohort is insufficient, so the cited "
+                    "loss cannot receive high customer-specific confidence."
+                ),
             ),
         ),
         supporting_evidence_ids=(SUPPORT_ID,),
@@ -267,7 +278,29 @@ def _outcome_with_population_context() -> InvestigationOutcome:
             ),
         }
     )
-    return outcome.model_copy(update={"state": state})
+    assert outcome.verification is not None and outcome.verification.final is not None
+    verification = outcome.verification.model_copy(
+        update={
+            "final": outcome.verification.final.model_copy(
+                update={
+                    "confidence_adjustments": (
+                        ConfidenceAdjustment(
+                            context_classification=(
+                                ContextClassification.INSUFFICIENT_CONTEXT
+                            ),
+                            maximum_confidence=ResolvedConfidence.MEDIUM,
+                            reason=(
+                                "The category comparison cohort is insufficient, "
+                                "so the cited loss cannot receive high "
+                                "customer-specific confidence."
+                            ),
+                        ),
+                    )
+                }
+            )
+        }
+    )
+    return outcome.model_copy(update={"state": state, "verification": verification})
 
 
 def _outcome_with_conflicting_population_context() -> InvestigationOutcome:
@@ -338,18 +371,44 @@ def _outcome_with_conflicting_population_context() -> InvestigationOutcome:
         }
     )
     assert outcome.verification is not None and outcome.verification.final is not None
+    existing_driver = outcome.verification.final.drivers[0]
     final = outcome.verification.final.model_copy(
         update={
+            "drivers": (
+                existing_driver.model_copy(
+                    update={
+                        "counterevidence_ids": (
+                            *existing_driver.counterevidence_ids,
+                            "ev-peer-broad-classification",
+                        )
+                    }
+                ),
+            ),
             "resolved_confidence": ResolvedConfidence.LOW,
+            "counterevidence_ids": (
+                *outcome.verification.final.counterevidence_ids,
+                "ev-peer-broad-classification",
+            ),
             "confidence_adjustments": (
-                *outcome.verification.final.confidence_adjustments,
                 ConfidenceAdjustment(
                     context_classification=ContextClassification.BROAD_CONTEXT,
                     maximum_confidence=ResolvedConfidence.LOW,
-                    reason="Broad contemporaneous movement limits confidence.",
+                    reason=(
+                        "The target resembles broad contemporaneous population and "
+                        "peer movement, limiting confidence in a customer-specific "
+                        "explanation."
+                    ),
                     evidence_ids=(
                         "ev-peer-classification",
                         "ev-peer-broad-classification",
+                    ),
+                ),
+                ConfidenceAdjustment(
+                    context_classification=ContextClassification.INSUFFICIENT_CONTEXT,
+                    maximum_confidence=ResolvedConfidence.MEDIUM,
+                    reason=(
+                        "The category comparison cohort is insufficient, so the "
+                        "cited loss cannot receive high customer-specific confidence."
                     ),
                 ),
             ),
@@ -560,6 +619,28 @@ def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
     missing_interpretation_limits["interpretation_limits"]["observed_scope"] = []
     with pytest.raises(ValidationError, match="at least 1 item"):
         type(report).model_validate(missing_interpretation_limits)
+
+
+def test_report_schema_recomputes_counterevidence_and_confidence_policy() -> None:
+    customer_specific = build_report_data(_outcome_with_population_context())
+    forged_high = customer_specific.model_dump(mode="json")
+    forged_high["action"]["resolved_confidence"] = ResolvedConfidence.HIGH.value
+    with pytest.raises(ValidationError, match="deterministic evidence cap"):
+        type(customer_specific).model_validate(forged_high)
+
+    broad = build_report_data(_outcome_with_conflicting_population_context())
+    omitted_adjustment = broad.model_dump(mode="json")
+    omitted_adjustment["action"]["confidence_adjustments"] = []
+    omitted_adjustment["action"]["resolved_confidence"] = (
+        ResolvedConfidence.MEDIUM.value
+    )
+    with pytest.raises(ValidationError, match="deterministic evidence policy"):
+        type(broad).model_validate(omitted_adjustment)
+
+    omitted_counter = broad.model_dump(mode="json")
+    omitted_counter["likely_drivers"][0]["counterevidence_ids"] = [COUNTER_ID]
+    with pytest.raises(ValidationError, match="material broad or mixed"):
+        type(broad).model_validate(omitted_counter)
 
 
 def test_category_context_requires_explicit_target_exclusion_provenance() -> None:

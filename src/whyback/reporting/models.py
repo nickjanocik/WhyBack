@@ -4,10 +4,21 @@ from __future__ import annotations
 
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    ValidationError,
+    model_validator,
+)
 
-from whyback.agent.actions import ActionId
-from whyback.agent.state import ResolvedConfidence, RunStatus
+from whyback.agent.actions import ActionId, load_action_catalog
+from whyback.agent.state import ConfidenceLevel, ResolvedConfidence, RunStatus
+from whyback.agent.verifier import (
+    required_context_counterevidence_ids,
+    resolve_confidence_policy,
+)
 from whyback.immutability import frozen_mapping
 from whyback.methodology import (
     ClaimType,
@@ -15,7 +26,7 @@ from whyback.methodology import (
     resolve_context_classifications,
 )
 from whyback.provenance import RunProvenance
-from whyback.tools.contracts import ToolName, ToolStatus
+from whyback.tools.contracts import EvidenceRecord, ToolName, ToolStatus
 
 _CLAIM_ORDER = {
     ClaimType.DESCRIPTIVE: 0,
@@ -429,6 +440,97 @@ class ReportData(BaseModel):
             ):
                 raise ValueError("Driver claim type exceeds its evidence support level")
         if self.action is not None:
+            try:
+                evidence_records = {
+                    item.evidence_id: EvidenceRecord.model_validate(
+                        item.model_dump(exclude={"role", "source_status"})
+                    )
+                    for item in self.evidence_ledger
+                }
+            except ValidationError as error:
+                raise ValueError(
+                    "Report ledger cannot reconstruct deterministic evidence"
+                ) from error
+            action_definition = load_action_catalog().get(self.action.action_id)
+            full_evidence_records = tuple(evidence_records.values())
+            for driver in self.likely_drivers:
+                driver_support = tuple(
+                    evidence_records[evidence_id]
+                    for evidence_id in driver.supporting_evidence_ids
+                )
+                required_context_ids = set(
+                    required_context_counterevidence_ids(
+                        action_definition,
+                        driver_support,
+                        full_evidence_records,
+                    )
+                )
+                if not required_context_ids.issubset(driver.counterevidence_ids):
+                    raise ValueError(
+                        "Driver omits material broad or mixed counterevidence"
+                    )
+
+            confidence_limitations = tuple(
+                dict.fromkeys(
+                    (
+                        *(
+                            limitation
+                            for item in (
+                                *self.supporting_evidence,
+                                *self.counterevidence,
+                            )
+                            for limitation in item.limitations
+                        ),
+                        *(
+                            "A cited evidence source returned a partial result."
+                            for item in (
+                                *self.supporting_evidence,
+                                *self.counterevidence,
+                            )
+                            if item.source_status is ToolStatus.PARTIAL
+                        ),
+                        *(
+                            "An analytical tool is unavailable."
+                            for warning in self.tool_warnings
+                            if warning.unavailable
+                        ),
+                    )
+                )
+            )
+            report_support_records = tuple(
+                evidence_records[item.evidence_id] for item in self.supporting_evidence
+            )
+            confidence_policy = resolve_confidence_policy(
+                action=action_definition,
+                proposed_confidence=ConfidenceLevel.HIGH,
+                proposal_supporting_records=report_support_records,
+                resolved_supporting_records=report_support_records,
+                full_ledger_records=full_evidence_records,
+                support_limitations=confidence_limitations,
+            )
+            if confidence_policy.issues:
+                raise ValueError(
+                    "Report evidence violates deterministic confidence policy"
+                )
+            expected_adjustments = tuple(
+                item.model_dump(mode="json")
+                for item in confidence_policy.confidence_adjustments
+            )
+            actual_adjustments = tuple(
+                item.model_dump(mode="json")
+                for item in self.action.confidence_adjustments
+            )
+            if actual_adjustments != expected_adjustments:
+                raise ValueError(
+                    "Confidence adjustments do not match deterministic evidence policy"
+                )
+            if (
+                _CONFIDENCE_ORDER[self.action.resolved_confidence]
+                > _CONFIDENCE_ORDER[confidence_policy.resolved_confidence]
+            ):
+                raise ValueError(
+                    "Resolved confidence exceeds the deterministic evidence cap"
+                )
             for adjustment in self.action.confidence_adjustments:
                 if not set(adjustment.evidence_ids).issubset(ledger):
                     raise ValueError(
