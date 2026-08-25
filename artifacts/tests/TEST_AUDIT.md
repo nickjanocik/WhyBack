@@ -2,19 +2,19 @@
 
 Overall result: **PASS**
 
-Invocation: `f7e88cde-a8d6-4aa0-8ac5-d784f7e0daf1`
-Started: `2026-08-25T01:35:28.946983Z`
-Completed: `2026-08-25T01:35:52.760755Z`
-Duration: `23.813860583119094 seconds`
+Invocation: `aca229d5-35a3-4897-985c-5a66f868944f`
+Started: `2026-08-25T01:36:35.051923Z`
+Completed: `2026-08-25T01:36:58.881464Z`
+Duration: `23.82960845902562 seconds`
 
 ## Reproducibility metadata
 
-- Git: `960c0987d36c7d7acd5b5bd62bdce06f9061bcaa` on `codex/whyback-build` (dirty: `true`)
+- Git: `76ac8de22fd313c4f5f1c2219b4375272f1996b2` on `codex/whyback-build` (dirty: `false`)
 - Python: `3.12.14` (`CPython`)
 - uv: `uv 0.12.5 (Homebrew 2026-08-14 aarch64-apple-darwin)`
 - Platform: `macOS-26.3.1-arm64-arm-64bit`
 - Lock SHA-256: `82894e4acdf443c2e44652bd3e22def210fc645de4ea93cb49d531709cee62f3`
-- Source-tree SHA-256: `e51cb0e5b16afa652518e4878bf60b7fff47112761d7c58d5942d8b6d0c3d521`
+- Source-tree SHA-256: `9bc89d240839bb283215686c9ea5ac8259b4d817f439db359288e141c64e989e`
 
 ```json
 {
@@ -63,17 +63,17 @@ Duration: `23.813860583119094 seconds`
 ```json
 {
   "coverage": {
-    "covered_branches": 612,
+    "covered_branches": 613,
     "covered_lines": 3210,
     "minimum_percent": 85.0,
-    "missing_branches": 214,
+    "missing_branches": 213,
     "missing_lines": 364,
     "num_branches": 826,
     "num_statements": 3574,
-    "percent_covered": 86.86363636363636
+    "percent_covered": 86.88636363636364
   },
   "junit": {
-    "duration_seconds": 18.981,
+    "duration_seconds": 18.97,
     "errors": 0,
     "failures": 0,
     "skipped": 1,
@@ -87,23 +87,23 @@ Duration: `23.813860583119094 seconds`
 | Step | Required | Status | Exit | Duration |
 | --- | ---: | ---: | ---: | ---: |
 | coverage_configuration | True | passed | 0 | 0.0s |
-| frozen_sync | True | passed | 0 | 0.009780624881386757s |
-| ruff_format | True | passed | 0 | 0.025428040884435177s |
-| ruff_lint | True | passed | 0 | 0.025031959172338247s |
-| pyright | True | passed | 0 | 2.5756118749268353s |
-| pytest | True | passed | 0 | 19.342285207938403s |
+| frozen_sync | True | passed | 0 | 0.010152958333492279s |
+| ruff_format | True | passed | 0 | 0.02222541719675064s |
+| ruff_lint | True | passed | 0 | 0.02453620871528983s |
+| pyright | True | passed | 0 | 2.622246667277068s |
+| pytest | True | passed | 0 | 19.328258417081088s |
 | test_output_validation | True | passed | 0 | 0.0s |
-| deterministic_evals | True | passed | 0 | 0.33686737483367324s |
-| artifact_verification | True | passed | 0 | 0.6617355416528881s |
-| official_artifact_verification | True | passed | 0 | 0.3657579580321908s |
-| official_type_a_artifact_verification | True | passed | 0 | 0.3972934582270682s |
+| deterministic_evals | True | passed | 0 | 0.34357620775699615s |
+| artifact_verification | True | passed | 0 | 0.6475644591264427s |
+| official_artifact_verification | True | passed | 0 | 0.3609717912040651s |
+| official_type_a_artifact_verification | True | passed | 0 | 0.3933401247486472s |
 
 ### coverage_configuration
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-25T01:35:29.003921Z`
-Completed: `2026-08-25T01:35:29.003921Z`
+Started: `2026-08-25T01:36:35.108998Z`
+Completed: `2026-08-25T01:36:35.108998Z`
 
 Stdout:
 
@@ -122,8 +122,8 @@ Stderr:
 
 Command: `uv sync --frozen --extra dev`
 
-Started: `2026-08-25T01:35:29.004905Z`
-Completed: `2026-08-25T01:35:29.014690Z`
+Started: `2026-08-25T01:36:35.110064Z`
+Completed: `2026-08-25T01:36:35.120221Z`
 
 Stdout:
 
@@ -142,8 +142,8 @@ Checked 46 packages in 0.98ms
 
 Command: `uv run ruff format --check .`
 
-Started: `2026-08-25T01:35:29.015781Z`
-Completed: `2026-08-25T01:35:29.041213Z`
+Started: `2026-08-25T01:36:35.121525Z`
+Completed: `2026-08-25T01:36:35.143755Z`
 
 Stdout:
 
@@ -162,8 +162,8 @@ Stderr:
 
 Command: `uv run ruff check .`
 
-Started: `2026-08-25T01:35:29.042390Z`
-Completed: `2026-08-25T01:35:29.067425Z`
+Started: `2026-08-25T01:36:35.145157Z`
+Completed: `2026-08-25T01:36:35.169699Z`
 
 Stdout:
 
@@ -182,8 +182,8 @@ Stderr:
 
 Command: `uv run pyright`
 
-Started: `2026-08-25T01:35:29.068434Z`
-Completed: `2026-08-25T01:35:31.644033Z`
+Started: `2026-08-25T01:36:35.171149Z`
+Completed: `2026-08-25T01:36:37.793384Z`
 
 Stdout:
 
@@ -202,8 +202,8 @@ Stderr:
 
 Command: `uv run pytest --cov=whyback --cov-branch --cov-report=json:artifacts/tests/coverage.json --junitxml=artifacts/tests/junit.xml`
 
-Started: `2026-08-25T01:35:31.645288Z`
-Completed: `2026-08-25T01:35:50.987451Z`
+Started: `2026-08-25T01:36:37.794838Z`
+Completed: `2026-08-25T01:36:57.122971Z`
 
 Stdout:
 
@@ -251,10 +251,10 @@ tests/unit/test_trend_category_basket.py ....                            [100%]
 ______________ coverage: platform darwin, python 3.12.14-final-0 _______________
 
 Coverage JSON written to file artifacts/tests/coverage.json
-Required test coverage of 85.0% reached. Total coverage: 86.86%
+Required test coverage of 85.0% reached. Total coverage: 86.89%
 =========================== short test summary info ============================
 SKIPPED [1] tests/live/test_openai_backend_live.py:15: OPENAI_API_KEY is absent; live Responses execution was not attempted.
-======================= 187 passed, 1 skipped in 19.03s ========================
+======================= 187 passed, 1 skipped in 19.01s ========================
 
 ```
 
@@ -268,13 +268,13 @@ Stderr:
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-25T01:35:50.992887Z`
-Completed: `2026-08-25T01:35:50.992887Z`
+Started: `2026-08-25T01:36:57.128551Z`
+Completed: `2026-08-25T01:36:57.128551Z`
 
 Stdout:
 
 ```text
-JUnit recorded 188 tests; branch-aware coverage is 86.86363636363636% across 826 branches (minimum 85.00%).
+JUnit recorded 188 tests; branch-aware coverage is 86.88636363636364% across 826 branches (minimum 85.00%).
 
 ```
 
@@ -288,8 +288,8 @@ Stderr:
 
 Command: `uv run python evals/run_evals.py artifacts/demo/evals/normalized_runs.json --json-output artifacts/tests/eval_report.json --markdown-output artifacts/tests/EVAL_REPORT.md`
 
-Started: `2026-08-25T01:35:50.993930Z`
-Completed: `2026-08-25T01:35:51.330801Z`
+Started: `2026-08-25T01:36:57.129660Z`
+Completed: `2026-08-25T01:36:57.473238Z`
 
 Stdout:
 
@@ -307,8 +307,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/demo --json-output artifacts/tests/artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-25T01:35:51.332074Z`
-Completed: `2026-08-25T01:35:51.993813Z`
+Started: `2026-08-25T01:36:57.474936Z`
+Completed: `2026-08-25T01:36:58.122501Z`
 
 Stdout:
 
@@ -326,8 +326,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official --json-output artifacts/tests/official_artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-25T01:35:51.995085Z`
-Completed: `2026-08-25T01:35:52.360847Z`
+Started: `2026-08-25T01:36:58.124161Z`
+Completed: `2026-08-25T01:36:58.485137Z`
 
 Stdout:
 
@@ -345,8 +345,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official-type-a --json-output artifacts/tests/official_type_a_artifact_verification.json`
 
-Started: `2026-08-25T01:35:52.362142Z`
-Completed: `2026-08-25T01:35:52.759440Z`
+Started: `2026-08-25T01:36:58.486672Z`
+Completed: `2026-08-25T01:36:58.880016Z`
 
 Stdout:
 
@@ -370,3 +370,4 @@ None.
 | --- | --- | ---: | --- |
 | `fc0fa366-baa1-4eff-9c56-960605dd237d` | `2026-08-25T01:30:51.640542Z` | fail | frozen_sync, ruff_format, ruff_lint, pyright, pytest, test_output_validation, deterministic_evals, artifact_verification, official_artifact_verification, official_type_a_artifact_verification |
 | `ae802628-c7ed-4717-9d83-7ecd55338ab1` | `2026-08-25T01:32:17.746590Z` | pass | none |
+| `f7e88cde-a8d6-4aa0-8ac5-d784f7e0daf1` | `2026-08-25T01:35:28.946983Z` | pass | none |

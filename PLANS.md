@@ -15,8 +15,8 @@ Status legend: **planned**, **implemented**, **verified**, **blocked**, or
 | 6 | Bounded investigation workflow | 3–5 | Provider protocol, scripted and Responses backends, strict one-tool turns, explicit state, duplicate/turn/tool/retry/timeout bounds, fault injection, orchestration tests | verified (21 focused state/backend/orchestration/fault tests) |
 | 7 | Evidence and governance | 6 | Immutable evidence ledger, catalog actions, confidence cap, ownership/failed-call/partial/reconciliation verifier checks, one repair attempt, unsupported-number rejection | verified (20 focused catalog/evidence/verifier tests) |
 | 8 | Audit, reports, demo, and evals | 6–7 | Append-only JSONL, static trace and customer HTML, JSON/Markdown output, deterministic synthetic demo/failure example/golden trace, scenario metrics and artifact verifier | verified (five synthetic reports, persistent-failure and partial-data controls, six passing scenario contracts, and strict artifact verification) |
-| 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.86% branch coverage, all required artifact and evaluation checks passed) |
-| 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified except final commit summary: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker |
+| 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.89% branch coverage, all required artifact and evaluation checks passed) |
+| 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker; actual Git history summarized |
 
 Each row is intended to become one coherent commit, with adjacent rows split or
 combined only when it improves reviewability. Every commit must remain usable
@@ -121,6 +121,6 @@ label.
 - [x] Frozen baseline CI implemented and complete local gate verified
 - [x] README, architecture/reliability/evaluation/data docs, six ADRs,
       productionization notes
-- [ ] Actual Git history summary (independent red-team findings are resolved)
+- [x] Actual Git history summary (independent red-team findings are resolved)
 - [x] Final quality gate passed and captured
-- [ ] Branch clean; all possible commits pushed without force
+- [x] Branch clean; all possible commits pushed without force
