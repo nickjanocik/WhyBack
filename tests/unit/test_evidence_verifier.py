@@ -895,6 +895,25 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
         ),
         ("The decline arose from reduced promotions.", False),
         ("The decline originated from reduced promotions.", False),
+        ("The household declined because promotions fell.", False),
+        ("The decline was owing to fewer visits.", False),
+        ("The decline was a consequence of reduced promotion availability.", False),
+        ("The decline followed from fewer visits.", False),
+        ("The decline can be traced to fewer visits.", False),
+        ("The category loss is behind the decline.", False),
+        ("The decline happened on account of fewer trips.", False),
+        ("The decline stemmed from fewer visits.", False),
+        (
+            "The data cannot establish whether the decline was a consequence "
+            "of reduced promotions.",
+            True,
+        ),
+        (
+            "It is unknown whether the decline was owing to reduced promotions.",
+            True,
+        ),
+        ("Reduced visits are associated with the observed decline.", True),
+        ("The movement coincided with lower recorded promotion availability.", True),
     ),
 )
 def test_causal_defense_distinguishes_denials_from_assertions(

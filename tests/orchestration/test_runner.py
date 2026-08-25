@@ -559,7 +559,7 @@ def test_invalid_tool_arguments_are_not_written_raw_to_the_trace(
 def test_causal_model_decision_prose_is_not_stored_or_traced(tmp_path: Path) -> None:
     trace_path = tmp_path / "trace.jsonl"
     unsafe_tool_decision = ToolDecision(
-        investigation_question="Promotions caused this customer to churn.",
+        investigation_question="The decline stemmed from fewer visits.",
         selected_tool=ToolName.CUSTOMER_TREND,
         arguments={"household_id": "1"},
         decision_summary="The customer was exposed to the offer.",
@@ -575,5 +575,5 @@ def test_causal_model_decision_prose_is_not_stored_or_traced(tmp_path: Path) -> 
     )
     assert history.decision_summary == "Choose one bounded, evidence-seeking next step."
     serialized_trace = trace_path.read_text(encoding="utf-8")
-    assert "caused" not in serialized_trace
+    assert "stemmed from" not in serialized_trace
     assert "was exposed" not in serialized_trace

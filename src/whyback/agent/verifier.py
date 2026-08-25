@@ -138,7 +138,8 @@ _QUANTITATIVE_WORD_CLAIM = re.compile(
     re.IGNORECASE,
 )
 _CAUSAL_CLAIM = re.compile(
-    r"\b(?:caus(?:e|ed|es|ing)|drove|driven\s+by|because\s+of|due\s+to|"
+    r"\b(?:caus(?:e|ed|es|ing)|drove|driven\s+by|because(?:\s+of)?|due\s+to|"
+    r"owing\s+to|on\s+account\s+of|"
     r"attribut(?:e|ed|es|ing)\s+to|explains?|explained\s+by|trigger(?:ed|s)?|"
     r"produc(?:e|ed|es|ing)|result(?:ed|s)?\s+(?:from|in)|resulting\s+from|"
     r"(?:led|leads?|leading)\s+to|ma(?:de|kes?)\s+(?:the\s+)?"
@@ -149,17 +150,23 @@ _CAUSAL_CLAIM = re.compile(
     r"disengagement)|induc(?:e|ed|es|ing)|account(?:ed|s|ing)?\s+for\s+"
     r"(?:(?:the\s+)?(?:customer|household)(?:'s)?\s+)?(?:the\s+)?"
     r"(?:decline|churn|disengagement)|"
-    r"(?:arose|originat(?:e|ed|es|ing))\s+from|"
-    r"as\s+(?:a\s+)?(?:consequence|result)\s+of|"
+    r"(?:arose|originat(?:e|ed|es|ing)|stems?|stemmed|stemming|"
+    r"follow(?:ed|s|ing)?)\s+from|"
+    r"(?:can|could|may|might)\s+be\s+traced\s+(?:back\s+)?to|"
+    r"traceable\s+to|"
+    r"(?:as\s+(?:a|the)?\s*|(?:is|are|was|were)\s+(?:a|the)\s+)"
+    r"(?:direct\s+)?(?:consequence|result)\s+of|"
+    r"(?:is|are|was|were)\s+(?:directly\s+)?behind\s+(?:the\s+)?"
+    r"(?:decline|churn|disengagement)|"
     r"(?:is|are|was|were)\s+(?:the\s+)?"
     r"reason(?:\s+(?:for|that|why))?|(?:is|are|was|were)\s+why|"
-    r"responsible\s+for|stems?\s+from|guarantee(?:d|s)?|ensures?|"
+    r"responsible\s+for|guarantee(?:d|s)?|ensures?|"
     r"(?:will|expected\s+to)\s+(?:boost|raise|grow|increase|improve|restore|retain|"
     r"reduce|prevent|decrease))\b",
     re.IGNORECASE,
 )
 _NEGATED_CAUSAL_PREFIX = re.compile(
-    r"(?:\bcannot|\bcan\s+not|\bnot(?!\s+only\b))(?:\s+\w+){0,4}\s*$",
+    r"(?:\bcannot|\bcan\s+not|\bnot(?!\s+only\b))(?:\s+\w+){0,8}\s*$",
     re.IGNORECASE,
 )
 _UNCERTAIN_CAUSAL_PREFIX = re.compile(
