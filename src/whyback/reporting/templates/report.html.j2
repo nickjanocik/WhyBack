@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack investigation report — household {{ report.household_id }}</title>
+  <style>
+    :root { color-scheme: light; --ink:#16211d; --muted:#607068; --line:#dce5df; --paper:#fbfdfb; --panel:#fff; --green:#185c45; --mint:#dff4e9; --amber:#8a5814; --amber-bg:#fff4dc; --red:#8f312b; --red-bg:#fdecea; --blue:#265d78; --blue-bg:#eaf5fa; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(145deg,#edf6f0 0,#fbfdfb 35rem); color:var(--ink); font:15px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1120px,calc(100% - 32px)); margin:32px auto 64px; }
+    header { padding:34px; color:white; border-radius:22px; background:linear-gradient(130deg,#123d31,#1f7255); box-shadow:0 18px 45px rgba(22,60,48,.18); }
+    .brand { font-size:13px; letter-spacing:.14em; text-transform:uppercase; opacity:.82; }
+    h1 { margin:.15em 0 0; font-size:clamp(30px,5vw,50px); line-height:1.05; }
+    header p { margin:10px 0 0; font-size:18px; opacity:.9; }
+    .meta,.grid,.metric-grid { display:grid; gap:14px; }
+    .meta { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; }
+    .meta div { padding:12px 14px; border:1px solid rgba(255,255,255,.22); border-radius:12px; background:rgba(255,255,255,.08); overflow-wrap:anywhere; }
+    .meta span,.eyebrow { display:block; color:inherit; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.72; }
+    section { margin-top:20px; padding:26px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.94); box-shadow:0 8px 30px rgba(29,56,45,.06); }
+    h2 { margin:0 0 18px; font-size:22px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:8px 0; }
+    .metric-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .metric { padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .metric strong { display:block; margin-top:4px; font-size:20px; }
+    .metric small { color:var(--muted); }
+    .score { background:var(--mint); border-color:#b9dfcc; }
+    .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .step,.evidence,.driver,.warning,.action { padding:17px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .step + .step,.driver + .driver,.warning + .warning { margin-top:11px; }
+    .step-head,.evidence-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .badge { display:inline-block; padding:3px 9px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+    .badge.partial,.badge.retryable_error { color:var(--amber); background:var(--amber-bg); }
+    .badge.missing_data,.badge.invalid_request,.badge.fatal_error { color:var(--red); background:var(--red-bg); }
+    .badge.context { color:var(--blue); background:var(--blue-bg); }
+    .details { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:11px; color:var(--muted); font-size:13px; }
+    code { padding:2px 6px; border-radius:6px; background:#edf2ef; color:#244a3d; overflow-wrap:anywhere; }
+    dl { display:grid; grid-template-columns:max-content 1fr; gap:5px 14px; margin:12px 0 0; }
+    dt { color:var(--muted); } dd { margin:0; font-weight:650; }
+    ul { padding-left:20px; } li + li { margin-top:7px; }
+    .callout { padding:18px; border-left:5px solid var(--green); border-radius:10px; background:var(--mint); }
+    .warning { border-color:#edcf98; background:var(--amber-bg); }
+    .human { color:white; background:linear-gradient(130deg,#172d26,#274a3d); border:0; }
+    .human h2,.human p { color:white; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:11px; letter-spacing:.07em; text-transform:uppercase; }
+    .empty { color:var(--muted); font-style:italic; }
+    footer { padding:22px 6px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:760px) { .meta,.metric-grid,.grid.two { grid-template-columns:1fr; } header,section { padding:20px; } .step-head,.evidence-head { display:block; } .badge { margin-top:8px; } table { display:block; overflow-x:auto; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } header,section { box-shadow:none; break-inside:avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack Investigator</div>
+    <h1>WhyBack</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="meta">
+      <div><span>Household</span>{{ report.household_id }}</div>
+      <div><span>Run</span>{{ report.run_id }}</div>
+      <div><span>Status</span>{{ report.run_status.value | humanize }}</div>
+    </div>
+  </header>
+
+  <section id="decline-summary">
+    <span class="eyebrow">Detection</span><h2>Decline summary</h2>
+    <p>Baseline weeks <strong>{{ report.decline.baseline_start_week }}–{{ report.decline.baseline_end_week }}</strong> compared with recent weeks <strong>{{ report.decline.recent_start_week }}–{{ report.decline.recent_end_week }}</strong>.</p>
+    <div class="metric-grid">
+      <div class="metric"><small>Retailer sales value</small><strong>{{ report.decline.baseline_retailer_sales_value | money }} → {{ report.decline.recent_retailer_sales_value | money }}</strong><small>{{ report.decline.sales_drop | percent }} recorded drop</small></div>
+      <div class="metric"><small>Distinct baskets</small><strong>{{ report.decline.baseline_distinct_baskets | number }} → {{ report.decline.recent_distinct_baskets | number }}</strong><small>{{ report.decline.trip_drop | percent }} recorded drop</small></div>
+      <div class="metric"><small>Active weeks</small><strong>{{ report.decline.baseline_active_weeks | number }} → {{ report.decline.recent_active_weeks | number }}</strong><small>{{ report.decline.active_week_drop | percent }} recorded drop</small></div>
+      <div class="metric score"><small>Decline score</small><strong>{{ report.decline.decline_score | number }}</strong><small>Weighted heuristic, not a probability</small></div>
+    </div>
+    <div class="details"><span>Eligible: <strong>{{ "yes" if report.decline.eligible else "no" }}</strong></span><span>Flagged: <strong>{{ "yes" if report.decline.flagged else "no" }}</strong></span></div>
+  </section>
+
+  <section id="investigation-path">
+    <span class="eyebrow">Bounded analysis</span><h2>Investigation path</h2>
+    {% if report.investigation_path %}{% for step in report.investigation_path %}
+    <article class="step">
+      <div class="step-head"><div><h3>{{ step.decision_number }}. {{ step.tool_label }}</h3><p>{{ step.investigation_question }}</p></div><span class="badge {{ step.final_status.value }}">{{ step.final_status.value | humanize }}</span></div>
+      <div class="details"><span>Attempts {{ step.attempt_count }}</span><span>Retries {{ step.retry_count }}</span><span>Recorded latency {{ step.total_latency_ms | number }} ms</span>{% if step.evidence_ids %}<span>Evidence {% for evidence_id in step.evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</span>{% endif %}</div>
+    </article>
+    {% endfor %}{% else %}<p class="empty">No analytical tool step was recorded.</p>{% endif %}
+  </section>
+
+  <section id="likely-drivers">
+    <span class="eyebrow">Verified interpretation</span><h2>Likely drivers</h2>
+    {% if report.likely_drivers %}{% for driver in report.likely_drivers %}
+    <article class="driver"><p>{{ driver.summary }}</p><div class="details"><span>Grounded by {% for evidence_id in driver.supporting_evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</span></div></article>
+    {% endfor %}{% else %}<p class="empty">No likely driver passed deterministic verification.</p>{% endif %}
+  </section>
+
+  <section id="supporting-evidence">
+    <span class="eyebrow">Immutable ledger</span><h2>Supporting evidence</h2>
+    {% if report.supporting_evidence %}<div class="grid two">{% for item in report.supporting_evidence %}
+    <article class="evidence">
+      <div class="evidence-head"><div><code>{{ item.evidence_id }}</code><h3>{{ item.metric | humanize }}</h3></div><span class="badge {{ item.source_status.value if item.source_status else 'context' }}">{{ item.source_status.value | humanize if item.source_status else "Source status unavailable" }}</span></div>
+      <dl>{% if item.baseline_value is not none %}<dt>Baseline</dt><dd>{{ item.baseline_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.recent_value is not none %}<dt>Recent</dt><dd>{{ item.recent_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.value is not none %}<dt>Value</dt><dd>{{ item.value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.change is not none %}<dt>Change</dt><dd>{{ item.change | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}</dl>
+      <div class="details"><span>Tool <code>{{ item.source_tool.value }}</code></span><span>Call <code>{{ item.source_tool_call_id }}</code></span>{% for key,value in item.dimensions.items() %}<span>{{ key | humanize }} <code>{{ value }}</code></span>{% endfor %}</div>
+      {% if item.limitations %}<ul>{% for limitation in item.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul>{% endif %}
+    </article>
+    {% endfor %}</div>{% else %}<p class="empty">No supporting evidence was accepted for a verified conclusion.</p>{% endif %}
+  </section>
+
+  <section id="counterevidence-alternatives">
+    <span class="eyebrow">Challenge the hypothesis</span><h2>Counterevidence and alternative explanations</h2>
+    {% if report.counterevidence %}<ul>{% for item in report.counterevidence %}<li><code>{{ item.evidence_id }}</code> — {{ item.metric | humanize }}; source status {{ item.source_status.value | humanize if item.source_status else "unavailable" }}.{% if item.baseline_value is not none %} Baseline {{ item.baseline_value | number }}.{% endif %}{% if item.recent_value is not none %} Recent {{ item.recent_value | number }}.{% endif %}{% if item.value is not none %} Value {{ item.value | number }}.{% endif %}{% if item.change is not none %} Change {{ item.change | number }}.{% endif %}{% if item.limitations %} Limitations: {{ item.limitations | join('; ') }}.{% endif %}</li>{% endfor %}</ul>{% else %}<p class="empty">No evidence record was designated as counterevidence.</p>{% endif %}
+    {% if report.alternative_explanations %}<ul>{% for item in report.alternative_explanations %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">No verified alternative explanation was recorded.</p>{% endif %}
+  </section>
+
+  <section id="next-best-action">
+    <span class="eyebrow">Catalog governed</span><h2>Next Best Action</h2>
+    {% if report.action %}<div class="action callout"><h3>{{ report.action.action_id.value }}</h3><p>{{ report.action.description }}</p><p>{{ report.action.rationale }}</p><div class="details"><span>Resolved confidence <strong>{{ report.action.resolved_confidence.value | humanize }}</strong></span>{% if report.action.confidence_cap_applied %}<span>Deterministic confidence cap applied</span>{% endif %}</div></div>{% else %}<p class="empty">No Next Best Action passed deterministic verification. No customer action should be taken from this report.</p>{% endif %}
+  </section>
+
+  <section id="measurement-plan">
+    <span class="eyebrow">Learn safely</span><h2>Measurement plan</h2>
+    {% if report.action %}<div class="grid two"><div class="evidence"><h3>Success metric</h3><p>{{ report.action.recommended_success_metric }}</p></div><div class="evidence"><h3>Suggested experiment</h3><p>{{ report.action.suggested_experiment }}</p></div></div>{% else %}<p class="empty">No measurement plan is available because no action passed verification.</p>{% endif %}
+  </section>
+
+  <section id="limitations">
+    <span class="eyebrow">Use with care</span><h2>Limitations</h2>
+    {% if report.limitations %}<ul>{% for item in report.limitations %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">No additional limitation was recorded.</p>{% endif %}
+  </section>
+
+  <section id="failures-partial-warnings">
+    <span class="eyebrow">Reliability record</span><h2>Failures and partial-result warnings</h2>
+    {% if report.tool_warnings %}{% for warning in report.tool_warnings %}<article class="warning"><h3>{{ warning.tool_name.value | humanize }} — {{ warning.final_status.value | humanize }}</h3><div class="details"><span>Attempts {{ warning.attempt_count }}</span><span>Retries {{ warning.retry_count }}</span><span>Recorded latency {{ warning.total_latency_ms | number }} ms</span></div>{% if warning.limitations %}<ul>{% for limitation in warning.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul>{% endif %}</article>{% endfor %}{% else %}<p class="empty">No failed, partial, or retried analytical result was recorded.</p>{% endif %}
+    {% if report.verification_issues %}<ul>{% for issue in report.verification_issues %}<li>Verification issue: {{ issue }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+
+  <section id="human-review" class="human">
+    <span class="eyebrow">Required control</span><h2>Human-review requirement</h2>
+    <p><strong>Human review is required before any action.</strong> WhyBack recommends catalog-governed actions for review; it does not contact customers, mutate a CRM, or execute outreach.</p>
+  </section>
+
+  <section id="evidence-ledger">
+    <span class="eyebrow">Audit index</span><h2>Evidence ledger</h2>
+    {% if report.evidence_ledger %}<table><thead><tr><th>Evidence ID</th><th>Role</th><th>Tool</th><th>Status</th><th>Metric</th><th>Limitations</th></tr></thead><tbody>{% for item in report.evidence_ledger %}<tr><td><code>{{ item.evidence_id }}</code></td><td>{{ item.role | humanize }}</td><td><code>{{ item.source_tool.value }}</code></td><td>{{ item.source_status.value | humanize if item.source_status else "Unavailable" }}</td><td>{{ item.metric | humanize }}</td><td>{{ item.limitations | join('; ') if item.limitations else "None recorded" }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">The immutable evidence ledger is empty.</p>{% endif %}
+  </section>
+
+  <footer>WhyBack · Find the why. Choose the way back. · Deterministic evidence report</footer>
+</main>
+</body>
+</html>

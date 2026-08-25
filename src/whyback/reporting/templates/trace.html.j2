@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack trace viewer{% if trace.household_id %} — household {{ trace.household_id }}{% endif %}</title>
+  <style>
+    :root { color-scheme:light; --ink:#17221e; --muted:#68766f; --paper:#f7faf8; --panel:#fff; --line:#dbe5df; --green:#176046; --mint:#e1f4ea; --blue:#285f79; --blue-bg:#eaf5fa; --amber:#8a5814; --amber-bg:#fff3db; --red:#93362f; --red-bg:#fdecea; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1040px,calc(100% - 30px)); margin:28px auto 60px; }
+    header { padding:28px; border-radius:18px; color:white; background:linear-gradient(130deg,#173d31,#236b51); }
+    h1 { margin:4px 0 0; font-size:34px; } header p { margin:5px 0 0; opacity:.85; }
+    .brand { font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; opacity:.75; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:18px; }
+    .summary div { padding:11px; border:1px solid rgba(255,255,255,.2); border-radius:10px; background:rgba(255,255,255,.08); }
+    .summary span { display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.7; }
+    .identity { margin-top:10px; overflow-wrap:anywhere; font-size:12px; opacity:.8; }
+    .timeline { position:relative; margin-top:24px; padding-left:28px; }
+    .timeline::before { content:""; position:absolute; left:8px; top:9px; bottom:9px; width:2px; background:var(--line); }
+    article { position:relative; margin:0 0 14px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 6px 20px rgba(35,62,51,.05); }
+    article::before { content:""; position:absolute; left:-26px; top:23px; width:11px; height:11px; border:3px solid var(--paper); border-radius:50%; background:var(--green); }
+    article.tool::before { background:var(--blue); } article.retry::before { background:var(--amber); } article.verifier::before { background:#6f4b92; } article.evidence::before { background:#3a7b35; }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h2 { margin:0; font-size:17px; } time { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .code { margin-top:2px; color:var(--muted); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .chip { padding:4px 8px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:700; }
+    .chip.tool { color:var(--blue); background:var(--blue-bg); } .chip.retry { color:var(--amber); background:var(--amber-bg); } .chip.failed,.chip.rejected { color:var(--red); background:var(--red-bg); }
+    code { padding:2px 5px; border-radius:5px; background:#eef3f0; color:#23503f; overflow-wrap:anywhere; }
+    details { margin-top:13px; border-top:1px solid var(--line); padding-top:10px; } summary { color:var(--muted); cursor:pointer; font-weight:650; }
+    pre { max-height:360px; margin:10px 0 0; padding:12px; overflow:auto; border-radius:9px; background:#18221e; color:#dff2e8; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .empty { margin-top:24px; padding:30px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; }
+    footer { padding:20px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:700px) { .summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .top { display:block; } time { display:block; margin-top:4px; } header { padding:20px; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } article { box-shadow:none; break-inside:avoid; } details { display:none; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack audit</div>
+    <h1>Trace viewer</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="summary">
+      <div><span>Events</span>{{ trace.event_count }}</div>
+      <div><span>Decisions</span>{{ trace.decision_count }}</div>
+      <div><span>Tool attempts</span>{{ trace.tool_attempt_count }}</div>
+      <div><span>Retries</span>{{ trace.retry_count }}</div>
+    </div>
+    <div class="identity">Run {{ trace.run_id or "not recorded" }} · Household {{ trace.household_id or "not recorded" }} · Verifier {{ trace.verifier_status }} · Final action {{ trace.final_action or "not recorded" }}</div>
+  </header>
+
+  {% if trace.events %}<div class="timeline">{% for item in trace.events %}
+    <article class="{{ item.category }}">
+      <div class="top"><div><h2>{{ item.sequence }}. {{ item.title }}</h2><div class="code">{{ item.event }}</div></div><time>{{ item.timestamp }}</time></div>
+      <div class="chips">
+        <span class="chip">{{ item.category }}</span>
+        {% if item.tool_name %}<span class="chip tool">tool {{ item.tool_name }}</span>{% endif %}
+        {% if item.status %}<span class="chip {{ item.status }}">status {{ item.status }}</span>{% endif %}
+        {% if item.latency_ms is not none %}<span class="chip">latency {{ item.latency_ms }} ms</span>{% endif %}
+        {% if item.retry_label %}<span class="chip retry">{{ item.retry_label }}</span>{% endif %}
+        {% if item.verifier_label %}<span class="chip {{ item.verifier_label }}">verifier {{ item.verifier_label }}</span>{% endif %}
+        {% if item.final_action %}<span class="chip">final action {{ item.final_action }}</span>{% endif %}
+      </div>
+      {% if item.evidence_ids %}<p>Evidence {% for evidence_id in item.evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</p>{% endif %}
+      <details><summary>Recorded event details</summary><pre>{{ item.details | pretty_json }}</pre></details>
+    </article>
+  {% endfor %}</div>{% else %}<div class="empty">This valid trace contains no events.</div>{% endif %}
+  <footer>Static, self-contained viewer · chronological append-only events · no network connection required</footer>
+</main>
+</body>
+</html>

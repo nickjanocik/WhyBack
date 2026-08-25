@@ -1,0 +1,143 @@
+# WhyBack investigation report
+
+*Find the why. Choose the way back.*
+
+**Investigator:** {{ report.investigator_name | md }}
+**Household:** `{{ report.household_id | md }}`
+**Run:** `{{ report.run_id | md }}`
+**Status:** {{ report.run_status.value | humanize }}
+
+## Decline summary
+
+The deterministic detector compared weeks **{{ report.decline.baseline_start_week }}–{{ report.decline.baseline_end_week }}** with weeks **{{ report.decline.recent_start_week }}–{{ report.decline.recent_end_week }}**.
+
+| Measure | Baseline | Recent | Recorded drop |
+|---|---:|---:|---:|
+| Retailer sales value | {{ report.decline.baseline_retailer_sales_value | money }} | {{ report.decline.recent_retailer_sales_value | money }} | {{ report.decline.sales_drop | percent }} |
+| Distinct baskets | {{ report.decline.baseline_distinct_baskets | number }} | {{ report.decline.recent_distinct_baskets | number }} | {{ report.decline.trip_drop | percent }} |
+| Active weeks | {{ report.decline.baseline_active_weeks | number }} | {{ report.decline.recent_active_weeks | number }} | {{ report.decline.active_week_drop | percent }} |
+
+- **Decline score:** {{ report.decline.decline_score | number }} (weighted heuristic, not a probability)
+- **Eligible:** {{ "yes" if report.decline.eligible else "no" }}
+- **Flagged:** {{ "yes" if report.decline.flagged else "no" }}
+
+## Investigation path
+
+{% if report.investigation_path %}
+{% for step in report.investigation_path %}
+{{ loop.index }}. **{{ step.tool_label | md }}** — {{ step.final_status.value | humanize }}
+   {{ step.investigation_question | md }}
+   Attempts: {{ step.attempt_count }} · Retries: {{ step.retry_count }} · Recorded latency: {{ step.total_latency_ms | number }} ms{% if step.evidence_ids %} · Evidence: {% for evidence_id in step.evidence_ids %}`{{ evidence_id | md }}`{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+{% endfor %}
+{% else %}
+No analytical tool step was recorded.
+{% endif %}
+
+## Likely drivers
+
+{% if report.likely_drivers %}
+{% for driver in report.likely_drivers %}
+- {{ driver.summary | md }}
+  Grounded by {% for evidence_id in driver.supporting_evidence_ids %}`{{ evidence_id | md }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{% endfor %}
+{% else %}
+No likely driver passed deterministic verification.
+{% endif %}
+
+## Supporting evidence
+
+{% if report.supporting_evidence %}
+{% for item in report.supporting_evidence %}
+### `{{ item.evidence_id | md }}` — {{ item.metric | humanize }}
+
+- Source: `{{ item.source_tool.value | md }}` / `{{ item.source_tool_call_id | md }}`
+- Source status: {{ item.source_status.value | humanize if item.source_status else "Unavailable" }}
+{% if item.dimensions %}- Dimensions: {% for key, value in item.dimensions.items() %}{{ key | humanize }} = `{{ value | md }}`{% if not loop.last %}; {% endif %}{% endfor %}
+{% endif %}{% if item.baseline_value is not none %}- Baseline: {{ item.baseline_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
+{% endif %}{% if item.recent_value is not none %}- Recent: {{ item.recent_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
+{% endif %}{% if item.value is not none %}- Value: {{ item.value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
+{% endif %}{% if item.change is not none %}- Change: {{ item.change | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
+{% endif %}{% if item.limitations %}- Limitations: {{ item.limitations | map('md') | join('; ') }}
+{% endif %}
+{% endfor %}
+{% else %}
+No supporting evidence was accepted for a verified conclusion.
+{% endif %}
+
+## Counterevidence and alternative explanations
+
+{% if report.counterevidence %}
+{% for item in report.counterevidence %}
+- `{{ item.evidence_id | md }}` — **{{ item.metric | humanize }}**; source status {{ item.source_status.value | humanize if item.source_status else "Unavailable" }}.{% if item.baseline_value is not none %} Baseline {{ item.baseline_value | number }}.{% endif %}{% if item.recent_value is not none %} Recent {{ item.recent_value | number }}.{% endif %}{% if item.value is not none %} Value {{ item.value | number }}.{% endif %}{% if item.change is not none %} Change {{ item.change | number }}.{% endif %}{% if item.limitations %} Limitations: {{ item.limitations | map('md') | join('; ') }}.{% endif %}
+{% endfor %}
+{% else %}
+- No evidence record was designated as counterevidence.
+{% endif %}
+{% if report.alternative_explanations %}
+{% for item in report.alternative_explanations %}
+- Alternative: {{ item | md }}
+{% endfor %}
+{% else %}
+- No verified alternative explanation was recorded.
+{% endif %}
+
+## Next Best Action
+
+{% if report.action %}
+**{{ report.action.action_id.value | md }}** — {{ report.action.description | md }}
+
+{{ report.action.rationale | md }}
+
+Resolved confidence: **{{ report.action.resolved_confidence.value | humanize }}**{% if report.action.confidence_cap_applied %} (deterministic cap applied){% endif %}.
+{% else %}
+No Next Best Action passed deterministic verification. No customer action should be taken from this report.
+{% endif %}
+
+## Measurement plan
+
+{% if report.action %}
+- **Success metric:** {{ report.action.recommended_success_metric | md }}
+- **Suggested experiment:** {{ report.action.suggested_experiment | md }}
+{% else %}
+No measurement plan is available because no action passed verification.
+{% endif %}
+
+## Limitations
+
+{% if report.limitations %}
+{% for item in report.limitations %}
+- {{ item | md }}
+{% endfor %}
+{% else %}
+- No additional limitation was recorded.
+{% endif %}
+
+## Failures and partial-result warnings
+
+{% if report.tool_warnings %}
+{% for warning in report.tool_warnings %}
+- **{{ warning.tool_name.value | humanize }} — {{ warning.final_status.value | humanize }}.** Attempts: {{ warning.attempt_count }}; retries: {{ warning.retry_count }}; recorded latency: {{ warning.total_latency_ms | number }} ms.{% if warning.limitations %} {{ warning.limitations | map('md') | join('; ') }}{% endif %}
+{% endfor %}
+{% else %}
+- No failed, partial, or retried analytical result was recorded.
+{% endif %}
+{% if report.verification_issues %}
+{% for issue in report.verification_issues %}
+- Verification issue: {{ issue | md }}
+{% endfor %}
+{% endif %}
+
+## Human-review requirement
+
+**Human review is required before any action.** WhyBack recommends catalog-governed actions for review; it does not contact customers, mutate a CRM, or execute outreach.
+
+## Evidence ledger
+
+{% if report.evidence_ledger %}
+| Evidence ID | Role | Tool | Status | Metric | Limitations |
+|---|---|---|---|---|---|
+{% for item in report.evidence_ledger %}| `{{ item.evidence_id | md }}` | {{ item.role | humanize }} | `{{ item.source_tool.value | md }}` | {{ item.source_status.value | humanize if item.source_status else "Unavailable" }} | {{ item.metric | humanize }} | {{ item.limitations | map('md') | join('; ') if item.limitations else "None recorded" }} |
+{% endfor %}
+{% else %}
+The immutable evidence ledger is empty.
+{% endif %}
