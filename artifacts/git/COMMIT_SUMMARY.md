@@ -6,10 +6,10 @@ below are taken from the corresponding commit messages; they are not
 retroactive claims that every historical check was rerun at every later
 commit.
 
-The implementation history through `4e0da21` was pushed to
+The implementation history through `211db13` was pushed to
 `git@github.com:nickjanocik/WhyBack.git` without a force-push. The summary
-itself belongs to the final reviewer-artifact commit, so it cannot include its
-own hash.
+itself belongs to the final bookkeeping commit, so it cannot include its own
+hash.
 
 | Commit | Plain-English subject | What the milestone established | Checks recorded by that commit | Remote state |
 |---|---|---|---|---|
@@ -29,32 +29,46 @@ own hash.
 | `dac5232` | Publish the final audit and Git history | Clean-tree gate evidence, milestone history, and completed OpenAI-era reviewer checklist | Complete gate, 187 passed and 1 credential-gated skip, 86.89% coverage, all three artifact profiles verified | pushed |
 | `a8b9a32` | Replace the live provider with Gemini | Stateless Gemini Interactions adapter, Gemini configuration/CLI/provenance, legacy artifact compatibility, and a labeled live synthetic request-boundary failure audit | Ruff, Pyright, 199 passed and 1 credential-gated skip, live analytical-call contract, live synthetic artifact verification | pushed |
 | `4e0da21` | Harden the Gemini migration after audit | Compatible Interactions SDK floor, explicit function types, Gemini credential redaction/presence hardening, credential-independent historical verification, and corrected provider documentation | Ruff, Pyright, 206 passed and 1 credential-gated skip, 24 tests at the `google-genai==2.3.0` floor | pushed |
+| `eed35ee` | Publish the final Gemini migration audit | Final provider-migration audit, clean-tree gate evidence, and package compatibility record | Complete gate, 206 passed and 1 credential-gated skip, 87.18% branch-aware coverage, four artifact profiles verified | pushed |
+| `a30bac7` | Add interactive WhyBack investigator dashboard | Local React reviewer workspace and localhost-only artifact bridge without moving analytical authority out of Python | Dashboard check, localhost/security smoke, and focused accessibility audit | pushed |
+| `462f50c` | Change dashboard development port to 5163 | Consistent dashboard port across Vite, bridge validation, tests, and docs | Dashboard check | pushed |
+| `9c1df86` | Document the dataset population and analytical limits | Authoritative population, intended-use, bias, observability, confounding, and temporal-boundary documentation | Staged diff check | pushed |
+| `2c38b5b` | Add population-relative decline context | Target-excluded eligible-population, behavioral-peer, and protected category distributions with centralized context classification | Ruff, Pyright, 13 focused tests | pushed |
+| `d2b4359` | Enforce claim strength and causal guardrails | Typed claim ceilings, per-driver counterevidence, context-aware confidence, and causal/numerical prose rejection | Ruff, Pyright, 103 focused tests | pushed |
+| `934484f` | Update reports, evaluations, and methodology checks | Structured methodology reports, exact trace reconstruction, 12 deterministic scenarios, and current documentation | Ruff, Pyright, 266 passed and 1 credential-gated skip | pushed |
+| `4b2f89a` | Harden causal wording defenses | Expanded semantic causal assertions while preserving explicit non-causal denials | Ruff, Pyright, 100 focused tests | pushed |
+| `ca54c81` | Close confidence and counterevidence trust gaps | Material-context citation requirements and independently recomputed confidence at runtime, report, and artifact boundaries | Ruff, Pyright, 286 passed and 1 credential-gated skip | pushed |
+| `db6dbb0` | Extend causal language defenses | Additional idiomatic causal assertions blocked in final and public trace prose | Ruff, 117 focused tests | pushed |
+| `bf7594e` | Scope causal denials to their clauses | Clause-aware negation plus pronoun and contribution attack coverage | Ruff, 124 focused tests | pushed |
+| `d87a6cd` | Bind public artifacts to verified trace state | Exact report limitation/verifier-issue reconstruction, unsafe trace-prose checks, coordinated-tamper defenses, and migrated historical artifact | Ruff, 158 focused tests, four artifact profiles verified | pushed |
+| `bac3b4e` | Require grounded report evidence partitions | Standalone report schema now requires grounded drivers, exact evidence partitions, and relevant counterevidence | Ruff, 45 focused tests | pushed |
+| `211db13` | Publish verified methodology artifacts | Regenerated synthetic, evaluation, official Type A, and machine quality records for the settled methodology implementation | Complete gate, 309 passed and 1 credential-gated skip, 87.14% branch-aware coverage, four artifact profiles verified | pushed |
 
 ## Final verification snapshot
 
-The final Gemini migration quality gate started from a clean, pushed `4e0da21` tree
-and completed with all 12 stages passing:
+The final methodology quality gate ran from settled source commit `bac3b4e` as
+invocation `bae4b901-5a31-4b17-bc60-897a368b93b3` and completed all 12 stages:
 
-- Ruff formatting and linting passed.
-- Pyright reported no errors.
-- Pytest recorded 207 tests: 206 passed and the live Gemini test was skipped
-  because `GEMINI_API_KEY` was deliberately absent from the credential-free
-  gate.
-- Branch-aware overall coverage was 87.18%, above the required 85% threshold.
-- Deterministic evaluations passed their scenario contracts.
-- Demo, live Gemini synthetic failure, historical official no-key, and
-  official Type A artifacts passed strict verification.
-- The wheel and source distribution rebuilt successfully; the wheel contains
-  `GeminiFunctionCallingBackend` and requires `google-genai>=2.3.0,<3`, with no
-  OpenAI backend module or package dependency.
-- The adapter and foundation tests also passed in an isolated environment at
-  the declared `google-genai==2.3.0` floor (24 passed).
+- Frozen dependency sync, Ruff formatting/linting, and Pyright passed.
+- Pytest recorded 310 tests: 309 passed and the live Gemini test was skipped
+  because `GEMINI_API_KEY` was deliberately absent.
+- Branch-aware coverage was 87.14386211748153%: 920 of 1,206 branches and
+  4,035 of 4,480 lines were covered, above the required 85% threshold.
+- All 12 deterministic methodology scenario contracts passed, with no
+  unsupported evidence citations across 26 evaluated citations.
+- Demo, historical live Gemini bounded-failure, historical official no-key,
+  and official Type A artifacts passed strict verification.
+- The independent final red-team found no remaining high-severity issue; its
+  causal-language, trace-prose, coordinated-tamper, and standalone-report
+  findings were fixed and regression-tested before this gate.
+- No live Gemini call ran during the gate, and official customer-behavior data
+  was not transmitted to Gemini.
 
 The machine record is
 [`artifacts/tests/test_audit.json`](../tests/test_audit.json), with a readable
 companion at [`artifacts/tests/TEST_AUDIT.md`](../tests/TEST_AUDIT.md). It
-retains preliminary invocations as well as the final successful clean-tree
-run, including an honestly recorded sandbox dependency-resolution failure.
+retains preliminary invocations as well as the final successful run, including
+historical failures and skip reasons rather than rewriting them as successes.
 
 ## Publication notes
 

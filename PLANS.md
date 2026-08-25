@@ -22,7 +22,7 @@ that time; they are not current live-provider instructions.
 | 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.89% branch coverage, all required artifact and evaluation checks passed) |
 | 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker; actual Git history summarized |
 | 11 | Gemini live-provider migration | 6–10 | Replace the active provider with Gemini Interactions function calling; use `GEMINI_API_KEY`, backend `gemini`, default model `gemini-3.7-flash`, and `RETENTION_THINKING_LEVEL`; preserve legacy artifact reads; update tests and current docs | verified: clean-tree gate passed with 199 tests passed, one expected live-key skip, 87.17% branch-aware overall coverage, and all required artifact checks; live analytical-call contract passed |
-| 12 | Population context and claim boundaries | 3–11 | Document the represented population and analytical limits; extend the existing peer and category tools with household-level contemporaneous context; type and verify claim strength; make reports and confidence context-aware; add deterministic scenarios and current artifacts | planned; baseline audit complete before implementation |
+| 12 | Population context and claim boundaries | 3–11 | Document the represented population and analytical limits; extend the existing peer and category tools with household-level contemporaneous context; type and verify claim strength; make reports and confidence context-aware; add deterministic scenarios and current artifacts | verified: implementation, adversarial tests, 12 scenario contracts, regenerated synthetic and official Type A controls, strict artifact verification, and the complete credential-free gate passed |
 
 Each row is intended to become one coherent commit, with adjacent rows split or
 combined only when it improves reviewability. Every commit must remain usable
@@ -34,6 +34,7 @@ The pre-change audit ran from clean commit `eed35ee` on
 `codex/whyback-build`. The complete documented gate passed all 12 stages: 206
 tests passed, one live-key test was skipped because `GEMINI_API_KEY` was absent,
 and branch-aware overall coverage was 87.18% (633 of 846 branches covered).
+The baseline gate invocation was `f8211cb7-5144-4d6f-8b72-7364dbb01ac9`.
 The audit inspected the six tools, agent loop, evidence ledger, verifier,
 confidence policy, report models and templates, evaluation suite, an official
 customer report, and its execution trace before methodology changes began.
@@ -52,6 +53,48 @@ the single report pipeline. Population calculations remain deterministic and
 are added to `peer_comparison`; reliable context for selected loss categories
 is added to `category_decomposition`. The project uses the term **broad
 contemporaneous context**, not proven seasonality.
+
+## Milestone 12 verification record
+
+The completed upgrade preserves all six analytical tools and the bounded
+orchestrator. It adds deterministic, target-excluded household and category
+comparison evidence; centralized `CUSTOMER_SPECIFIC`, `MIXED`,
+`BROAD_CONTEXT`, and `INSUFFICIENT_CONTEXT` rules; descriptive and
+associational claim ceilings; material counterevidence accounting; exact
+confidence resolution; causal-language defense in depth; and structured
+observed, unobserved, and causal boundaries in every report.
+
+The final credential-free gate ran after every material red-team fix from
+source commit `bac3b4e` as invocation
+`bae4b901-5a31-4b17-bc60-897a368b93b3`; all 12 stages passed. Pytest recorded
+309 passes and one expected live-key skip, with 87.14% branch-aware coverage
+(920 of 1,206 branches). The record is in
+`artifacts/tests/test_audit.json`. Deterministic evaluations cover 12 scenario
+contracts, including broad and customer-specific population and category
+movement, insufficient cohorts, and a causal-language attack.
+The synthetic demo, historical bounded Gemini failure, historical official
+no-key record, and official Type A scripted control are verified separately.
+No completed live Gemini investigation is claimed, and official customer data
+was not transmitted to Gemini.
+
+### Milestone 12 completion checklist
+
+- [x] Existing architecture audited and reused without adding an analytical tool
+- [x] Population, intended use, observability biases, controls, confounding, and
+      one-year limits documented in `docs/data-semantics.md`
+- [x] Target-excluded eligible-population, behavioral-peer, and protected
+      category comparison cohorts implemented deterministically
+- [x] Broad contemporaneous context affects confidence without being called
+      proven seasonality or a specific cause
+- [x] Claim types, evidence support ceilings, counterevidence, and deterministic
+      confidence adjustments verified at runtime and artifact boundaries
+- [x] Reports render population context, claim strength, unobserved factors,
+      causal limits, and a human-reviewed measurement plan
+- [x] Unit, property, orchestration, reporting, artifact-tamper, and deterministic
+      evaluation regressions added
+- [x] Reviewer artifacts regenerated and all four artifact profiles verified
+- [x] Live Gemini execution skipped in the final gate because no environment
+      credential was present; no live or official-data success was fabricated
 
 ## Detailed implementation sequence
 
