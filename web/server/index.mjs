@@ -77,11 +77,11 @@ export function mutationHeaderError(headers) {
   const origin = headers.origin ? String(headers.origin) : null;
   const allowedOrigins = new Set([
     `http://${host}:${port}`,
-    `http://${host}:5173`,
+    `http://${host}:5163`,
     "http://localhost:4173",
-    "http://localhost:5173",
+    "http://localhost:5163",
     "http://127.0.0.1:4173",
-    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5163",
   ]);
   return origin && !allowedOrigins.has(origin)
     ? "Cross-origin requests are not allowed."

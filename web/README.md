@@ -17,7 +17,7 @@ npm ci
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173>. The development runner starts both Vite and the
+Open <http://127.0.0.1:5163>. The development runner starts both Vite and the
 artifact bridge. Stop both with `Ctrl-C`.
 
 ## Run the production build locally

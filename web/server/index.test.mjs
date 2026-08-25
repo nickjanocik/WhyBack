@@ -35,7 +35,7 @@ test("rejects non-JSON and cross-site mutation requests", () => {
 
 test("allows only localhost Host headers", () => {
   assert.equal(hostHeaderAllowed("127.0.0.1:4173"), true);
-  assert.equal(hostHeaderAllowed("localhost:5173"), true);
+  assert.equal(hostHeaderAllowed("localhost:5163"), true);
   assert.equal(hostHeaderAllowed("malicious.example"), false);
   assert.equal(hostHeaderAllowed(undefined), false);
 });
