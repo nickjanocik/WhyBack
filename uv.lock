@@ -1043,7 +1043,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "duckdb", specifier = ">=1.4.0,<2" },
-    { name = "google-genai", specifier = ">=2.0.0,<3" },
+    { name = "google-genai", specifier = ">=2.3.0,<3" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.120.0,<7" },
     { name = "jinja2", specifier = ">=3.1.5,<4" },
     { name = "numpy", specifier = ">=2.1.0,<3" },

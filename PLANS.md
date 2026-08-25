@@ -21,7 +21,7 @@ that time; they are not current live-provider instructions.
 | 8 | Audit, reports, demo, and evals | 6–7 | Append-only JSONL, static trace and customer HTML, JSON/Markdown output, deterministic synthetic demo/failure example/golden trace, scenario metrics and artifact verifier | verified (five synthetic reports, persistent-failure and partial-data controls, six passing scenario contracts, and strict artifact verification) |
 | 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.89% branch coverage, all required artifact and evaluation checks passed) |
 | 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker; actual Git history summarized |
-| 11 | Gemini live-provider migration | 6–10 | Replace the active provider with Gemini Interactions function calling; use `GEMINI_API_KEY`, backend `gemini`, default model `gemini-3.7-flash`, and `RETENTION_THINKING_LEVEL`; preserve legacy artifact reads; update tests and current docs | implemented; deterministic checks and live analytical-call contract passed; final gate pending |
+| 11 | Gemini live-provider migration | 6–10 | Replace the active provider with Gemini Interactions function calling; use `GEMINI_API_KEY`, backend `gemini`, default model `gemini-3.7-flash`, and `RETENTION_THINKING_LEVEL`; preserve legacy artifact reads; update tests and current docs | verified: clean-tree gate passed with 199 tests passed, one expected live-key skip, 87.17% branch-aware overall coverage, and all required artifact checks; live analytical-call contract passed |
 
 Each row is intended to become one coherent commit, with adjacent rows split or
 combined only when it improves reviewability. Every commit must remain usable
@@ -77,7 +77,7 @@ and include only checks that actually passed.
   reports.
 
 Prior submission execution record: all official source files were prepared
-under a clean manifest v2 bound to source commit `960c098`; the
+under a clean manifest v2 bound to WhyBack source-tree version `960c098`; the
 detector selected households `5`, `181`, `423`, `472`, and `682`. The six tools
 were smoke-tested against full prepared data, including a legitimate Type A
 partial case for household `181`. `OPENAI_API_KEY` was absent, so live GPT-5.6
@@ -87,10 +87,10 @@ Current Gemini migration record: the active provider has been changed to
 Gemini, with backend `gemini`, default model `gemini-3.7-flash`, explicit
 `GEMINI_API_KEY`, and `RETENTION_THINKING_LEVEL`. A synthetic live analytical
 call returned a provider-issued function-call ID. A longer synthetic attempt
-completed three decision/tool turns before the fourth provider request timed out
-and the application failed closed. No completed live investigation or live
-customer artifact is claimed, and official customer-behavior data was not sent
-to Gemini.
+completed three decision/tool turns before the fourth provider request failed
+at the configured 60-second request boundary and the application failed closed.
+No completed live investigation or live customer artifact is claimed, and
+official customer-behavior data was not sent to Gemini.
 
 ## Expected testing by layer
 
@@ -114,7 +114,7 @@ to Gemini.
 | Restricted network | Resolved for source acquisition after approved network access | Keep pinned URLs/hashes; never use unofficial data or require network in baseline CI |
 | Full promotions memory | Resolved locally: 20,940,529 rows prepared and canonicalized once | Retain manifest/idempotence; prefer cancellable warehouse SQL in production |
 | Prior OpenAI credential (historical) | `OPENAI_API_KEY` was unset for the prior submission | Preserve the skip record and its artifacts as historical evidence |
-| Gemini credential and live validation | Synthetic analytical-call contract passed; a longer synthetic attempt later reached its bounded provider timeout | Keep scripted tests as the baseline; claim contract validation only, and require separate authorization before transmitting official data |
+| Gemini credential and live validation | Synthetic analytical-call contract passed; a longer synthetic attempt later failed at the configured 60-second request boundary | Keep scripted tests as the baseline; claim contract validation only, and require separate authorization before transmitting official data |
 | Empty remote | Resolved: milestone commits are on `origin/codex/whyback-build` | Continue on the approved branch and push without force |
 | Optional ecosystem drift | MCP/telemetry APIs can change | Omit from core unless verified against current official APIs and isolated behind extras |
 
@@ -151,7 +151,7 @@ unchanged as historical evidence.
 - [x] Legacy OpenAI artifact provenance remains readable and historically labeled
 - [x] ADR 007 records the provider migration and its boundaries
 - [x] Bounded live synthetic failure artifact generated, verified, and labeled
-- [ ] Deterministic migration quality gate rerun and captured
+- [x] Deterministic migration quality gate rerun and captured
 - [x] Live Gemini analytical-call contract validated with a provider-issued call ID
 - [ ] Completed live official-data artifacts generated with explicit authorization
-- [ ] Migration worktree clean and all possible commits pushed without force
+- [x] Migration worktree clean and all possible commits pushed without force

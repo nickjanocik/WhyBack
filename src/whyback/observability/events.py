@@ -114,6 +114,8 @@ _HIDDEN_REASONING_KEYS = frozenset(
 _SENSITIVE_VALUE_PATTERNS = (
     re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]{12,}"),
     re.compile(r"\bsk-[A-Za-z0-9_-]{16,}"),
+    re.compile(r"\bAIza[A-Za-z0-9_-]{30,}"),
+    re.compile(r"\bAQ\.[A-Za-z0-9_-]{30,}"),
     re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
     re.compile(
         r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\."

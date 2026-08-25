@@ -167,6 +167,7 @@ def _analytical_function(definition: ToolDefinition) -> interactions.Function:
     arguments.clear()
     arguments.update(definition.input_schema)
     return interactions.Function(
+        type="function",
         name=definition.name.value,
         description=definition.description,
         parameters=_interaction_schema(payload_schema),
@@ -175,6 +176,7 @@ def _analytical_function(definition: ToolDefinition) -> interactions.Function:
 
 def _finish_function() -> interactions.Function:
     return interactions.Function(
+        type="function",
         name="finish_investigation",
         description=(
             "Finish only when the available evidence supports a catalog action or an "

@@ -36,7 +36,7 @@ flowchart TB
     subgraph Control[Bounded control plane]
         X[DeclineSnapshot]
         ST[InvestigationState<br/>application-owned]
-        MB[ModelBackend<br/>Responses or scripted]
+        MB[ModelBackend<br/>Gemini or scripted]
         RG[ToolRegistry]
         EL[EvidenceLedger]
         FV[FinalVerifier]

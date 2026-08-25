@@ -49,6 +49,12 @@ _ARTIFACT_OWNERSHIP_DOCUMENT = {
 }
 
 
+def _gemini_api_key_present() -> bool:
+    """Return whether the configured Gemini credential contains non-space text."""
+
+    return bool((os.getenv("GEMINI_API_KEY") or "").strip())
+
+
 class DemoBuildSummary(BaseModel):
     """Stable command boundary returned after generating reviewer artifacts."""
 
@@ -873,7 +879,7 @@ def _build_official_demo_contents(
     )
 
     outcomes: list[InvestigationOutcome] = []
-    if backend == "gemini" and not os.getenv("GEMINI_API_KEY"):
+    if backend == "gemini" and not _gemini_api_key_present():
         selected_ids = tuple(item.household_id for item in selected)
         _write_json(
             output_directory / "live_model_status.json",
@@ -985,7 +991,7 @@ def build_official_demo(
             "Official run artifacts already exist; choose a new output directory "
             "so no historical live or scripted audit is deleted."
         )
-    if backend == "gemini" and os.getenv("GEMINI_API_KEY"):
+    if backend == "gemini" and _gemini_api_key_present():
         _initialize_live_official_output(output_directory)
         return _build_official_demo_contents(
             prepared_dir,

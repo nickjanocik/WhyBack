@@ -1,0 +1,17 @@
+{
+  "checked_files": [
+    "manifest.json",
+    "report.html",
+    "report.json",
+    "report.md",
+    "trace.html",
+    "trace.jsonl"
+  ],
+  "execution_modes": [
+    "live"
+  ],
+  "issues": [],
+  "passed": true,
+  "root": "/Users/nickjanocik/Documents/WhyBack/artifacts/live-gemini-synthetic-failure",
+  "schema_version": 1
+}

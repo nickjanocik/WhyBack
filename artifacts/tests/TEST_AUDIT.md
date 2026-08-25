@@ -2,27 +2,27 @@
 
 Overall result: **PASS**
 
-Invocation: `aca229d5-35a3-4897-985c-5a66f868944f`
-Started: `2026-08-25T01:36:35.051923Z`
-Completed: `2026-08-25T01:36:58.881464Z`
-Duration: `23.82960845902562 seconds`
+Invocation: `b7b40f9a-b4f2-4adb-a5b1-a977544cf837`
+Started: `2026-08-25T04:51:31.091353Z`
+Completed: `2026-08-25T04:51:58.788592Z`
+Duration: `27.69734291685745 seconds`
 
 ## Reproducibility metadata
 
-- Git: `76ac8de22fd313c4f5f1c2219b4375272f1996b2` on `codex/whyback-build` (dirty: `false`)
+- Git: `a8b9a32dbc5a845dc44d470ae474fa9f5bad57a0` on `codex/whyback-build` (dirty: `false`)
 - Python: `3.12.14` (`CPython`)
 - uv: `uv 0.12.5 (Homebrew 2026-08-14 aarch64-apple-darwin)`
 - Platform: `macOS-26.3.1-arm64-arm-64bit`
-- Lock SHA-256: `82894e4acdf443c2e44652bd3e22def210fc645de4ea93cb49d531709cee62f3`
-- Source-tree SHA-256: `9bc89d240839bb283215686c9ea5ac8259b4d817f439db359288e141c64e989e`
+- Lock SHA-256: `ad908fab71d71cda3451aca8765802c7c00e8f0903cfdeac374844467710116d`
+- Source-tree SHA-256: `1f4bd468187083ae5facdfad6409792a4065976161be0c40671d8646facbddec`
 
 ```json
 {
   "model_configuration": {
+    "gemini_api_key_present": false,
     "live_execution_permitted": false,
-    "model": "gpt-5.6-sol",
-    "openai_api_key_present": false,
-    "reasoning_effort": "medium"
+    "model": "gemini-3.7-flash",
+    "thinking_level": "medium"
   },
   "source_dataset": {
     "manifest_path": "data/prepared/manifest.json",
@@ -63,21 +63,21 @@ Duration: `23.82960845902562 seconds`
 ```json
 {
   "coverage": {
-    "covered_branches": 613,
-    "covered_lines": 3210,
+    "covered_branches": 634,
+    "covered_lines": 3265,
     "minimum_percent": 85.0,
-    "missing_branches": 213,
-    "missing_lines": 364,
-    "num_branches": 826,
-    "num_statements": 3574,
-    "percent_covered": 86.88636363636364
+    "missing_branches": 214,
+    "missing_lines": 360,
+    "num_branches": 848,
+    "num_statements": 3625,
+    "percent_covered": 87.16744913928012
   },
   "junit": {
-    "duration_seconds": 18.97,
+    "duration_seconds": 21.32,
     "errors": 0,
     "failures": 0,
     "skipped": 1,
-    "tests": 188
+    "tests": 200
   }
 }
 ```
@@ -87,23 +87,24 @@ Duration: `23.82960845902562 seconds`
 | Step | Required | Status | Exit | Duration |
 | --- | ---: | ---: | ---: | ---: |
 | coverage_configuration | True | passed | 0 | 0.0s |
-| frozen_sync | True | passed | 0 | 0.010152958333492279s |
-| ruff_format | True | passed | 0 | 0.02222541719675064s |
-| ruff_lint | True | passed | 0 | 0.02453620871528983s |
-| pyright | True | passed | 0 | 2.622246667277068s |
-| pytest | True | passed | 0 | 19.328258417081088s |
+| frozen_sync | True | passed | 0 | 0.016009249724447727s |
+| ruff_format | True | passed | 0 | 0.06184012535959482s |
+| ruff_lint | True | passed | 0 | 0.02751974994316697s |
+| pyright | True | passed | 0 | 3.279413416981697s |
+| pytest | True | passed | 0 | 21.812710916623473s |
 | test_output_validation | True | passed | 0 | 0.0s |
-| deterministic_evals | True | passed | 0 | 0.34357620775699615s |
-| artifact_verification | True | passed | 0 | 0.6475644591264427s |
-| official_artifact_verification | True | passed | 0 | 0.3609717912040651s |
-| official_type_a_artifact_verification | True | passed | 0 | 0.3933401247486472s |
+| deterministic_evals | True | passed | 0 | 0.45827137492597103s |
+| artifact_verification | True | passed | 0 | 0.7111197090707719s |
+| live_gemini_artifact_verification | True | passed | 0 | 0.41593091702088714s |
+| official_artifact_verification | True | passed | 0 | 0.3773629581555724s |
+| official_type_a_artifact_verification | True | passed | 0 | 0.4259427082724869s |
 
 ### coverage_configuration
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-25T01:36:35.108998Z`
-Completed: `2026-08-25T01:36:35.108998Z`
+Started: `2026-08-25T04:51:31.175977Z`
+Completed: `2026-08-25T04:51:31.175977Z`
 
 Stdout:
 
@@ -122,8 +123,8 @@ Stderr:
 
 Command: `uv sync --frozen --extra dev`
 
-Started: `2026-08-25T01:36:35.110064Z`
-Completed: `2026-08-25T01:36:35.120221Z`
+Started: `2026-08-25T04:51:31.177516Z`
+Completed: `2026-08-25T04:51:31.193530Z`
 
 Stdout:
 
@@ -134,7 +135,7 @@ Stdout:
 Stderr:
 
 ```text
-Checked 46 packages in 0.98ms
+Checked 55 packages in 4ms
 
 ```
 
@@ -142,13 +143,13 @@ Checked 46 packages in 0.98ms
 
 Command: `uv run ruff format --check .`
 
-Started: `2026-08-25T01:36:35.121525Z`
-Completed: `2026-08-25T01:36:35.143755Z`
+Started: `2026-08-25T04:51:31.195057Z`
+Completed: `2026-08-25T04:51:31.256901Z`
 
 Stdout:
 
 ```text
-91 files already formatted
+92 files already formatted
 
 ```
 
@@ -162,8 +163,8 @@ Stderr:
 
 Command: `uv run ruff check .`
 
-Started: `2026-08-25T01:36:35.145157Z`
-Completed: `2026-08-25T01:36:35.169699Z`
+Started: `2026-08-25T04:51:31.259179Z`
+Completed: `2026-08-25T04:51:31.286705Z`
 
 Stdout:
 
@@ -182,8 +183,8 @@ Stderr:
 
 Command: `uv run pyright`
 
-Started: `2026-08-25T01:36:35.171149Z`
-Completed: `2026-08-25T01:36:37.793384Z`
+Started: `2026-08-25T04:51:31.288366Z`
+Completed: `2026-08-25T04:51:34.567772Z`
 
 Stdout:
 
@@ -202,8 +203,8 @@ Stderr:
 
 Command: `uv run pytest --cov=whyback --cov-branch --cov-report=json:artifacts/tests/coverage.json --junitxml=artifacts/tests/junit.xml`
 
-Started: `2026-08-25T01:36:37.794838Z`
-Completed: `2026-08-25T01:36:57.122971Z`
+Started: `2026-08-25T04:51:34.569548Z`
+Completed: `2026-08-25T04:51:56.382129Z`
 
 Stdout:
 
@@ -217,33 +218,33 @@ plugins: cov-7.1.0, timeout-2.4.0, anyio-4.14.2, hypothesis-6.165.10
 timeout: 30.0s
 timeout method: signal
 timeout func_only: False
-collected 188 items
+collected 200 items
 
-tests/integration/test_cli_workflows.py ...                              [  1%]
-tests/integration/test_demo_pipeline.py ......                           [  4%]
-tests/integration/test_evaluation_cases.py .                             [  5%]
-tests/integration/test_prepared_repository.py ....                       [  7%]
-tests/live/test_openai_backend_live.py s                                 [  7%]
-tests/orchestration/test_runner.py .............                         [ 14%]
+tests/integration/test_cli_workflows.py .....                            [  2%]
+tests/integration/test_demo_pipeline.py ......                           [  5%]
+tests/integration/test_evaluation_cases.py .                             [  6%]
+tests/integration/test_prepared_repository.py ....                       [  8%]
+tests/live/test_gemini_backend_live.py s                                 [  8%]
+tests/orchestration/test_runner.py .............                         [ 15%]
 tests/property/test_agent_invariants.py ............                     [ 21%]
 tests/property/test_decline_properties.py .                              [ 21%]
 tests/property/test_tool_contract_properties.py .                        [ 22%]
 tests/unit/test_actions.py ........                                      [ 26%]
-tests/unit/test_agent_backends.py ..............                         [ 34%]
-tests/unit/test_audit_trace.py .......                                   [ 37%]
-tests/unit/test_data_contracts.py .......                                [ 41%]
-tests/unit/test_decline_detector.py .........                            [ 46%]
-tests/unit/test_evals.py .........                                       [ 51%]
-tests/unit/test_evidence_verifier.py ................................... [ 69%]
+tests/unit/test_agent_backends.py ....................                   [ 36%]
+tests/unit/test_audit_trace.py ........                                  [ 40%]
+tests/unit/test_data_contracts.py .......                                [ 43%]
+tests/unit/test_decline_detector.py .........                            [ 48%]
+tests/unit/test_evals.py .........                                       [ 52%]
+tests/unit/test_evidence_verifier.py ................................... [ 70%]
 .                                                                        [ 70%]
-tests/unit/test_fault_injection.py ...                                   [ 71%]
-tests/unit/test_foundation.py ..                                         [ 72%]
-tests/unit/test_promotion_coupon_peer.py ...                             [ 74%]
-tests/unit/test_quality_scripts.py .........................             [ 87%]
-tests/unit/test_reporting.py .......                                     [ 91%]
-tests/unit/test_scripted_plans.py ....                                   [ 93%]
+tests/unit/test_fault_injection.py ...                                   [ 72%]
+tests/unit/test_foundation.py ...                                        [ 73%]
+tests/unit/test_promotion_coupon_peer.py ...                             [ 75%]
+tests/unit/test_quality_scripts.py ...........................           [ 88%]
+tests/unit/test_reporting.py .......                                     [ 92%]
+tests/unit/test_scripted_plans.py ....                                   [ 94%]
 tests/unit/test_tool_contracts.py .....                                  [ 96%]
-tests/unit/test_tool_registry.py ...                                     [ 97%]
+tests/unit/test_tool_registry.py ...                                     [ 98%]
 tests/unit/test_trend_category_basket.py ....                            [100%]
 
 - generated xml file: /Users/nickjanocik/Documents/WhyBack/artifacts/tests/junit.xml -
@@ -251,10 +252,10 @@ tests/unit/test_trend_category_basket.py ....                            [100%]
 ______________ coverage: platform darwin, python 3.12.14-final-0 _______________
 
 Coverage JSON written to file artifacts/tests/coverage.json
-Required test coverage of 85.0% reached. Total coverage: 86.89%
+Required test coverage of 85.0% reached. Total coverage: 87.17%
 =========================== short test summary info ============================
-SKIPPED [1] tests/live/test_openai_backend_live.py:15: OPENAI_API_KEY is absent; live Responses execution was not attempted.
-======================= 187 passed, 1 skipped in 19.01s ========================
+SKIPPED [1] tests/live/test_gemini_backend_live.py:39: GEMINI_API_KEY is absent; live Gemini execution was not attempted.
+======================= 199 passed, 1 skipped in 21.36s ========================
 
 ```
 
@@ -268,13 +269,13 @@ Stderr:
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-25T01:36:57.128551Z`
-Completed: `2026-08-25T01:36:57.128551Z`
+Started: `2026-08-25T04:51:56.388522Z`
+Completed: `2026-08-25T04:51:56.388522Z`
 
 Stdout:
 
 ```text
-JUnit recorded 188 tests; branch-aware coverage is 86.88636363636364% across 826 branches (minimum 85.00%).
+JUnit recorded 200 tests; branch-aware coverage is 87.16744913928012% across 848 branches (minimum 85.00%).
 
 ```
 
@@ -288,8 +289,8 @@ Stderr:
 
 Command: `uv run python evals/run_evals.py artifacts/demo/evals/normalized_runs.json --json-output artifacts/tests/eval_report.json --markdown-output artifacts/tests/EVAL_REPORT.md`
 
-Started: `2026-08-25T01:36:57.129660Z`
-Completed: `2026-08-25T01:36:57.473238Z`
+Started: `2026-08-25T04:51:56.390158Z`
+Completed: `2026-08-25T04:51:56.848432Z`
 
 Stdout:
 
@@ -307,8 +308,27 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/demo --json-output artifacts/tests/artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-25T01:36:57.474936Z`
-Completed: `2026-08-25T01:36:58.122501Z`
+Started: `2026-08-25T04:51:56.850454Z`
+Completed: `2026-08-25T04:51:57.561575Z`
+
+Stdout:
+
+```text
+
+```
+
+Stderr:
+
+```text
+
+```
+
+### live_gemini_artifact_verification
+
+Command: `uv run python scripts/verify_artifacts.py artifacts/live-gemini-synthetic-failure --json-output artifacts/tests/live_gemini_artifact_verification.json`
+
+Started: `2026-08-25T04:51:57.563282Z`
+Completed: `2026-08-25T04:51:57.979216Z`
 
 Stdout:
 
@@ -326,8 +346,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official --json-output artifacts/tests/official_artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-25T01:36:58.124161Z`
-Completed: `2026-08-25T01:36:58.485137Z`
+Started: `2026-08-25T04:51:57.980914Z`
+Completed: `2026-08-25T04:51:58.358281Z`
 
 Stdout:
 
@@ -345,8 +365,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official-type-a --json-output artifacts/tests/official_type_a_artifact_verification.json`
 
-Started: `2026-08-25T01:36:58.486672Z`
-Completed: `2026-08-25T01:36:58.880016Z`
+Started: `2026-08-25T04:51:58.360527Z`
+Completed: `2026-08-25T04:51:58.786474Z`
 
 Stdout:
 
@@ -371,3 +391,4 @@ None.
 | `fc0fa366-baa1-4eff-9c56-960605dd237d` | `2026-08-25T01:30:51.640542Z` | fail | frozen_sync, ruff_format, ruff_lint, pyright, pytest, test_output_validation, deterministic_evals, artifact_verification, official_artifact_verification, official_type_a_artifact_verification |
 | `ae802628-c7ed-4717-9d83-7ecd55338ab1` | `2026-08-25T01:32:17.746590Z` | pass | none |
 | `f7e88cde-a8d6-4aa0-8ac5-d784f7e0daf1` | `2026-08-25T01:35:28.946983Z` | pass | none |
+| `aca229d5-35a3-4897-985c-5a66f868944f` | `2026-08-25T01:36:35.051923Z` | pass | none |

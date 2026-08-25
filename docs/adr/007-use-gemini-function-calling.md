@@ -52,8 +52,8 @@ There is no active OpenAI runtime backend or OpenAI package dependency.
 Implementation and deterministic adapter tests alone do not establish a live
 provider run. A synthetic live contract request did return one valid analytical
 function call with a provider-issued ID. A longer synthetic investigation made
-three valid live decisions before a later request reached the bounded provider
-timeout and failed closed. WhyBack therefore claims contract validation, not a
+three valid live decisions before a later request failed at the configured
+60-second request boundary. WhyBack therefore claims contract validation, not a
 completed live investigation. No official customer-behavior data was sent to
 Gemini. Stateless `store=False` responses can omit the interaction resource ID,
 so the adapter falls back to the returned function-call step ID documented for

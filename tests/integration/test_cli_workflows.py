@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -153,3 +155,42 @@ def test_cli_gemini_investigation_reports_missing_key(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert "GEMINI_API_KEY is required for the gemini backend" in result.stdout
+
+
+def test_cli_verifies_historical_skip_with_current_key_present(tmp_path: Path) -> None:
+    status_path = tmp_path / "live_model_status.json"
+    status_path.write_text(
+        json.dumps(
+            {
+                "status": "skipped_no_api_key",
+                "execution_mode": "skipped",
+                "reason": "GEMINI_API_KEY was absent.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "execution_mode": "skipped",
+                "reason": "GEMINI_API_KEY was absent.",
+                "files": {
+                    status_path.name: hashlib.sha256(
+                        status_path.read_bytes()
+                    ).hexdigest()
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        app,
+        ["verify-artifacts", str(tmp_path)],
+        env={"GEMINI_API_KEY": "test-placeholder-not-a-real-key"},
+    )
+
+    assert result.exit_code == 0, result.output
+    assert '"passed": true' in result.stdout

@@ -102,6 +102,23 @@ def test_sanitizer_redacts_gemini_and_legacy_openai_api_key_fields() -> None:
     }
 
 
+def test_sanitizer_redacts_google_api_key_shaped_free_text() -> None:
+    modern_key = f"AQ.{'a' * 40}"
+    legacy_key = f"AIza{'b' * 35}"
+
+    details = sanitize_details(
+        {
+            "message": f"provider rejected {modern_key}",
+            "nested": [legacy_key],
+        }
+    )
+
+    assert details == {
+        "message": REDACTED_VALUE,
+        "nested": [REDACTED_VALUE],
+    }
+
+
 def test_sanitizer_can_reject_secrets_and_always_rejects_hidden_reasoning() -> None:
     with pytest.raises(UnsafeAuditDetailError, match="secret-like audit field"):
         sanitize_details(

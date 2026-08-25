@@ -319,11 +319,12 @@ def model_metadata(root: Path) -> dict[str, object]:
     agent = _nested_mapping(config.get("agent"))
     configured_model = agent.get("default_model", "gemini-3.7-flash")
     configured_level = agent.get("default_thinking_level", "medium")
+    gemini_api_key_present = bool((os.getenv("GEMINI_API_KEY") or "").strip())
     return {
         "model": os.getenv("RETENTION_MODEL", str(configured_model)),
         "thinking_level": os.getenv("RETENTION_THINKING_LEVEL", str(configured_level)),
-        "gemini_api_key_present": bool(os.getenv("GEMINI_API_KEY")),
-        "live_execution_permitted": bool(os.getenv("GEMINI_API_KEY")),
+        "gemini_api_key_present": gemini_api_key_present,
+        "live_execution_permitted": gemini_api_key_present,
     }
 
 

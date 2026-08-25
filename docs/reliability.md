@@ -10,7 +10,7 @@ not from asking the model to be careful.
 | --- | ---: | --- |
 | Analytical executions | 5 | Every actual attempt, including a retry, decrements the application-owned budget. It cannot become negative. |
 | Model decisions | 6 | Every backend request consumes one turn, including finish and repair. |
-| Actions per decision | 1 | The live backend disables parallel calls and rejects responses containing anything other than exactly one offered function call. |
+| Actions per decision | 1 | The live adapter requires tool selection and rejects responses containing anything other than exactly one offered function call, including parallel calls. |
 | Exact duplicate calls | 0 executions | `(tool_name, normalized_arguments)` is hashed and refused before dispatch. |
 | Retryable retries | 1 | Only a result marked `retryable_error` and `retryable=true` can retry. |
 | Finish repairs | 1 | Rejected verification exposes issue codes on one finish-only turn. |

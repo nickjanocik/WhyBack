@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -341,9 +340,15 @@ def verify_artifacts(
     if not verifier.is_file():
         console.print("[red]Artifact verifier is missing from scripts/.[/red]")
         raise typer.Exit(code=1)
-    command = [sys.executable, str(verifier), str(artifact_root)]
-    if not os.getenv("GEMINI_API_KEY"):
-        command.append("--allow-live-skipped")
+    # Artifact truth is historical and must not depend on credentials exported
+    # during a later verification session. Explicit skip records remain subject
+    # to the verifier's strict skip schema and hash checks.
+    command = [
+        sys.executable,
+        str(verifier),
+        str(artifact_root),
+        "--allow-live-skipped",
+    ]
     completed = subprocess.run(
         command,
         check=False,

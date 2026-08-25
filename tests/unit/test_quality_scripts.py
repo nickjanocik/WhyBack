@@ -74,6 +74,26 @@ fail_under = 85
     eval_input.write_text('{"runs": []}\n', encoding="utf-8")
 
 
+def test_model_metadata_requires_a_non_space_gemini_key(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_gate_project(tmp_path)
+    monkeypatch.setenv("GEMINI_API_KEY", "  \t")
+
+    blank = quality_gate.model_metadata(tmp_path)
+
+    assert blank["gemini_api_key_present"] is False
+    assert blank["live_execution_permitted"] is False
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-placeholder")
+
+    present = quality_gate.model_metadata(tmp_path)
+
+    assert present["gemini_api_key_present"] is True
+    assert present["live_execution_permitted"] is True
+
+
 def _report() -> dict[str, object]:
     return {
         "schema_version": 2,

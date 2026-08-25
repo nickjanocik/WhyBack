@@ -79,8 +79,8 @@ and that the then-current live GPT investigation was skipped. That is historical
 evidence, not the status of the current provider. The active live backend is now
 Gemini. A live synthetic contract request returned a provider-issued Gemini
 function-call ID and one valid analytical decision. A longer synthetic attempt
-completed three model/tool turns before a later provider request reached its
-bounded timeout and failed closed. No completed live Gemini investigation is
+completed three model/tool turns before a later provider request failed at the
+configured 60-second request boundary. No completed live Gemini investigation is
 therefore claimed, and no official customer-behavior data was sent to Gemini.
 Credential-free scripted investigations exercise the same runner, tools,
 verifier, report renderer, and trace writer; their manifests label the execution
@@ -231,9 +231,9 @@ selection and then-current no-key skip status without manufacturing customer
 reports. It is not evidence of a live Gemini run.
 `artifacts/live-gemini-synthetic-failure/` is the current live-provider audit:
 three Gemini-selected analytical tools completed over fabricated data, then the
-fourth provider request timed out and the run failed closed without a customer
-action. The artifact manifest is the authoritative record of execution mode,
-source, hashes, and omissions.
+fourth provider request failed at the configured 60-second request boundary,
+and the run failed closed without a customer action. The artifact manifest is
+the authoritative record of execution mode, source, hashes, and omissions.
 
 | Scripted control | Decline score | Verified action | Report | Trace |
 | --- | ---: | --- | --- | --- |
@@ -251,7 +251,7 @@ Reviewer entry points:
   and [trace](artifacts/demo/failure_example/trace.html).
 - [Prior OpenAI-era official full-data no-key status](artifacts/official/live_model_status.json)
   and [manifest](artifacts/official/manifest.json).
-- [Live Gemini synthetic bounded-timeout report](artifacts/live-gemini-synthetic-failure/report.html),
+- [Live Gemini synthetic bounded-failure report](artifacts/live-gemini-synthetic-failure/report.html),
   [trace](artifacts/live-gemini-synthetic-failure/trace.html), and
   [manifest](artifacts/live-gemini-synthetic-failure/manifest.json).
 - [Official Type A household 181 report](artifacts/official-type-a/customer_181/report.html),
@@ -269,7 +269,7 @@ verifier events, and final status. It never stores hidden reasoning.
 `trace.html` is a self-contained, offline timeline with the same validated
 events. Start with the [household 101 trace](artifacts/demo/customer_101/trace.html),
 then inspect the [persistent-failure trace](artifacts/demo/failure_example/trace.html)
-the [live Gemini bounded-timeout trace](artifacts/live-gemini-synthetic-failure/trace.html),
+the [live Gemini bounded-failure trace](artifacts/live-gemini-synthetic-failure/trace.html),
 and [official Type A trace](artifacts/official-type-a/customer_181/trace.html).
 
 ## Testing and evaluations

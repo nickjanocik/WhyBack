@@ -170,10 +170,10 @@ provider-status claim.
 The current live backend uses Gemini function calling through the Interactions
 API. A live request over a fabricated decline snapshot returned a valid
 analytical function call and provider-issued call ID. A longer synthetic run
-completed three live decision/tool turns before a later provider request reached
-the adapter's timeout and the run failed closed. No completed live investigation
-result is claimed, no official customer-behavior data was sent to Gemini, and
-baseline CI remains credential-free. See
+completed three live decision/tool turns before a later provider request failed
+at the configured 60-second request boundary and the run failed closed. No
+completed live investigation result is claimed, no official customer-behavior
+data was sent to Gemini, and baseline CI remains credential-free. See
 [ADR 007](adr/007-use-gemini-function-calling.md) for the provider decision.
 The verified synthetic failure bundle is available at
 [`artifacts/live-gemini-synthetic-failure/`](../artifacts/live-gemini-synthetic-failure/).

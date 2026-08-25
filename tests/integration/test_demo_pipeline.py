@@ -7,7 +7,11 @@ from typing import Any
 import pytest
 
 from scripts.verify_artifacts import verify_artifact_tree
-from whyback.demo import _initialize_live_official_output, build_synthetic_demo
+from whyback.demo import (
+    _gemini_api_key_present,
+    _initialize_live_official_output,
+    build_synthetic_demo,
+)
 from whyback.observability import read_audit_events
 
 
@@ -170,6 +174,20 @@ def test_live_official_transition_exactly_replaces_an_owned_skipped_tree(
     assert (destination / ".whyback-owned-artifact-root.json").is_file()
     assert not (destination / "live_model_status.json").exists()
     assert not (destination / "manifest.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (("", False), ("   \t", False), ("test-placeholder", True)),
+)
+def test_gemini_key_presence_requires_non_space_text(
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+    expected: bool,
+) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", value)
+
+    assert _gemini_api_key_present() is expected
 
 
 def test_live_official_transition_preserves_prior_run_artifacts(tmp_path: Path) -> None:

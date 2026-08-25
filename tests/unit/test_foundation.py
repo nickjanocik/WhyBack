@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,12 @@ def test_gemini_configuration_defaults_and_environment_overrides(
 
     assert overridden.model == "gemini-migration-test"
     assert overridden.thinking_level == "high"
+
+
+def test_interactions_sdk_floor_is_declared() -> None:
+    configuration = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert "google-genai>=2.3.0,<3" in configuration["project"]["dependencies"]
 
 
 def test_cli_help_and_version() -> None:

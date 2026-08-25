@@ -10,6 +10,7 @@ from whyback.detection.decline import DeclineSnapshot
 from whyback.tools.registry import build_tool_registry
 
 pytestmark = pytest.mark.live
+_GEMINI_API_KEY_PRESENT = bool((os.getenv("GEMINI_API_KEY") or "").strip())
 
 
 def _state() -> InvestigationState:
@@ -38,7 +39,7 @@ def _state() -> InvestigationState:
 
 @pytest.mark.timeout(120)
 @pytest.mark.skipif(
-    not os.getenv("GEMINI_API_KEY"),
+    not _GEMINI_API_KEY_PRESENT,
     reason="GEMINI_API_KEY is absent; live Gemini execution was not attempted.",
 )
 def test_gemini_backend_returns_one_strict_investigation_decision() -> None:
