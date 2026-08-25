@@ -1,0 +1,73 @@
+schema_version: 1
+scenarios:
+  - scenario_id: frequency_decline
+    archetype: frequency
+    title: Visit frequency declines while trip value is comparatively stable
+    description: Verify that the investigation inspects cadence or trend evidence without requiring unrelated campaign analysis.
+    relevant_tools:
+      - customer_trend
+      - basket_behavior
+    irrelevant_mandatory_tools:
+      - coupon_campaign_history
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: category_collapse
+    archetype: category
+    title: A material category contribution disappears
+    description: Verify that category decomposition is selected and broad peer analysis is not treated as a mandatory first step.
+    relevant_tools:
+      - category_decomposition
+    irrelevant_mandatory_tools:
+      - peer_comparison
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: promotion_associated_decline
+    archetype: promotion
+    title: Recorded purchases move with promotion availability
+    description: Verify promotion association analysis while preserving the distinction between availability and household exposure.
+    relevant_tools:
+      - promotion_response
+    irrelevant_mandatory_tools:
+      - peer_comparison
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: ambiguous_peer_comparison
+    archetype: ambiguous_peer
+    title: Direct behavioral signals do not identify a clear driver
+    description: Verify that behavioral peers can provide context without making demographics a recommendation driver.
+    relevant_tools:
+      - peer_comparison
+    irrelevant_mandatory_tools:
+      - coupon_campaign_history
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: type_a_coupon_exposure_gap
+    archetype: type_a
+    title: Type A participation is known but delivered coupon identities are not
+    description: Verify a partial coupon result, continued investigation, and propagation of the exact-delivery limitation.
+    relevant_tools:
+      - coupon_campaign_history
+      - customer_trend
+    irrelevant_mandatory_tools: []
+    required_partial_tools:
+      - coupon_campaign_history
+    requires_limitation_propagation: true
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: persistent_promotion_timeout
+    archetype: failure
+    title: Promotion analysis times out on the initial call and retry
+    description: Verify one bounded retry, safe continuation, no failed-tool evidence, and a verified result from remaining evidence.
+    relevant_tools:
+      - promotion_response
+    irrelevant_mandatory_tools: []
+    required_failed_tools:
+      - promotion_response
+    requires_graceful_degradation: true
+    max_tool_executions: 5
+    max_model_decisions: 6

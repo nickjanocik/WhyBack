@@ -62,6 +62,14 @@ def _stable_signature(name: ToolName, arguments: dict[str, JsonValue]) -> str:
     return hashlib.sha256(f"{name.value}:{serialized}".encode()).hexdigest()
 
 
+def make_tool_call_id(run_id: UUID, call_index: int, name: ToolName) -> str:
+    """Return the stable call identifier used by traces and scripted plans."""
+
+    if call_index < 1:
+        raise ValueError("Tool call indexes start at one")
+    return f"call-{run_id.hex[:10]}-{call_index:02d}-{name.value}"
+
+
 def _append_unique[T](values: tuple[T, ...], item: T) -> tuple[T, ...]:
     return values if item in values else (*values, item)
 
@@ -460,9 +468,8 @@ class InvestigationRunner:
             call_index = (
                 sum(len(item.attempts) for item in state.tool_history) + attempt_number
             )
-            call_id = (
-                f"call-{state.run_id.hex[:10]}-{call_index:02d}-"
-                f"{decision.selected_tool.value}"
+            call_id = make_tool_call_id(
+                state.run_id, call_index, decision.selected_tool
             )
             context = ToolExecutionContext(
                 run_id=state.run_id,
@@ -554,6 +561,7 @@ class InvestigationRunner:
                     "evidence_ids": [item.evidence_id for item in result.evidence],
                     "limitations": list(result.limitations),
                     "diagnostics": result.provenance.diagnostics,
+                    "tool_result": result.model_dump(mode="json"),
                 },
             )
             will_retry = (

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 import typer
 from rich.console import Console
@@ -194,3 +197,141 @@ def detect(
             output_dir / "sensitivity.csv", index=False
         )
         console.print(f"Wrote detector artifacts to {output_dir}")
+
+
+@app.command("investigate")
+def investigate(
+    household_id: Annotated[
+        str, typer.Option(help="Eligible household identifier to investigate.")
+    ],
+    backend: Annotated[
+        str,
+        typer.Option(help="Model backend: scripted or openai."),
+    ] = "scripted",
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(help="Directory for report and trace files."),
+    ] = None,
+    data_dir: Annotated[
+        Path | None,
+        typer.Option(help="Prepared-data directory; defaults to data/prepared."),
+    ] = None,
+    demo_fault: Annotated[
+        str | None,
+        typer.Option(
+            help="Explicit demo-only fault, such as promotion_response:timeout-always."
+        ),
+    ] = None,
+) -> None:
+    """Run one bounded investigation and write its replayable artifacts."""
+
+    from whyback.agent.faults import DemoFaultScenario
+    from whyback.agent.scripted_plans import ScriptedPlan
+    from whyback.demo import BackendName, locate_snapshot, run_investigation
+
+    if backend not in {"scripted", "openai"}:
+        raise typer.BadParameter("backend must be 'scripted' or 'openai'")
+    settings = load_settings()
+    prepared = data_dir or settings.data_dir / "prepared"
+    destination = output_dir or (settings.artifact_dir / f"customer_{household_id}")
+    try:
+        fault = DemoFaultScenario(demo_fault) if demo_fault is not None else None
+    except ValueError as error:
+        raise typer.BadParameter(f"Unknown demo fault: {demo_fault}") from error
+    if fault is not None and backend != "scripted":
+        raise typer.BadParameter(
+            "Demo faults require --backend scripted so the path is reproducible"
+        )
+    plan = ScriptedPlan.PROMOTION_TIMEOUT if fault else ScriptedPlan.STANDARD
+    try:
+        snapshot = locate_snapshot(prepared, household_id)
+        outcome = run_investigation(
+            prepared_dir=prepared,
+            snapshot=snapshot,
+            output_directory=destination,
+            backend=cast(BackendName, backend),
+            dataset_kind="official_complete_journey",
+            plan=plan,
+            demo_fault=fault,
+        )
+    except (OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Investigation failed:[/red] {error}")
+        raise typer.Exit(code=1) from error
+    console.print(
+        f"Investigation {outcome.state.run_status.value}: {destination / 'report.html'}"
+    )
+    console.print(f"Replayable trace: {destination / 'trace.html'}")
+
+
+@app.command("demo")
+def demo(
+    customers: Annotated[
+        int,
+        typer.Option(min=1, max=5, help="Number of top-ranked households."),
+    ] = 5,
+    backend: Annotated[
+        str,
+        typer.Option(help="scripted uses synthetic data; openai uses official data."),
+    ] = "scripted",
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(help="Override the reviewer-artifact directory."),
+    ] = None,
+) -> None:
+    """Build the complete scripted demo or run the official live top five."""
+
+    from whyback.demo import build_official_demo, build_synthetic_demo
+
+    settings = load_settings()
+    if backend == "scripted":
+        destination = output_dir or Path("artifacts/demo")
+        summary = build_synthetic_demo(destination, customers=customers)
+    elif backend == "openai":
+        destination = output_dir or Path("artifacts/live")
+        summary = build_official_demo(
+            settings.data_dir / "prepared",
+            destination,
+            customers=customers,
+            backend="openai",
+        )
+    else:
+        raise typer.BadParameter("backend must be 'scripted' or 'openai'")
+    console.print(
+        f"Generated {summary.report_count} reports for "
+        f"{', '.join(summary.selected_household_ids)}."
+    )
+    console.print(f"Manifest: {summary.manifest_path}")
+    if backend == "openai" and not summary.live_model_executed:
+        console.print(
+            "[yellow]Live model execution was skipped because OPENAI_API_KEY is "
+            "absent.[/yellow]"
+        )
+
+
+@app.command("verify-artifacts")
+def verify_artifacts(
+    artifact_root: Annotated[
+        Path,
+        typer.Argument(help="Artifact tree to validate without modifying it."),
+    ] = Path("artifacts/demo"),
+) -> None:
+    """Validate hashes, report grounding, trace order, and execution labels."""
+
+    verifier = Path("scripts/verify_artifacts.py")
+    if not verifier.is_file():
+        console.print("[red]Artifact verifier is missing from scripts/.[/red]")
+        raise typer.Exit(code=1)
+    command = [sys.executable, str(verifier), str(artifact_root)]
+    if not os.getenv("OPENAI_API_KEY"):
+        command.append("--allow-live-skipped")
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    console.print(completed.stdout, end="")
+    if completed.stderr:
+        console.print(completed.stderr, style="red", end="")
+    if completed.returncode != 0:
+        raise typer.Exit(code=1)
