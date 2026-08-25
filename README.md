@@ -100,6 +100,23 @@ The default model is `gemini-3.7-flash`, overridable with `RETENTION_MODEL`.
 Thinking level defaults to `medium` and is overridable with
 `RETENTION_THINKING_LEVEL` using `low`, `medium`, or `high`.
 
+## What the data can—and cannot—tell us
+
+WhyBack observes retailer-visible purchasing for frequent-shopper households
+associated with one grocery-retail ecosystem over roughly one year. A household
+identifier can represent multiple people, demographic coverage is incomplete,
+and this population is not assumed to represent consumers nationally. Missing
+retailer transactions do not establish that a household stopped buying
+groceries; purchases at competitors and many life circumstances are unobserved.
+
+The dataset is observational, not a randomized experiment. Population and
+behavioral-peer comparisons can reduce overinterpretation of an individual
+decline, but they do not control every confounder or establish recurring annual
+seasonality. WhyBack permits descriptive and cautious associational conclusions
+and rejects unsupported causal claims. The authoritative population,
+selection-bias, observability, measurement, and temporal guidance is in
+[Complete Journey data semantics](docs/data-semantics.md).
+
 ## Architecture
 
 WhyBack separates control from calculation:

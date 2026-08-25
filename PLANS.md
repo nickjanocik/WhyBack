@@ -22,10 +22,36 @@ that time; they are not current live-provider instructions.
 | 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.89% branch coverage, all required artifact and evaluation checks passed) |
 | 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker; actual Git history summarized |
 | 11 | Gemini live-provider migration | 6–10 | Replace the active provider with Gemini Interactions function calling; use `GEMINI_API_KEY`, backend `gemini`, default model `gemini-3.7-flash`, and `RETENTION_THINKING_LEVEL`; preserve legacy artifact reads; update tests and current docs | verified: clean-tree gate passed with 199 tests passed, one expected live-key skip, 87.17% branch-aware overall coverage, and all required artifact checks; live analytical-call contract passed |
+| 12 | Population context and claim boundaries | 3–11 | Document the represented population and analytical limits; extend the existing peer and category tools with household-level contemporaneous context; type and verify claim strength; make reports and confidence context-aware; add deterministic scenarios and current artifacts | planned; baseline audit complete before implementation |
 
 Each row is intended to become one coherent commit, with adjacent rows split or
 combined only when it improves reviewability. Every commit must remain usable
 and include only checks that actually passed.
+
+## Milestone 12 baseline audit and gap table
+
+The pre-change audit ran from clean commit `eed35ee` on
+`codex/whyback-build`. The complete documented gate passed all 12 stages: 206
+tests passed, one live-key test was skipped because `GEMINI_API_KEY` was absent,
+and branch-aware overall coverage was 87.18% (633 of 846 branches covered).
+The audit inspected the six tools, agent loop, evidence ledger, verifier,
+confidence policy, report models and templates, evaluation suite, an official
+customer report, and its execution trace before methodology changes began.
+
+| Requirement | Existing status | Evidence in repo | Needed change |
+|---|---|---|---|
+| Dataset population documentation | Partial | `docs/data-semantics.md` documents source semantics, demographic missingness, retailer sales value, and observational limits; `README.md` says the detector is not causal | Expand the existing authoritative document with population, intended and inappropriate uses, selection/observability biases, observed and unobserved variables, controls, marketing-treatment confounding, and one-year temporal limits; link a concise README summary |
+| Population-relative context | Partial | `src/whyback/tools/peer.py` deterministically excludes the target and returns peer median, IQR, and percentile; `src/whyback/tools/category.py` reconciles target-only category movement | Reuse those tools to add the full eligible household distribution, cohort sizes, declining share, target deviations, centralized context classification, and protected category cohorts with meaningful baseline activity |
+| Claim-type enforcement | Partial | `src/whyback/agent/verifier.py` rejects numerical and causal free text and replaces model prose with governed templates; evidence ownership and source status are verified | Add typed descriptive/associational/causal claims, evidence support ceilings, per-driver counterevidence accounting, semantic causal-denial handling, and verifier tests; no current observational tool may support causal claims |
+| Unobserved-factor reporting | Partial | Reports already include a limitations section plus one deterministic outside-retailer alternative and an uncertainty | Add populated structured interpretation limits, concise core and context-specific unobserved factors, explicit can/cannot-establish sections, and render them in JSON, Markdown, and HTML |
+| Confidence adjustment | Partial | `FinalVerifier._confidence_cap` caps confidence by evidence breadth and propagated limitations | Incorporate deterministic population/category classification, treat missing context as a limitation rather than neutral evidence, cap customer-specific confidence under broad movement, and record adjustment reasons in the audit trace |
+
+The minimal design keeps exactly six LLM-exposed tools, the application-owned
+state, one-action turns, the immutable ledger, the governed action catalog, and
+the single report pipeline. Population calculations remain deterministic and
+are added to `peer_comparison`; reliable context for selected loss categories
+is added to `category_decomposition`. The project uses the term **broad
+contemporaneous context**, not proven seasonality.
 
 ## Detailed implementation sequence
 
