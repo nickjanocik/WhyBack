@@ -44,7 +44,7 @@ def test_promotion_enrichment_is_nonmultiplicative(tmp_path: Path) -> None:
             PromotionResponseInput(household_id="1"), _context("1"), repository
         )
 
-    assert result.status is ToolStatus.OK
+    assert result.status is ToolStatus.PARTIAL
     assert result.provenance.diagnostics["raw_transaction_rows"] == 2
     assert result.provenance.diagnostics["enriched_transaction_rows"] == 2
     assert result.provenance.diagnostics["retailer_sales_value_preserved"] is True
@@ -56,6 +56,7 @@ def test_promotion_enrichment_is_nonmultiplicative(tmp_path: Path) -> None:
     assert promotion_evidence.baseline_value == 5.0
     assert promotion_evidence.recent_value == 0.0
     assert "do not establish" in " ".join(result.limitations).lower()
+    assert any("No recent transaction rows" in item for item in result.limitations)
 
 
 def test_type_a_coupon_history_is_partial_without_fabricated_exposure(

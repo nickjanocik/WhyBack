@@ -288,8 +288,12 @@ def test_timeout_once_retries_then_uses_real_promotion_evidence(
     assert outcome.state.run_status is RunStatus.COMPLETED
     assert [attempt.status for attempt in outcome.state.tool_history[0].attempts] == [
         ToolStatus.RETRYABLE_ERROR,
-        ToolStatus.OK,
+        ToolStatus.PARTIAL,
     ]
+    assert any(
+        "No recent transaction rows" in item
+        for item in outcome.state.tool_history[0].limitations
+    )
     assert promotion_evidence_id in {
         item.evidence_id for item in outcome.state.evidence_ledger
     }

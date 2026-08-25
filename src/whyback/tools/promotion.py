@@ -276,6 +276,12 @@ def run_promotion_response(
             )
         )
     matched_lines = sum(int(row["promotion_lines"]) for row in joined_records)
+    window_limitations: tuple[str, ...] = tuple(
+        f"No {period} transaction rows were observed; promotion-associated "
+        "comparisons for that window are unavailable."
+        for period in ("baseline", "recent")
+        if period not in by_period
+    )
     if matched_lines == 0:
         absence_limitation = (
             "No transaction line matched a recorded promotion key; this does not prove "
@@ -285,13 +291,18 @@ def run_promotion_response(
             AVAILABILITY_LIMITATION,
             ASSOCIATION_LIMITATION,
             absence_limitation,
+            *window_limitations,
         )
     else:
-        limitations = (AVAILABILITY_LIMITATION, ASSOCIATION_LIMITATION)
+        limitations = (
+            AVAILABILITY_LIMITATION,
+            ASSOCIATION_LIMITATION,
+            *window_limitations,
+        )
     return ToolResult(
         tool_call_id=context.tool_call_id,
         tool_name=ToolName.PROMOTION_RESPONSE,
-        status=ToolStatus.OK,
+        status=ToolStatus.PARTIAL if window_limitations else ToolStatus.OK,
         model_summary={
             "baseline_promotion_associated_retailer_sales_value": baseline_promo,
             "recent_promotion_associated_retailer_sales_value": recent_promo,
