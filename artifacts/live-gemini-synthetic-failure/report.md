@@ -26,6 +26,33 @@ Detector evidence: `detector_716a66bd-6ce6-4451-98aa-12f1f67a9937` (run- and hou
 - **Eligible:** yes
 - **Flagged:** yes
 
+## Population and comparison context
+
+**Classification:** Insufficient Context. Signed change is `(recent - baseline) / baseline`; more negative means a more severe decline.
+
+
+- **Target retailer-sales change:** comparison evidence was not computed.
+
+
+| Comparison | Households | Median change | Interquartile range | Target percentile | Share declining | Target minus median |
+|---|---:|---:|---:|---:|---:|---:|
+| Eligible Population | 0 | Unavailable | Unavailable | Unavailable | Unavailable | Unavailable |
+| Behavioral Peers | 0 | Unavailable | Unavailable | Unavailable | Unavailable | Unavailable |
+
+
+- **Eligible-population construction:** Households meeting the declared baseline active-week, distinct-basket, and positive retailer-sales eligibility criteria; the target is excluded.
+- **Behavioral-peer construction:** Nearest target-excluded households after robust scaling of declared baseline behavioral features; demographics are not used.
+- The target household is excluded from both comparison distributions: yes.
+
+
+No reliable major-category comparison was computed in this bounded investigation.
+
+
+
+- Context limitation: Population context is unavailable or below its declared cohort minimum.
+
+
+
 ## Investigation path
 
 
@@ -56,13 +83,41 @@ No likely driver passed deterministic verification.
 No supporting evidence was accepted for a verified conclusion.
 
 
-## Counterevidence and alternative explanations
+## What this analysis can establish
+
+
+- Recorded retailer sales value, distinct baskets, and active weeks in the declared baseline and recent windows.
+
+- Recorded category movement, including explicit UNKNOWN mappings and reconciled retailer-sales totals.
+
+
+## What this analysis cannot establish
+
+
+- The source is observational: current evidence supports descriptive and associational claims, not causal claims.
+
+- Marketing treatment may be targeted from prior behavior, so campaign and purchasing associations can reflect selection into treatment.
+
+- Whether a recommended action changes behavior must be learned through a valid prospective design such as the stated randomized holdout.
+
+
+## Unobserved factors and alternative explanations
+
+
+- Unobserved: Purchases at competitors, restaurants, and other online or offline channels.
+
+- Unobserved: Relocation, travel, income or employment changes, household-composition changes, health, diet, and transportation access.
+
+- Unobserved: Customer satisfaction, service experiences, stockouts, discontinuations, assortment changes, and competitor conditions.
+
+- Unobserved: Customer intent and whether a particular household member noticed an advertisement or promotion.
+
+
+
+## Counterevidence review
 
 
 - No evidence record was designated as counterevidence.
-
-
-- No verified alternative explanation was recorded.
 
 
 ## Next Best Action
@@ -105,63 +160,63 @@ No measurement plan is available because no action passed verification.
 ## Evidence ledger
 
 
-| Evidence ID | Role | Tool | Status | Metric | Limitations |
-|---|---|---|---|---|---|
-| `ev_call-716a66bd6c-01-customer_trend_001` | Context | `customer_trend` | Ok | Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_002` | Context | `customer_trend` | Ok | Distinct Trips | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_003` | Context | `customer_trend` | Ok | Active Weeks | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_004` | Context | `customer_trend` | Ok | Average Retailer Sales Value Per Trip | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_005` | Context | `customer_trend` | Ok | Median Retailer Sales Value Per Trip | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_006` | Context | `customer_trend` | Ok | Recorded Quantity | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
-| `ev_call-716a66bd6c-01-customer_trend_007` | Context | `customer_trend` | Ok | Distinct Products | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_008` | Context | `customer_trend` | Ok | Recency Weeks | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_009` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value Slope | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_010` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_011` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_012` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_013` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_014` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_015` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_016` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_017` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_018` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_019` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_020` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_021` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_022` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_023` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_024` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_025` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-01-customer_trend_026` | Context | `customer_trend` | Ok | Full Window Weekly Retailer Sales Value Slope | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_001` | Context | `category_decomposition` | Ok | Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_002` | Context | `category_decomposition` | Ok | Product Mapping Line Item Coverage | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_003` | Context | `category_decomposition` | Ok | Product Mapping Distinct Product Coverage | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_004` | Context | `category_decomposition` | Ok | Unknown Group Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_005` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_006` | Context | `category_decomposition` | Ok | Category Percentage Change | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_007` | Context | `category_decomposition` | Ok | Category Share Shift | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_008` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_009` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_010` | Context | `category_decomposition` | Ok | Category Percentage Change | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_011` | Context | `category_decomposition` | Ok | Category Share Shift | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_012` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_013` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_014` | Context | `category_decomposition` | Ok | Category Percentage Change | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_015` | Context | `category_decomposition` | Ok | Category Share Shift | None recorded |
-| `ev_call-716a66bd6c-02-category_decomposition_016` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_001` | Context | `basket_behavior` | Ok | Basket Count | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_002` | Context | `basket_behavior` | Ok | Active Weeks | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_003` | Context | `basket_behavior` | Ok | Baskets Per Calendar Week | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_004` | Context | `basket_behavior` | Ok | Mean Basket Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_005` | Context | `basket_behavior` | Ok | Median Basket Retailer Sales Value | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_006` | Context | `basket_behavior` | Ok | Mean Recorded Quantity Per Basket | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
-| `ev_call-716a66bd6c-03-basket_behavior_007` | Context | `basket_behavior` | Ok | Median Recorded Quantity Per Basket | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
-| `ev_call-716a66bd6c-03-basket_behavior_008` | Context | `basket_behavior` | Ok | Mean Distinct Products Per Basket | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_009` | Context | `basket_behavior` | Ok | Mean Distinct Categories Per Basket | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_010` | Context | `basket_behavior` | Ok | Mean Basket Interval Days | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_011` | Context | `basket_behavior` | Ok | Median Basket Interval Days | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_012` | Context | `basket_behavior` | Ok | Primary Store Share | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_013` | Context | `basket_behavior` | Ok | Stores Visited | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_014` | Context | `basket_behavior` | Ok | Consecutive Store Switch Rate | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_015` | Context | `basket_behavior` | Ok | Primary Store Changed | None recorded |
-| `ev_call-716a66bd6c-03-basket_behavior_016` | Context | `basket_behavior` | Ok | Recent Baskets At New Store Share | None recorded |
+| Evidence ID | Role | Tool | Status | Metric | Maximum claim | Limitations |
+|---|---|---|---|---|---|---|
+| `ev_call-716a66bd6c-01-customer_trend_001` | Context | `customer_trend` | Ok | Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_002` | Context | `customer_trend` | Ok | Distinct Trips | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_003` | Context | `customer_trend` | Ok | Active Weeks | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_004` | Context | `customer_trend` | Ok | Average Retailer Sales Value Per Trip | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_005` | Context | `customer_trend` | Ok | Median Retailer Sales Value Per Trip | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_006` | Context | `customer_trend` | Ok | Recorded Quantity | Associational | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
+| `ev_call-716a66bd6c-01-customer_trend_007` | Context | `customer_trend` | Ok | Distinct Products | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_008` | Context | `customer_trend` | Ok | Recency Weeks | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_009` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value Slope | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_010` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_011` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_012` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_013` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_014` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_015` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_016` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_017` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_018` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_019` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_020` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_021` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_022` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_023` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_024` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_025` | Context | `customer_trend` | Ok | Weekly Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-01-customer_trend_026` | Context | `customer_trend` | Ok | Full Window Weekly Retailer Sales Value Slope | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_001` | Context | `category_decomposition` | Ok | Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_002` | Context | `category_decomposition` | Ok | Product Mapping Line Item Coverage | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_003` | Context | `category_decomposition` | Ok | Product Mapping Distinct Product Coverage | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_004` | Context | `category_decomposition` | Ok | Unknown Group Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_005` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_006` | Context | `category_decomposition` | Ok | Category Percentage Change | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_007` | Context | `category_decomposition` | Ok | Category Share Shift | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_008` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_009` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_010` | Context | `category_decomposition` | Ok | Category Percentage Change | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_011` | Context | `category_decomposition` | Ok | Category Share Shift | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_012` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_013` | Context | `category_decomposition` | Ok | Category Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_014` | Context | `category_decomposition` | Ok | Category Percentage Change | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_015` | Context | `category_decomposition` | Ok | Category Share Shift | Associational | None recorded |
+| `ev_call-716a66bd6c-02-category_decomposition_016` | Context | `category_decomposition` | Ok | Contribution To Lost Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_001` | Context | `basket_behavior` | Ok | Basket Count | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_002` | Context | `basket_behavior` | Ok | Active Weeks | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_003` | Context | `basket_behavior` | Ok | Baskets Per Calendar Week | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_004` | Context | `basket_behavior` | Ok | Mean Basket Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_005` | Context | `basket_behavior` | Ok | Median Basket Retailer Sales Value | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_006` | Context | `basket_behavior` | Ok | Mean Recorded Quantity Per Basket | Associational | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
+| `ev_call-716a66bd6c-03-basket_behavior_007` | Context | `basket_behavior` | Ok | Median Recorded Quantity Per Basket | Associational | Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure. |
+| `ev_call-716a66bd6c-03-basket_behavior_008` | Context | `basket_behavior` | Ok | Mean Distinct Products Per Basket | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_009` | Context | `basket_behavior` | Ok | Mean Distinct Categories Per Basket | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_010` | Context | `basket_behavior` | Ok | Mean Basket Interval Days | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_011` | Context | `basket_behavior` | Ok | Median Basket Interval Days | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_012` | Context | `basket_behavior` | Ok | Primary Store Share | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_013` | Context | `basket_behavior` | Ok | Stores Visited | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_014` | Context | `basket_behavior` | Ok | Consecutive Store Switch Rate | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_015` | Context | `basket_behavior` | Ok | Primary Store Changed | Associational | None recorded |
+| `ev_call-716a66bd6c-03-basket_behavior_016` | Context | `basket_behavior` | Ok | Recent Baskets At New Store Share | Associational | None recorded |

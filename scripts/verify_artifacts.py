@@ -678,6 +678,30 @@ def _validate_trace(
 
     for index, event in enumerate(events[1:-1], start=2):
         name = event.event
+        public_model_fields = (
+            ("investigation_question", "decision_summary")
+            if name is AuditEventName.MODEL_DECISION_RECEIVED
+            else (
+                ("investigation_question",)
+                if name is AuditEventName.TOOL_REQUESTED
+                else ()
+            )
+        )
+        for field in public_model_fields:
+            value = event.details.get(field)
+            if value is not None and (
+                not isinstance(value, str)
+                or not is_report_safe_qualitative(sanitize_public_text(value))
+            ):
+                issues.append(
+                    _issue(
+                        path,
+                        root,
+                        "unsafe_trace_prose",
+                        f"Trace event {index} contains unsafe public model prose in "
+                        f"{field!r}",
+                    )
+                )
         if expected_evidence and name is not AuditEventName.EVIDENCE_ADDED:
             issues.append(
                 _issue(
@@ -1692,6 +1716,84 @@ def _finish_request(events: Sequence[AuditEvent]) -> FinishRequestTrace | None:
     return None
 
 
+def _deduplicate_public_text(values: Sequence[str]) -> tuple[str, ...]:
+    """Return report-rendered text in deterministic first-seen order."""
+
+    return tuple(
+        dict.fromkeys(sanitize_public_text(value) for value in values if value)
+    )
+
+
+def _verification_issue_strings(event: AuditEvent) -> tuple[str, ...]:
+    """Recover the public issue strings emitted by one verifier rejection."""
+
+    raw_issues = event.details.get("issues")
+    if not isinstance(raw_issues, list):
+        return ()
+    issues: list[str] = []
+    for raw_issue in raw_issues:
+        if not isinstance(raw_issue, Mapping):
+            continue
+        code = raw_issue.get("code")
+        message = raw_issue.get("message")
+        if isinstance(code, str) and isinstance(message, str):
+            issues.append(f"{code}: {message}")
+    return tuple(issues)
+
+
+def _terminal_trace_reason(events: Sequence[AuditEvent]) -> str | None:
+    if not events:
+        return None
+    completion = events[-1]
+    raw_reason = completion.details.get("fallback_reason")
+    if raw_reason is None:
+        raw_reason = completion.details.get("message")
+    return raw_reason if isinstance(raw_reason, str) else None
+
+
+def _expected_report_verification_issues(
+    events: Sequence[AuditEvent],
+) -> tuple[str, ...]:
+    """Reconstruct terminal state.verification_issues from lifecycle events."""
+
+    if not events:
+        return ()
+    completion_status = events[-1].details.get("status")
+    fallback_started = any(
+        event.event is AuditEventName.VERIFICATION_STARTED
+        and event.details.get("deterministic_fallback") is True
+        for event in events
+    )
+    if not fallback_started:
+        # An ordinary pass clears earlier repair issues. A direct backend failure
+        # replaces them with only its public terminal error.
+        reason = _terminal_trace_reason(events)
+        return (reason,) if completion_status == "failed" and reason is not None else ()
+
+    ordinary_rejections = tuple(
+        issue
+        for event in events
+        if event.event is AuditEventName.VERIFICATION_REJECTED
+        and event.details.get("deterministic_fallback") is not True
+        for issue in _verification_issue_strings(event)
+    )
+    fallback_rejections = tuple(
+        issue
+        for event in events
+        if event.event is AuditEventName.VERIFICATION_REJECTED
+        and event.details.get("deterministic_fallback") is True
+        for issue in _verification_issue_strings(event)
+    )
+    reason = _terminal_trace_reason(events)
+    return _deduplicate_public_text(
+        (
+            *ordinary_rejections,
+            *((reason,) if reason is not None else ()),
+            *fallback_rejections,
+        )
+    )
+
+
 def _expected_report_evidence(
     record: EvidenceRecord,
     status: ToolStatus,
@@ -1862,28 +1964,14 @@ def _validate_report_trace_pair(
                 "retried tool attempts",
             )
         )
-    required_limitations = {
-        item for step in expected_steps for item in step.limitations
-    } | {item for record, _ in trace.evidence for item in record.limitations}
-    if report.decline.partial_week_limitation:
-        required_limitations.add(report.decline.partial_week_limitation)
-    if report.failure_reason:
-        required_limitations.add(report.failure_reason)
-    required_limitations.update(report.verification_issues)
-    for warning in expected_warnings:
-        if warning.unavailable:
-            required_limitations.add(
-                f"{_TOOL_LABELS[warning.tool_name.value]} is unavailable after its "
-                "bounded retry policy was exhausted."
-            )
-    if not required_limitations.issubset(set(report.limitations)):
+    expected_verification_issues = _expected_report_verification_issues(trace.events)
+    if report.verification_issues != expected_verification_issues:
         issues.append(
             _issue(
                 report_path,
                 root,
-                "report_limitation_mismatch",
-                "Report omits a detector, tool, evidence, failure, or verifier "
-                "limitation",
+                "report_verification_issue_mismatch",
+                "Report verification issues are not the exact trace reconstruction",
             )
         )
     qualitative_claims = (
@@ -2488,6 +2576,80 @@ def _validate_report_trace_pair(
                         "Report action does not satisfy its catalog evidence policy",
                     )
                 )
+    expected_limitation_values: list[str] = []
+    if report.decline.partial_week_limitation:
+        expected_limitation_values.append(report.decline.partial_week_limitation)
+    expected_limitation_values.extend(
+        limitation for step in expected_steps for limitation in step.limitations
+    )
+    for warning in expected_warnings:
+        if not warning.unavailable:
+            continue
+        expected_limitation_values.append(
+            f"{_TOOL_LABELS[warning.tool_name.value]} is unavailable after its "
+            "bounded retry policy was exhausted."
+        )
+    expected_limitation_values.extend(
+        limitation for record, _ in trace.evidence for limitation in record.limitations
+    )
+    if report.action is not None:
+        # These raw tool-name notices come from the verifier's propagated
+        # limitations, in addition to the report builder's humanized warning.
+        expected_limitation_values.extend(
+            f"{warning.tool_name.value} is unavailable after its bounded retry "
+            "policy was exhausted."
+            for warning in expected_warnings
+            if warning.unavailable
+        )
+        if confidence_policy is not None:
+            expected_limitation_values.extend(confidence_policy.context_limitations)
+            expected_limitation_values.extend(
+                confidence_policy.category_context_limitations
+            )
+        expected_limitation_values.extend(_VERIFIED_UNCERTAINTIES)
+    trace_failure = _terminal_trace_reason(trace.events)
+    if trace_failure is not None:
+        expected_limitation_values.append(trace_failure)
+    expected_limitation_values.extend(expected_verification_issues)
+    expected_limitations = _deduplicate_public_text(expected_limitation_values)
+    if len(report.limitations) != len(set(report.limitations)) or set(
+        report.limitations
+    ) != set(expected_limitations):
+        issues.append(
+            _issue(
+                report_path,
+                root,
+                "report_limitation_mismatch",
+                "Report limitations are not the exact detector, trace, evidence, "
+                "confidence, failure, and verifier reconstruction",
+            )
+        )
+
+    # Deterministic source-owned limitations may legitimately contain cohort sizes,
+    # weeks, timeouts, or Type A coupon counts. Re-scan only report-authored extras;
+    # exact reconstruction above is the authority for legitimate quantities.
+    expected_limitation_set = set(expected_limitations)
+    expected_verification_set = set(expected_verification_issues)
+    unexpected_public_prose = (
+        *(item for item in report.limitations if item not in expected_limitation_set),
+        *(
+            item
+            for item in report.verification_issues
+            if item not in expected_verification_set
+        ),
+    )
+    if any(
+        not is_report_safe_qualitative(item) for item in unexpected_public_prose
+    ) and not any(item.code == "unsafe_report_prose" for item in issues):
+        issues.append(
+            _issue(
+                report_path,
+                root,
+                "unsafe_report_prose",
+                "Report prose contains a forbidden numerical, causal, or exposure "
+                "claim",
+            )
+        )
     return issues
 
 

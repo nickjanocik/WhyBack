@@ -573,7 +573,7 @@ def test_causal_model_decision_prose_is_not_stored_or_traced(tmp_path: Path) -> 
     assert history.investigation_question == (
         "Investigate the next permitted evidence source."
     )
-    assert history.decision_summary == "Choose one bounded, evidence-seeking next step."
+    assert history.decision_summary == "Choose a bounded, evidence-seeking next step."
     serialized_trace = trace_path.read_text(encoding="utf-8")
     assert "stemmed from" not in serialized_trace
     assert "was exposed" not in serialized_trace

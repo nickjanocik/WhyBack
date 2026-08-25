@@ -920,6 +920,7 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
         ("Promotions did not explain sales but caused churn.", False),
         ("Fewer visits made them disengage.", False),
         ("Promotion loss contributed to the decline.", False),
+        ("Which categories contribute to lost retailer sales value?", True),
         ("Promotions did not cause decline and did not cause churn.", True),
     ),
 )

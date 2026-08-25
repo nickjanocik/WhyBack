@@ -33,6 +33,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_001",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 12.0,
@@ -41,6 +42,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -51,6 +53,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_002",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "distinct_trips",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 2.0,
@@ -59,6 +62,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "count",
       "value": null
     },
@@ -69,6 +73,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_003",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "active_weeks",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 2.0,
@@ -77,6 +82,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "weeks",
       "value": null
     },
@@ -87,6 +93,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_004",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "average_retailer_sales_value_per_trip",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 6.0,
@@ -95,6 +102,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value_per_trip",
       "value": null
     },
@@ -105,6 +113,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_005",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "median_retailer_sales_value_per_trip",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 6.0,
@@ -113,6 +122,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value_per_trip",
       "value": null
     },
@@ -125,6 +135,7 @@
       "limitations": [
         "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure."
       ],
+      "maximum_claim_type": "associational",
       "metric": "recorded_quantity",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 2.0,
@@ -133,6 +144,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "recorded_quantity",
       "value": null
     },
@@ -143,6 +155,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_007",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "distinct_products",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 2.0,
@@ -151,6 +164,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "count",
       "value": null
     },
@@ -161,6 +175,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_008",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "recency_weeks",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": 6.0,
@@ -169,6 +184,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "weeks",
       "value": null
     },
@@ -179,6 +195,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_009",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value_slope",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": -0.8571428571428571,
@@ -187,6 +204,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value_per_week",
       "value": null
     },
@@ -199,6 +217,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_010",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -207,6 +226,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -219,6 +239,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_011",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -227,6 +248,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -239,6 +261,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_012",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -247,6 +270,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -259,6 +283,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_013",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -267,6 +292,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -279,6 +305,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_014",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -287,6 +314,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -299,6 +327,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_015",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -307,6 +336,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -319,6 +349,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_016",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -327,6 +358,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -339,6 +371,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_017",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -347,6 +380,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 20.0
     },
@@ -359,6 +393,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_018",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -367,6 +402,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 6.0
     },
@@ -379,6 +415,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_019",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -387,6 +424,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 6.0
     },
@@ -399,6 +437,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_020",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -407,6 +446,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -419,6 +459,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_021",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -427,6 +468,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -439,6 +481,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_022",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -447,6 +490,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -459,6 +503,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_023",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -467,6 +512,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -479,6 +525,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_024",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -487,6 +534,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -499,6 +547,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_025",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "weekly_retailer_sales_value",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -507,6 +556,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": 0.0
     },
@@ -517,6 +567,7 @@
       "evidence_id": "ev_call-716a66bd6c-01-customer_trend_026",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "full_window_weekly_retailer_sales_value_slope",
       "query_hash": "79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3",
       "recent_value": null,
@@ -525,6 +576,7 @@
       "source_status": "ok",
       "source_tool": "customer_trend",
       "source_tool_call_id": "call-716a66bd6c-01-customer_trend",
+      "text_value": null,
       "unit": "retailer_sales_value_per_week",
       "value": -1.8470588235294119
     },
@@ -535,6 +587,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_001",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 12.0,
@@ -543,6 +596,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -553,6 +607,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_002",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "product_mapping_line_item_coverage",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -561,6 +616,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "ratio",
       "value": 1.0
     },
@@ -571,6 +627,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_003",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "product_mapping_distinct_product_coverage",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -579,6 +636,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "ratio",
       "value": 1.0
     },
@@ -589,6 +647,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_004",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "unknown_group_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 6.0,
@@ -597,6 +656,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -611,6 +671,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_005",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 6.0,
@@ -619,6 +680,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -633,6 +695,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_006",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_percentage_change",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -641,6 +704,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "ratio",
       "value": -0.9
     },
@@ -655,6 +719,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_007",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_share_shift",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 0.5,
@@ -663,6 +728,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": null
     },
@@ -677,6 +743,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_008",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "contribution_to_lost_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -685,6 +752,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": 0.36486486486486486
     },
@@ -699,6 +767,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_009",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 0.0,
@@ -707,6 +776,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -721,6 +791,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_010",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_percentage_change",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -729,6 +800,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "ratio",
       "value": -1.0
     },
@@ -743,6 +815,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_011",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_share_shift",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 0.0,
@@ -751,6 +824,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": null
     },
@@ -765,6 +839,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_012",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "contribution_to_lost_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -773,6 +848,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": 0.33783783783783783
     },
@@ -787,6 +863,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_013",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 6.0,
@@ -795,6 +872,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "retailer_sales_value",
       "value": null
     },
@@ -809,6 +887,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_014",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_percentage_change",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -817,6 +896,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "ratio",
       "value": -0.88
     },
@@ -831,6 +911,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_015",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "category_share_shift",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": 0.5,
@@ -839,6 +920,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": null
     },
@@ -853,6 +935,7 @@
       "evidence_id": "ev_call-716a66bd6c-02-category_decomposition_016",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "contribution_to_lost_retailer_sales_value",
       "query_hash": "697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761",
       "recent_value": null,
@@ -861,6 +944,7 @@
       "source_status": "ok",
       "source_tool": "category_decomposition",
       "source_tool_call_id": "call-716a66bd6c-02-category_decomposition",
+      "text_value": null,
       "unit": "share",
       "value": 0.2972972972972973
     },
@@ -871,6 +955,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_001",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "basket_count",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 2.0,
@@ -879,6 +964,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "count",
       "value": null
     },
@@ -889,6 +975,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_002",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "active_weeks",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 2.0,
@@ -897,6 +984,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "weeks",
       "value": null
     },
@@ -907,6 +995,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_003",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "baskets_per_calendar_week",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 0.25,
@@ -915,6 +1004,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "baskets_per_week",
       "value": null
     },
@@ -925,6 +1015,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_004",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "mean_basket_retailer_sales_value",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 6.0,
@@ -933,6 +1024,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "retailer_sales_value_per_basket",
       "value": null
     },
@@ -943,6 +1035,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_005",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "median_basket_retailer_sales_value",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 6.0,
@@ -951,6 +1044,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "retailer_sales_value_per_basket",
       "value": null
     },
@@ -963,6 +1057,7 @@
       "limitations": [
         "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure."
       ],
+      "maximum_claim_type": "associational",
       "metric": "mean_recorded_quantity_per_basket",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -971,6 +1066,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "recorded_quantity_per_basket",
       "value": null
     },
@@ -983,6 +1079,7 @@
       "limitations": [
         "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure."
       ],
+      "maximum_claim_type": "associational",
       "metric": "median_recorded_quantity_per_basket",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -991,6 +1088,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "recorded_quantity_per_basket",
       "value": null
     },
@@ -1001,6 +1099,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_008",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "mean_distinct_products_per_basket",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -1009,6 +1108,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "products_per_basket",
       "value": null
     },
@@ -1019,6 +1119,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_009",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "mean_distinct_categories_per_basket",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -1027,6 +1128,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "categories_per_basket",
       "value": null
     },
@@ -1037,6 +1139,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_010",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "mean_basket_interval_days",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 7.0,
@@ -1045,6 +1148,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "days",
       "value": null
     },
@@ -1055,6 +1159,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_011",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "median_basket_interval_days",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 7.0,
@@ -1063,6 +1168,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "days",
       "value": null
     },
@@ -1073,6 +1179,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_012",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "primary_store_share",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -1081,6 +1188,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "share",
       "value": null
     },
@@ -1091,6 +1199,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_013",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "stores_visited",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 1.0,
@@ -1099,6 +1208,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "count",
       "value": null
     },
@@ -1109,6 +1219,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_014",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "consecutive_store_switch_rate",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": 0.0,
@@ -1117,6 +1228,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "share",
       "value": null
     },
@@ -1130,6 +1242,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_015",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "primary_store_changed",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": null,
@@ -1138,6 +1251,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "boolean_indicator",
       "value": 0.0
     },
@@ -1148,6 +1262,7 @@
       "evidence_id": "ev_call-716a66bd6c-03-basket_behavior_016",
       "household_id": "101",
       "limitations": [],
+      "maximum_claim_type": "associational",
       "metric": "recent_baskets_at_new_store_share",
       "query_hash": "052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88",
       "recent_value": null,
@@ -1156,6 +1271,7 @@
       "source_status": "ok",
       "source_tool": "basket_behavior",
       "source_tool_call_id": "call-716a66bd6c-03-basket_behavior",
+      "text_value": null,
       "unit": "share",
       "value": 0.0
     }
@@ -1163,6 +1279,23 @@
   "failure_reason": "Gemini Interactions request failed",
   "household_id": "101",
   "human_review_required": true,
+  "interpretation_limits": {
+    "causal_limitations": [
+      "The source is observational: current evidence supports descriptive and associational claims, not causal claims.",
+      "Marketing treatment may be targeted from prior behavior, so campaign and purchasing associations can reflect selection into treatment.",
+      "Whether a recommended action changes behavior must be learned through a valid prospective design such as the stated randomized holdout."
+    ],
+    "observed_scope": [
+      "Recorded retailer sales value, distinct baskets, and active weeks in the declared baseline and recent windows.",
+      "Recorded category movement, including explicit UNKNOWN mappings and reconciled retailer-sales totals."
+    ],
+    "unobserved_factors": [
+      "Purchases at competitors, restaurants, and other online or offline channels.",
+      "Relocation, travel, income or employment changes, household-composition changes, health, diet, and transportation access.",
+      "Customer satisfaction, service experiences, stockouts, discontinuations, assortment changes, and competitor conditions.",
+      "Customer intent and whether a particular household member noticed an advertisement or promotion."
+    ]
+  },
   "investigation_path": [
     {
       "attempt_count": 1,
@@ -1272,6 +1405,50 @@
     "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
     "Gemini Interactions request failed"
   ],
+  "population_context": {
+    "behavioral_peers": {
+      "available": false,
+      "cohort": "behavioral_peers",
+      "cohort_count": 0,
+      "construction_method": "Nearest target-excluded households after robust scaling of declared baseline behavioral features; demographics are not used.",
+      "declining_household_share": null,
+      "evidence_ids": [],
+      "limitations": [
+        "Comparison context is unavailable or below its declared cohort minimum."
+      ],
+      "median_change": null,
+      "q25_change": null,
+      "q75_change": null,
+      "target_excluded": true,
+      "target_minus_median_change": null,
+      "target_percentile": null
+    },
+    "category_context": [],
+    "classification_evidence_id": null,
+    "classification_evidence_ids": [],
+    "context_classification": "insufficient_context",
+    "eligible_population": {
+      "available": false,
+      "cohort": "eligible_population",
+      "cohort_count": 0,
+      "construction_method": "Households meeting the declared baseline active-week, distinct-basket, and positive retailer-sales eligibility criteria; the target is excluded.",
+      "declining_household_share": null,
+      "evidence_ids": [],
+      "limitations": [
+        "Comparison context is unavailable or below its declared cohort minimum."
+      ],
+      "median_change": null,
+      "q25_change": null,
+      "q75_change": null,
+      "target_excluded": true,
+      "target_minus_median_change": null,
+      "target_percentile": null
+    },
+    "limitations": [
+      "Population context is unavailable or below its declared cohort minimum."
+    ],
+    "target_retailer_sales_change": null
+  },
   "product_name": "WhyBack",
   "provenance": {
     "application_version": "0.1.0",

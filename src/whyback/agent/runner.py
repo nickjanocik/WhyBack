@@ -292,7 +292,7 @@ class InvestigationRunner:
                     ),
                     "decision_summary": _safe_model_prose(
                         backend_decision.decision.decision_summary,
-                        fallback="Choose one bounded, evidence-seeking next step.",
+                        fallback="Choose a bounded, evidence-seeking next step.",
                     ),
                 }
             )

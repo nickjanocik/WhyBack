@@ -162,7 +162,7 @@ def _report() -> dict[str, object]:
             "The fixture intentionally records a failed run.",
         ],
         "tool_warnings": [],
-        "verification_issues": [],
+        "verification_issues": ["The fixture intentionally records a failed run."],
         "failure_reason": "The fixture intentionally records a failed run.",
         "human_review_required": True,
     }
@@ -582,6 +582,7 @@ def _write_live_artifacts(root: Path) -> None:
     )
     report["run_status"] = "insufficient_evidence"
     report["failure_reason"] = None
+    report["verification_issues"] = []
     report["alternative_explanations"] = [
         "Recorded evidence does not distinguish the observed signal from unobserved "
         "activity outside this retailer."
@@ -592,6 +593,8 @@ def _write_live_artifacts(root: Path) -> None:
     ]
     report["limitations"] = [
         "Week 53 may be partial.",
+        "Eligible-population and behavioral-peer context was not available; missing "
+        "context must not be interpreted as neutral movement.",
         "Customer intent and activity outside the recorded retailer data are not "
         "observed.",
     ]
@@ -1193,6 +1196,51 @@ def test_artifact_verifier_reconstructs_methodology_sections_from_trace(
     limits_codes = {item.code for item in limits_result.issues}
     assert "report_interpretation_limits_mismatch" in limits_codes
     assert "unsafe_report_prose" in limits_codes
+
+
+def test_artifact_verifier_rejects_coordinated_public_issue_tampering(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    report_path = tmp_path / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    unsafe = "Reduced promotions caused the decline by 42%."
+    report["limitations"].append(unsafe)
+    report["verification_issues"].append(unsafe)
+    _write_exact_report_bundle(report_path, report)
+    _write_results_files(tmp_path)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    codes = {item.code for item in result.issues}
+    assert "report_limitation_mismatch" in codes
+    assert "report_verification_issue_mismatch" in codes
+    assert "unsafe_report_prose" in codes
+
+
+def test_artifact_verifier_rejects_unsafe_model_prose_in_rendered_trace(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    decision = next(
+        row
+        for row in rows
+        if row["event"] == AuditEventName.MODEL_DECISION_RECEIVED.value
+    )
+    decision["details"]["decision_summary"] = (
+        "Reduced promotions caused the decline by 42%."
+    )
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert "unsafe_trace_prose" in {item.code for item in result.issues}
 
 
 def test_live_history_and_skip_are_credential_independent(
