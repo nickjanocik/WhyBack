@@ -29,6 +29,7 @@ def test_tool_call_id_is_stable_and_one_indexed() -> None:
                 ToolName.CUSTOMER_TREND,
                 ToolName.CATEGORY_DECOMPOSITION,
                 ToolName.BASKET_BEHAVIOR,
+                ToolName.PEER_COMPARISON,
             ],
         ),
         (
@@ -37,6 +38,7 @@ def test_tool_call_id_is_stable_and_one_indexed() -> None:
                 ToolName.COUPON_CAMPAIGN_HISTORY,
                 ToolName.CUSTOMER_TREND,
                 ToolName.BASKET_BEHAVIOR,
+                ToolName.PEER_COMPARISON,
             ],
         ),
         (
@@ -45,6 +47,7 @@ def test_tool_call_id_is_stable_and_one_indexed() -> None:
                 ToolName.PROMOTION_RESPONSE,
                 ToolName.CUSTOMER_TREND,
                 ToolName.BASKET_BEHAVIOR,
+                ToolName.PEER_COMPARISON,
             ],
         ),
     ],

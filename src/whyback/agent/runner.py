@@ -184,6 +184,7 @@ class InvestigationRunner:
                 "open_questions": (
                     "Which observed behavioral changes best explain the decline?",
                     "What evidence argues against the leading explanation?",
+                    "Is the decline unusual relative to population and peer movement?",
                 )
             }
         )
@@ -334,6 +335,14 @@ class InvestigationRunner:
                         decision.final.supporting_evidence_ids
                     ),
                     "counterevidence_ids": list(decision.final.counterevidence_ids),
+                    "driver_claim_types": [
+                        driver.claim_type.value
+                        for driver in decision.final.driver_summary
+                    ],
+                    "driver_counterevidence_ids": [
+                        list(driver.counterevidence_ids)
+                        for driver in decision.final.driver_summary
+                    ],
                 },
             )
             self._emit(
@@ -376,6 +385,10 @@ class InvestigationRunner:
                         "confidence_cap_applied": (
                             verification.final.confidence_cap_applied
                         ),
+                        "confidence_adjustments": [
+                            item.model_dump(mode="json")
+                            for item in verification.final.confidence_adjustments
+                        ],
                         "supporting_evidence_ids": list(
                             verification.final.supporting_evidence_ids
                         ),
@@ -829,6 +842,14 @@ class InvestigationRunner:
                     "next_best_action_id": ActionId.INSUFFICIENT_EVIDENCE.value,
                     "resolved_confidence": ResolvedConfidence.INSUFFICIENT.value,
                     "confidence_cap_applied": True,
+                    "confidence_adjustments": [
+                        item.model_dump(mode="json")
+                        for item in (
+                            fallback_verification.final.confidence_adjustments
+                            if fallback_verification.final is not None
+                            else ()
+                        )
+                    ],
                     "supporting_evidence_ids": [],
                     "counterevidence_ids": [],
                 },

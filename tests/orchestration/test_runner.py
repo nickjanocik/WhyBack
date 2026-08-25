@@ -25,6 +25,7 @@ from whyback.config import AgentConfig
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType, ContextClassification
 from whyback.observability import AuditEventName, AuditJsonlWriter, read_audit_events
 from whyback.tools.contracts import (
     CustomerTrendInput,
@@ -86,7 +87,12 @@ def _finish(
         (
             DriverClaim(
                 summary="Reduced visit frequency is a plausible driver.",
+                claim_type=ClaimType.ASSOCIATIONAL,
                 supporting_evidence_ids=evidence_ids,
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("The evidence is observational.",),
             ),
         )
         if evidence_ids
@@ -150,6 +156,31 @@ def test_frequency_path_executes_selected_tool_then_verified_finish(
     assert outcome.state.model_usage.decisions == 2
 
 
+def test_context_confidence_adjustment_is_recorded_in_audit(
+    tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "context.trace.jsonl"
+    backend = ScriptedBackend([_tool(), _finish()])
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(tmp_path / "prepared", backend, audit_writer=writer)
+
+    passed = next(
+        event
+        for event in read_audit_events(trace_path)
+        if event.event is AuditEventName.VERIFICATION_PASSED
+    )
+    adjustments = passed.details["confidence_adjustments"]
+
+    assert outcome.verification is not None and outcome.verification.final is not None
+    assert isinstance(adjustments, list) and adjustments
+    assert adjustments[0]["context_classification"] == (
+        ContextClassification.INSUFFICIENT_CONTEXT.value
+    )
+    assert adjustments[0]["maximum_confidence"] == "medium"
+    assert adjustments[0]["reason"]
+    assert adjustments[0]["evidence_ids"] == []
+
+
 def test_exact_duplicate_is_refused_without_second_execution(tmp_path: Path) -> None:
     backend = ScriptedBackend([_tool(), _tool(), _finish()])
 
@@ -192,6 +223,37 @@ def test_verifier_allows_exactly_one_structured_repair(tmp_path: Path) -> None:
     assert outcome.state.model_usage.decisions == 2
     assert backend.calls[1].allowed_tools == ()
     assert backend.calls[1].repair_issues
+
+
+def test_repair_cannot_upgrade_observational_evidence_to_causal(
+    tmp_path: Path,
+) -> None:
+    valid_finish = _finish()
+    assert valid_finish.final.driver_summary
+    causal_driver = valid_finish.final.driver_summary[0].model_copy(
+        update={"claim_type": ClaimType.CAUSAL}
+    )
+    causal_finish = valid_finish.model_copy(
+        update={
+            "final": valid_finish.final.model_copy(
+                update={"driver_summary": (causal_driver,)}
+            )
+        }
+    )
+    backend = ScriptedBackend([_tool(), causal_finish, causal_finish])
+
+    outcome = _run(tmp_path, backend)
+
+    assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
+    assert outcome.state.model_usage.decisions == 3
+    assert any(
+        "unsupported_causal_claim" in issue
+        for issue in outcome.state.verification_issues
+    )
+    assert all(
+        evidence.maximum_claim_type is not ClaimType.CAUSAL
+        for evidence in outcome.state.evidence_ledger
+    )
 
 
 def test_model_turn_budget_stops_a_loop_and_returns_safe_fallback(
@@ -329,7 +391,12 @@ def test_timeout_once_retries_then_uses_real_promotion_evidence(
             driver_summary=(
                 DriverClaim(
                     summary="Promotion-associated purchasing is a plausible driver.",
+                    claim_type=ClaimType.ASSOCIATIONAL,
                     supporting_evidence_ids=(promotion_evidence_id,),
+                    no_material_counterevidence_reason=(
+                        "No material counterevidence was identified."
+                    ),
+                    limitations=("The evidence is observational.",),
                 ),
             ),
             proposed_confidence=ConfidenceLevel.MEDIUM,

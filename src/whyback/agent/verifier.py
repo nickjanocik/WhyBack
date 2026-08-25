@@ -23,6 +23,11 @@ from whyback.agent.state import (
     InvestigationState,
     ResolvedConfidence,
 )
+from whyback.methodology import (
+    ClaimType,
+    ContextClassification,
+    resolve_context_classifications,
+)
 from whyback.tools.contracts import (
     SUCCESS_STATUSES,
     EvidenceRecord,
@@ -43,6 +48,8 @@ class VerificationIssueCode(StrEnum):
     ACTION_CONTRAINDICATION = "action_contraindication"
     UNSUPPORTED_NUMERICAL_CLAIM = "unsupported_numerical_claim"
     UNSUPPORTED_CAUSAL_CLAIM = "unsupported_causal_claim"
+    CLAIM_STRENGTH_EXCEEDED = "claim_strength_exceeded"
+    INVALID_CONTEXT_EVIDENCE = "invalid_context_evidence"
     COUNTEREVIDENCE_CONFLICT = "counterevidence_conflict"
     PEER_SELF_COMPARISON = "peer_self_comparison"
     CATEGORY_RECONCILIATION = "category_reconciliation"
@@ -57,6 +64,17 @@ class VerificationIssue(BaseModel):
     message: str = Field(min_length=1)
 
 
+class ConfidenceAdjustment(BaseModel):
+    """One deterministic context-based maximum-confidence decision."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    context_classification: ContextClassification
+    maximum_confidence: ResolvedConfidence
+    reason: str = Field(min_length=1)
+    evidence_ids: tuple[str, ...] = ()
+
+
 class VerifiedFinalDecision(BaseModel):
     """A report-safe conclusion whose numeric content is resolved from evidence."""
 
@@ -66,6 +84,7 @@ class VerifiedFinalDecision(BaseModel):
     proposed_confidence: ConfidenceLevel
     resolved_confidence: ResolvedConfidence
     confidence_cap_applied: bool
+    confidence_adjustments: tuple[ConfidenceAdjustment, ...] = ()
     supporting_evidence_ids: tuple[str, ...]
     counterevidence_ids: tuple[str, ...]
     next_best_action_id: ActionId
@@ -111,6 +130,10 @@ _CAUSAL_CLAIM = re.compile(
     r"reduce|prevent|decrease))\b",
     re.IGNORECASE,
 )
+_NEGATED_CAUSAL_PREFIX = re.compile(
+    r"(?:\bcannot|\bcan\s+not|\bnot(?!\s+only\b))(?:\s+\w+){0,4}\s*$",
+    re.IGNORECASE,
+)
 _EXPOSURE_CLAIM = re.compile(
     r"\b(?:household|customer)\s+(?:was|were|is)\s+exposed\b|"
     r"\breceived\s+(?:the|a)\s+(?:promotion|offer)\b|"
@@ -132,6 +155,25 @@ _PROPOSED_TO_RESOLVED = {
     ConfidenceLevel.MEDIUM: ResolvedConfidence.MEDIUM,
     ConfidenceLevel.HIGH: ResolvedConfidence.HIGH,
 }
+_CLAIM_ORDER = {
+    ClaimType.DESCRIPTIVE: 0,
+    ClaimType.ASSOCIATIONAL: 1,
+    ClaimType.CAUSAL: 2,
+}
+_CONTEXT_CLASSIFICATION_METRIC = "context_classification"
+_CATEGORY_CONTEXT_CLASSIFICATION_METRIC = "category_context_classification"
+_MISSING_CONTEXT_LIMITATION = (
+    "Eligible-population and behavioral-peer context was not available; missing "
+    "context must not be interpreted as neutral movement."
+)
+_OBSERVATIONAL_DRIVER_LIMITATION = (
+    "The observational evidence supports an association, not a causal explanation "
+    "of the household's behavior."
+)
+_MISSING_CATEGORY_CONTEXT_LIMITATION = (
+    "Category-population context was unavailable for a cited category loss; missing "
+    "category context must not be interpreted as customer-specific movement."
+)
 _DRIVER_TEMPLATES = {
     ActionId.CATEGORY_WINBACK: (
         "A recorded mapped category-level loss is a plausible contributor to the "
@@ -154,6 +196,37 @@ _DRIVER_TEMPLATES = {
         "underlying reason remains uncertain."
     ),
 }
+_DESCRIPTIVE_DRIVER_TEMPLATES = {
+    ActionId.CATEGORY_WINBACK: (
+        "A recorded mapped category-level loss is present in the observed decline."
+    ),
+    ActionId.VISIT_FREQUENCY_REACTIVATION: (
+        "Recorded visit cadence declined during the observed period."
+    ),
+    ActionId.PROMOTION_VALUE_REENGAGEMENT: (
+        "Recorded promotion-associated or coupon activity declined during the "
+        "observed period."
+    ),
+    ActionId.PERSONALIZED_CHECK_IN: (
+        "Multiple distinct computed behavioral measures changed during the observed "
+        "period."
+    ),
+    ActionId.MONITOR: (
+        "A recorded decline signal is present and warrants monitored reassessment; "
+        "its underlying reason remains unknown."
+    ),
+}
+
+
+def contains_unsupported_causal_claim(text: str) -> bool:
+    """Return whether text contains a causal assertion rather than a denial."""
+
+    for match in _CAUSAL_CLAIM.finditer(text):
+        prefix = text[max(0, match.start() - 80) : match.start()]
+        if _NEGATED_CAUSAL_PREFIX.search(prefix):
+            continue
+        return True
+    return False
 
 
 def is_report_safe_qualitative(text: str) -> bool:
@@ -164,10 +237,9 @@ def is_report_safe_qualitative(text: str) -> bool:
         for pattern in (
             _NUMERICAL_CLAIM,
             _QUANTITATIVE_WORD_CLAIM,
-            _CAUSAL_CLAIM,
             _EXPOSURE_CLAIM,
         )
-    )
+    ) and not contains_unsupported_causal_claim(text)
 
 
 def _append_issue(
@@ -187,6 +259,12 @@ def _deduplicate(values: list[str]) -> tuple[str, ...]:
 def _free_text(proposal: FinishProposal) -> tuple[str, ...]:
     return (
         *(driver.summary for driver in proposal.driver_summary),
+        *(
+            driver.no_material_counterevidence_reason
+            for driver in proposal.driver_summary
+            if driver.no_material_counterevidence_reason is not None
+        ),
+        *(item for driver in proposal.driver_summary for item in driver.limitations),
         proposal.rationale,
         *proposal.alternative_explanations,
         *proposal.uncertainties,
@@ -236,6 +314,204 @@ def _confidence_cap(
     return ResolvedConfidence.MEDIUM
 
 
+def _lower_confidence_cap(
+    left: ResolvedConfidence, right: ResolvedConfidence
+) -> ResolvedConfidence:
+    return left if _CONFIDENCE_ORDER[left] <= _CONFIDENCE_ORDER[right] else right
+
+
+def _context_assessment(
+    records: tuple[EvidenceRecord, ...],
+    issues: list[VerificationIssue],
+) -> tuple[ContextClassification, tuple[str, ...], tuple[str, ...]]:
+    context_records = tuple(
+        record for record in records if record.metric == _CONTEXT_CLASSIFICATION_METRIC
+    )
+    if not context_records:
+        return (
+            ContextClassification.INSUFFICIENT_CONTEXT,
+            (),
+            (_MISSING_CONTEXT_LIMITATION,),
+        )
+
+    classifications: list[ContextClassification] = []
+    for record in context_records:
+        try:
+            classifications.append(ContextClassification(record.text_value))
+        except (TypeError, ValueError):
+            _append_issue(
+                issues,
+                VerificationIssueCode.INVALID_CONTEXT_EVIDENCE,
+                "Context classification evidence did not contain a recognized value: "
+                f"{record.evidence_id}",
+            )
+    evidence_ids = tuple(record.evidence_id for record in context_records)
+    limitations = _deduplicate(
+        [item for record in context_records for item in record.limitations]
+    )
+    if not classifications:
+        return (
+            ContextClassification.INSUFFICIENT_CONTEXT,
+            evidence_ids,
+            (*limitations, _MISSING_CONTEXT_LIMITATION),
+        )
+    # Multiple bounded calls can create multiple classifications. Resolve conflicts
+    # conservatively so a model cannot select the most favorable record.
+    return (
+        resolve_context_classifications(tuple(classifications)),
+        evidence_ids,
+        limitations,
+    )
+
+
+def _context_confidence_adjustments(
+    classification: ContextClassification,
+    evidence_ids: tuple[str, ...],
+) -> tuple[ConfidenceAdjustment, ...]:
+    if classification is ContextClassification.CUSTOMER_SPECIFIC:
+        return ()
+    if classification is ContextClassification.BROAD_CONTEXT:
+        return (
+            ConfidenceAdjustment(
+                context_classification=classification,
+                maximum_confidence=ResolvedConfidence.LOW,
+                reason=(
+                    "The target resembles broad contemporaneous population and peer "
+                    "movement, limiting confidence in a customer-specific explanation."
+                ),
+                evidence_ids=evidence_ids,
+            ),
+        )
+    if classification is ContextClassification.MIXED:
+        reason = (
+            "Population and peer context is mixed, so a uniquely customer-specific "
+            "interpretation cannot receive high confidence."
+        )
+    else:
+        reason = (
+            "Population or peer context is insufficient, so missing comparison "
+            "evidence cannot be treated as neutral."
+        )
+    return (
+        ConfidenceAdjustment(
+            context_classification=classification,
+            maximum_confidence=ResolvedConfidence.MEDIUM,
+            reason=reason,
+            evidence_ids=evidence_ids,
+        ),
+    )
+
+
+def _category_context_adjustments(
+    action: ActionDefinition,
+    supporting_records: tuple[EvidenceRecord, ...],
+    full_ledger_records: tuple[EvidenceRecord, ...],
+    issues: list[VerificationIssue],
+) -> tuple[tuple[ConfidenceAdjustment, ...], tuple[str, ...]]:
+    if action.action_id is not ActionId.CATEGORY_WINBACK:
+        return (), ()
+
+    dimension_keys = ("department", "product_category", "direction")
+    cited_categories = {
+        tuple(record.dimensions.get(key) for key in dimension_keys)
+        for record in supporting_records
+        if record.metric
+        in {
+            "category_retailer_sales_value",
+            "contribution_to_lost_retailer_sales_value",
+        }
+        and all(record.dimensions.get(key) is not None for key in dimension_keys)
+    }
+    context_records = tuple(
+        record
+        for record in full_ledger_records
+        if record.metric == _CATEGORY_CONTEXT_CLASSIFICATION_METRIC
+        and tuple(record.dimensions.get(key) for key in dimension_keys)
+        in cited_categories
+    )
+    if not context_records:
+        return (
+            (
+                ConfidenceAdjustment(
+                    context_classification=(ContextClassification.INSUFFICIENT_CONTEXT),
+                    maximum_confidence=ResolvedConfidence.MEDIUM,
+                    reason=(
+                        "A cited category loss lacks reliable category-population "
+                        "context, so it cannot receive high confidence as uniquely "
+                        "customer-specific."
+                    ),
+                    evidence_ids=(),
+                ),
+            ),
+            (_MISSING_CATEGORY_CONTEXT_LIMITATION,),
+        )
+
+    classifications: list[ContextClassification] = []
+    for record in context_records:
+        try:
+            classifications.append(ContextClassification(record.text_value))
+        except (TypeError, ValueError):
+            _append_issue(
+                issues,
+                VerificationIssueCode.INVALID_CONTEXT_EVIDENCE,
+                "Category context evidence did not contain a recognized value: "
+                f"{record.evidence_id}",
+            )
+    evidence_ids = tuple(record.evidence_id for record in context_records)
+    limitations = _deduplicate(
+        [item for record in context_records for item in record.limitations]
+    )
+    if (
+        not classifications
+        or ContextClassification.INSUFFICIENT_CONTEXT in classifications
+    ):
+        return (
+            (
+                ConfidenceAdjustment(
+                    context_classification=(ContextClassification.INSUFFICIENT_CONTEXT),
+                    maximum_confidence=ResolvedConfidence.MEDIUM,
+                    reason=(
+                        "The category comparison cohort is insufficient, so the cited "
+                        "loss cannot receive high customer-specific confidence."
+                    ),
+                    evidence_ids=evidence_ids,
+                ),
+            ),
+            (*limitations, _MISSING_CATEGORY_CONTEXT_LIMITATION),
+        )
+    if ContextClassification.BROAD_CONTEXT in classifications:
+        return (
+            (
+                ConfidenceAdjustment(
+                    context_classification=ContextClassification.BROAD_CONTEXT,
+                    maximum_confidence=ResolvedConfidence.LOW,
+                    reason=(
+                        "The cited category also declined broadly, so its movement is "
+                        "not uniquely customer-specific."
+                    ),
+                    evidence_ids=evidence_ids,
+                ),
+            ),
+            limitations,
+        )
+    if ContextClassification.MIXED in classifications:
+        return (
+            (
+                ConfidenceAdjustment(
+                    context_classification=ContextClassification.MIXED,
+                    maximum_confidence=ResolvedConfidence.MEDIUM,
+                    reason=(
+                        "The cited category has mixed customer and broad movement, "
+                        "limiting a uniquely customer-specific interpretation."
+                    ),
+                    evidence_ids=evidence_ids,
+                ),
+            ),
+            limitations,
+        )
+    return (), limitations
+
+
 def _cap_confidence(
     proposed: ConfidenceLevel, cap: ResolvedConfidence
 ) -> tuple[ResolvedConfidence, bool]:
@@ -248,12 +524,10 @@ def _cap_confidence(
 def _resolved_drivers(
     action: ActionDefinition,
     supporting_records: tuple[EvidenceRecord, ...],
+    proposal: FinishProposal,
 ) -> tuple[DriverClaim, ...]:
-    template = _DRIVER_TEMPLATES.get(action.action_id)
-    if template is None:
-        return ()
-    matching_ids = tuple(
-        record.evidence_id
+    matching_records = tuple(
+        record
         for record in supporting_records
         if any(
             record.source_tool in rule.source_tools
@@ -262,12 +536,43 @@ def _resolved_drivers(
             for rule in action.evidence_prerequisites
         )
     )
-    if not matching_ids:
+    if not matching_records:
         return ()
+    claim_type = min(
+        (
+            *(record.maximum_claim_type for record in matching_records),
+            *(driver.claim_type for driver in proposal.driver_summary),
+        ),
+        key=_CLAIM_ORDER.__getitem__,
+    )
+    templates = (
+        _DESCRIPTIVE_DRIVER_TEMPLATES
+        if claim_type is ClaimType.DESCRIPTIVE
+        else _DRIVER_TEMPLATES
+    )
+    template = templates.get(action.action_id)
+    if template is None:
+        return ()
+    matching_ids = tuple(record.evidence_id for record in matching_records)
+    limitations = _deduplicate(
+        [
+            _OBSERVATIONAL_DRIVER_LIMITATION,
+            *(item for record in matching_records for item in record.limitations),
+        ]
+    )
+    counterevidence_ids = tuple(proposal.counterevidence_ids)
     return (
         DriverClaim(
             summary=template,
+            claim_type=claim_type,
             supporting_evidence_ids=matching_ids,
+            counterevidence_ids=counterevidence_ids,
+            no_material_counterevidence_reason=(
+                None
+                if counterevidence_ids
+                else "No material counterevidence was cited from the available ledger."
+            ),
+            limitations=limitations,
         ),
     )
 
@@ -350,6 +655,42 @@ class FinalVerifier:
                     f"{evidence_id}",
                 )
 
+        full_ledger_records = tuple(state.evidence_ledger)
+        methodology_context_records = tuple(
+            record
+            for record in full_ledger_records
+            if record.metric
+            in {
+                _CONTEXT_CLASSIFICATION_METRIC,
+                _CATEGORY_CONTEXT_CLASSIFICATION_METRIC,
+            }
+        )
+        for record in methodology_context_records:
+            if (
+                record.run_id != state.run_id
+                or record.household_id != state.household_id
+            ):
+                _append_issue(
+                    issues,
+                    VerificationIssueCode.WRONG_EVIDENCE_OWNER,
+                    "Context evidence has the wrong run or household owner: "
+                    f"{record.evidence_id}",
+                )
+            if call_statuses.get(record.source_tool_call_id) not in SUCCESS_STATUSES:
+                _append_issue(
+                    issues,
+                    VerificationIssueCode.INVALID_EVIDENCE_SOURCE,
+                    "Context evidence did not originate from a successful invocation: "
+                    f"{record.evidence_id}",
+                )
+        context_classification, context_evidence_ids, context_limitations = (
+            _context_assessment(full_ledger_records, issues)
+        )
+        confidence_adjustments = _context_confidence_adjustments(
+            context_classification,
+            context_evidence_ids,
+        )
+
         support_id_set = set(proposal.supporting_evidence_ids)
         for driver in proposal.driver_summary:
             if not set(driver.supporting_evidence_ids).issubset(support_id_set):
@@ -365,6 +706,26 @@ class FinalVerifier:
                     VerificationIssueCode.UNSUPPORTED_DRIVER,
                     f"Driver references missing evidence: {driver.summary}",
                 )
+            if driver.claim_type is ClaimType.CAUSAL:
+                _append_issue(
+                    issues,
+                    VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM,
+                    "Current observational tools cannot support a causal driver claim.",
+                )
+            for evidence_id in driver.supporting_evidence_ids:
+                record = ledger.get(evidence_id)
+                if record is None:
+                    continue
+                if (
+                    _CLAIM_ORDER[driver.claim_type]
+                    > _CLAIM_ORDER[record.maximum_claim_type]
+                ):
+                    _append_issue(
+                        issues,
+                        VerificationIssueCode.CLAIM_STRENGTH_EXCEEDED,
+                        "Driver claim strength exceeds its evidence ceiling: "
+                        f"{evidence_id}",
+                    )
 
         for text in _free_text(proposal):
             if _NUMERICAL_CLAIM.search(text) or _QUANTITATIVE_WORD_CLAIM.search(text):
@@ -374,7 +735,7 @@ class FinalVerifier:
                     "Free-form final text contains a raw numerical claim; reports must "
                     "resolve numbers from evidence IDs.",
                 )
-            if _CAUSAL_CLAIM.search(text):
+            if contains_unsupported_causal_claim(text):
                 _append_issue(
                     issues,
                     VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM,
@@ -404,7 +765,6 @@ class FinalVerifier:
             for item in proposal.supporting_evidence_ids
             if item in referenced
         )
-        full_ledger_records = tuple(state.evidence_ledger)
         if action is not None:
             if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
                 if proposal.supporting_evidence_ids or proposal.driver_summary:
@@ -445,16 +805,28 @@ class FinalVerifier:
                     ActionId.PERSONALIZED_CHECK_IN,
                     ActionId.MONITOR,
                 }:
-                    narrower = tuple(
-                        candidate
-                        for candidate_id in (
-                            ActionId.CATEGORY_WINBACK,
-                            ActionId.VISIT_FREQUENCY_REACTIVATION,
-                            ActionId.PROMOTION_VALUE_REENGAGEMENT,
-                        )
-                        if _action_supported(
-                            candidate := self._catalog.get(candidate_id),
-                            full_ledger_records,
+                    monitor_context_override = (
+                        action.action_id is ActionId.MONITOR
+                        and context_classification
+                        in {
+                            ContextClassification.BROAD_CONTEXT,
+                            ContextClassification.INSUFFICIENT_CONTEXT,
+                        }
+                    )
+                    narrower = (
+                        ()
+                        if monitor_context_override
+                        else tuple(
+                            candidate
+                            for candidate_id in (
+                                ActionId.CATEGORY_WINBACK,
+                                ActionId.VISIT_FREQUENCY_REACTIVATION,
+                                ActionId.PROMOTION_VALUE_REENGAGEMENT,
+                            )
+                            if _action_supported(
+                                candidate := self._catalog.get(candidate_id),
+                                full_ledger_records,
+                            )
                         )
                     )
                     if narrower:
@@ -515,6 +887,22 @@ class FinalVerifier:
                             "a cited cadence window is missing.",
                         )
 
+        category_adjustments: tuple[ConfidenceAdjustment, ...] = ()
+        category_context_limitations: tuple[str, ...] = ()
+        if action is not None:
+            category_adjustments, category_context_limitations = (
+                _category_context_adjustments(
+                    action,
+                    supporting_records,
+                    full_ledger_records,
+                    issues,
+                )
+            )
+            confidence_adjustments = (
+                *confidence_adjustments,
+                *category_adjustments,
+            )
+
         used_limitations: list[str] = []
         for record in referenced.values():
             used_limitations.extend(record.limitations)
@@ -529,13 +917,20 @@ class FinalVerifier:
                 "policy was exhausted."
             )
             used_limitations.extend(history.limitations)
-        propagated_limitations = _deduplicate(used_limitations)
+        support_limitations = _deduplicate(used_limitations)
+        propagated_limitations = _deduplicate(
+            [
+                *support_limitations,
+                *context_limitations,
+                *category_context_limitations,
+            ]
+        )
 
         self._verify_tool_invariants(state, issues)
         if issues or action is None:
             return VerificationResult(passed=False, issues=tuple(issues))
 
-        resolved_drivers = _resolved_drivers(action, supporting_records)
+        resolved_drivers = _resolved_drivers(action, supporting_records, proposal)
         resolved_supporting_ids = tuple(
             evidence_id
             for driver in resolved_drivers
@@ -546,7 +941,9 @@ class FinalVerifier:
             for evidence_id in resolved_supporting_ids
             if evidence_id in referenced
         )
-        cap = _confidence_cap(resolved_supporting_records, propagated_limitations)
+        cap = _confidence_cap(resolved_supporting_records, support_limitations)
+        for adjustment in confidence_adjustments:
+            cap = _lower_confidence_cap(cap, adjustment.maximum_confidence)
         if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
             resolved = ResolvedConfidence.INSUFFICIENT
             cap_applied = True
@@ -557,6 +954,7 @@ class FinalVerifier:
             proposed_confidence=proposal.proposed_confidence,
             resolved_confidence=resolved,
             confidence_cap_applied=cap_applied,
+            confidence_adjustments=confidence_adjustments,
             supporting_evidence_ids=resolved_supporting_ids,
             counterevidence_ids=proposal.counterevidence_ids,
             next_best_action_id=action.action_id,

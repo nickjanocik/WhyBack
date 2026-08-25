@@ -19,6 +19,7 @@ from pydantic import (
 from whyback.agent.actions import ActionId
 from whyback.detection.decline import DeclineSnapshot
 from whyback.immutability import frozen_mapping
+from whyback.methodology import ClaimType
 from whyback.tools.contracts import AnalysisWindow, EvidenceRecord, ToolName, ToolStatus
 
 
@@ -119,14 +120,39 @@ class DriverClaim(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     summary: str = Field(min_length=1, max_length=400)
+    claim_type: ClaimType
     supporting_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=6)
+    counterevidence_ids: tuple[str, ...] = Field(default=(), max_length=6)
+    no_material_counterevidence_reason: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=400,
+    )
+    limitations: tuple[str, ...] = Field(min_length=1, max_length=6)
 
-    @field_validator("supporting_evidence_ids")
+    @field_validator("supporting_evidence_ids", "counterevidence_ids")
     @classmethod
     def unique_support(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         if len(value) != len(set(value)):
             raise ValueError("Driver evidence references must be unique")
         return value
+
+    @model_validator(mode="after")
+    def require_counterevidence_consideration(self) -> Self:
+        if (
+            not self.counterevidence_ids
+            and self.no_material_counterevidence_reason is None
+        ):
+            raise ValueError(
+                "A driver must cite counterevidence or state why none was material"
+            )
+        if set(self.supporting_evidence_ids).intersection(self.counterevidence_ids):
+            raise ValueError(
+                "Driver support and counterevidence references cannot overlap"
+            )
+        if any(not item.strip() for item in self.limitations):
+            raise ValueError("Driver limitations cannot be blank")
+        return self
 
 
 class FinishProposal(BaseModel):
@@ -149,6 +175,22 @@ class FinishProposal(BaseModel):
         if len(value) != len(set(value)):
             raise ValueError("Evidence references must be unique")
         return value
+
+    @model_validator(mode="after")
+    def require_driver_counterevidence_subset(self) -> Self:
+        proposal_counterevidence = set(self.counterevidence_ids)
+        assigned_counterevidence: set[str] = set()
+        for driver in self.driver_summary:
+            if not set(driver.counterevidence_ids).issubset(proposal_counterevidence):
+                raise ValueError(
+                    "Driver counterevidence must be present in the proposal-level set"
+                )
+            assigned_counterevidence.update(driver.counterevidence_ids)
+        if assigned_counterevidence != proposal_counterevidence:
+            raise ValueError(
+                "Proposal counterevidence must be assigned to at least one driver"
+            )
+        return self
 
 
 class ToolDecision(BaseModel):
@@ -243,8 +285,10 @@ class InvestigationState(BaseModel):
                 "baseline_value": item.baseline_value,
                 "recent_value": item.recent_value,
                 "value": item.value,
+                "text_value": item.text_value,
                 "change": item.change,
                 "unit": item.unit,
+                "maximum_claim_type": item.maximum_claim_type.value,
                 "limitations": list(item.limitations),
             }
             for item in self.evidence_ledger

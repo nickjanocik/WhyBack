@@ -23,6 +23,7 @@ from whyback.agent.state import (
     ToolDecision,
 )
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType
 from whyback.tools.contracts import ToolName
 from whyback.tools.registry import ToolRegistry
 
@@ -74,7 +75,12 @@ def _finish_decision() -> FinishDecision:
             driver_summary=(
                 DriverClaim(
                     summary="Reduced visit frequency is a plausible driver.",
+                    claim_type=ClaimType.ASSOCIATIONAL,
                     supporting_evidence_ids=("ev-trend",),
+                    no_material_counterevidence_reason=(
+                        "No material counterevidence was identified."
+                    ),
+                    limitations=("The evidence is observational.",),
                 ),
             ),
             proposed_confidence="medium",
@@ -149,7 +155,12 @@ def test_finish_proposal_rejects_duplicate_evidence_references() -> None:
             driver_summary=(
                 DriverClaim(
                     summary="A plausible driver.",
+                    claim_type=ClaimType.ASSOCIATIONAL,
                     supporting_evidence_ids=("ev-1",),
+                    no_material_counterevidence_reason=(
+                        "No material counterevidence was identified."
+                    ),
+                    limitations=("The evidence is observational.",),
                 ),
             ),
             proposed_confidence="low",

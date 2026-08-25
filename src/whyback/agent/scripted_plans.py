@@ -15,6 +15,7 @@ from whyback.agent.state import (
     ModelDecision,
     ToolDecision,
 )
+from whyback.methodology import ClaimType
 from whyback.tools.contracts import ToolName
 
 
@@ -70,7 +71,18 @@ def _supported_finish(
                         "Reduced recorded visit cadence is a plausible engagement "
                         "decline driver."
                     ),
+                    claim_type=ClaimType.ASSOCIATIONAL,
                     supporting_evidence_ids=supporting,
+                    counterevidence_ids=counterevidence_ids,
+                    no_material_counterevidence_reason=(
+                        None
+                        if counterevidence_ids
+                        else "No material counterevidence was identified in this plan."
+                    ),
+                    limitations=(
+                        "Observed retailer behavior does not establish customer intent "
+                        "or causality.",
+                    ),
                 ),
             ),
             proposed_confidence=ConfidenceLevel.HIGH,
@@ -84,7 +96,8 @@ def _supported_finish(
             alternative_explanations=(
                 "The household may have shifted activity outside the recorded "
                 "retailer.",
-                "The observed window may include a temporary life or seasonal change.",
+                "The observed window may include temporary life changes or broad "
+                "contemporaneous movement.",
             ),
             uncertainties=(
                 "The dataset contains behavior rather than stated customer intent.",
@@ -127,6 +140,7 @@ def build_scripted_plan(
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
+            _tool(ToolName.PEER_COMPARISON, household_id),
         ]
         counterevidence: tuple[str, ...] = ()
     elif plan is ScriptedPlan.TYPE_A_PARTIAL:
@@ -136,6 +150,7 @@ def build_scripted_plan(
             _tool(ToolName.COUPON_CAMPAIGN_HISTORY, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
+            _tool(ToolName.PEER_COMPARISON, household_id),
         ]
         counterevidence = (
             _evidence_id(
@@ -154,6 +169,7 @@ def build_scripted_plan(
             _tool(ToolName.PROMOTION_RESPONSE, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
+            _tool(ToolName.PEER_COMPARISON, household_id),
         ]
         counterevidence = ()
 

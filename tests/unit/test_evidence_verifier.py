@@ -18,6 +18,12 @@ from whyback.agent.state import (
 )
 from whyback.agent.verifier import FinalVerifier, VerificationIssueCode
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import (
+    ClaimType,
+    ContextClassification,
+    ContextPolicy,
+    classify_context,
+)
 from whyback.tools.contracts import (
     EvidenceRecord,
     ToolName,
@@ -113,6 +119,49 @@ def _history(
     )
 
 
+def _context_evidence(
+    classification: ContextClassification,
+    *,
+    evidence_id: str = "ev-context",
+    call_id: str = "call-peer",
+) -> EvidenceRecord:
+    return EvidenceRecord(
+        evidence_id=evidence_id,
+        run_id=RUN_ID,
+        household_id="1",
+        source_tool=ToolName.PEER_COMPARISON,
+        source_tool_call_id=call_id,
+        metric="context_classification",
+        text_value=classification.value,
+        unit="classification",
+        query_hash="context-query",
+    )
+
+
+def _category_context_evidence(
+    classification: ContextClassification,
+    *,
+    evidence_id: str = "ev-category-context",
+) -> EvidenceRecord:
+    return EvidenceRecord(
+        evidence_id=evidence_id,
+        run_id=RUN_ID,
+        household_id="1",
+        source_tool=ToolName.CATEGORY_DECOMPOSITION,
+        source_tool_call_id="call-category",
+        metric="category_context_classification",
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+            "target_excluded": "true",
+        },
+        text_value=classification.value,
+        unit="classification",
+        query_hash="category-context-query",
+    )
+
+
 def _state(
     records: tuple[EvidenceRecord, ...],
     histories: tuple[ToolHistoryEntry, ...],
@@ -130,7 +179,17 @@ def _proposal(
     summary: str = "The observed change warrants cautious monitoring.",
 ) -> FinishProposal:
     drivers = (
-        (DriverClaim(summary=summary, supporting_evidence_ids=evidence_ids),)
+        (
+            DriverClaim(
+                summary=summary,
+                claim_type=ClaimType.ASSOCIATIONAL,
+                supporting_evidence_ids=evidence_ids,
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("The evidence is observational.",),
+            ),
+        )
         if evidence_ids
         else ()
     )
@@ -173,6 +232,16 @@ def test_evidence_ledger_is_immutable_and_checks_ownership() -> None:
         ledger.add_tool_result(result, run_id=RUN_ID, household_id="1")
 
 
+def test_driver_claim_requires_claim_type_and_counterevidence_consideration() -> None:
+    with pytest.raises(ValidationError, match="counterevidence"):
+        DriverClaim(
+            summary="A recorded pattern is associated with decline.",
+            claim_type=ClaimType.ASSOCIATIONAL,
+            supporting_evidence_ids=("ev-1",),
+            limitations=("The evidence is observational.",),
+        )
+
+
 def test_verifier_caps_high_confidence_and_propagates_partial_limitation() -> None:
     limitation = "The recent window has no observed transactions."
     record = _evidence("ev-1")
@@ -192,7 +261,14 @@ def test_verifier_caps_high_confidence_and_propagates_partial_limitation() -> No
     assert verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.MEDIUM
     assert verdict.final.confidence_cap_applied
-    assert verdict.final.propagated_limitations == (limitation,)
+    assert limitation in verdict.final.propagated_limitations
+    assert any(
+        "missing context" in item.casefold()
+        for item in verdict.final.propagated_limitations
+    )
+    assert verdict.final.confidence_adjustments[0].context_classification is (
+        ContextClassification.INSUFFICIENT_CONTEXT
+    )
     assert verdict.final.human_review_required
 
 
@@ -205,8 +281,9 @@ def test_high_confidence_requires_two_tools_without_limitations() -> None:
         metric="target_retailer_sales_change_percentile",
         value=20.0,
     )
+    context = _context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
     state = _state(
-        (trend, peer),
+        (trend, peer, context),
         (
             _history(),
             _history(
@@ -220,7 +297,12 @@ def test_high_confidence_requires_two_tools_without_limitations() -> None:
         driver_summary=(
             DriverClaim(
                 summary="Multiple behavioral signals suggest an ambiguous decline.",
+                claim_type=ClaimType.ASSOCIATIONAL,
                 supporting_evidence_ids=("ev-trend", "ev-peer"),
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("The evidence is observational.",),
             ),
         ),
         proposed_confidence=ConfidenceLevel.HIGH,
@@ -256,7 +338,12 @@ def test_personalized_check_in_rejects_support_for_a_narrower_action() -> None:
         driver_summary=(
             DriverClaim(
                 summary="Recorded visit cadence is a plausible decline driver.",
+                claim_type=ClaimType.ASSOCIATIONAL,
                 supporting_evidence_ids=("ev-trend", "ev-basket"),
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("The evidence is observational.",),
             ),
         ),
         proposed_confidence=ConfidenceLevel.MEDIUM,
@@ -293,7 +380,7 @@ def test_insufficient_action_rejects_a_satisfiable_ledger() -> None:
     }
 
 
-def test_monitor_rejects_ledger_supporting_a_narrower_cadence_action() -> None:
+def test_missing_context_keeps_monitor_available_despite_narrower_policy() -> None:
     state = _state(
         (_evidence("ev-1", metric="distinct_trips"),),
         (_history(),),
@@ -301,10 +388,12 @@ def test_monitor_rejects_ledger_supporting_a_narrower_cadence_action() -> None:
 
     verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
 
-    assert not verdict.passed
-    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
-        issue.code for issue in verdict.issues
-    }
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.next_best_action_id is ActionId.MONITOR
+    assert verdict.final.resolved_confidence is ResolvedConfidence.MEDIUM
+    assert verdict.final.confidence_adjustments[0].context_classification is (
+        ContextClassification.INSUFFICIENT_CONTEXT
+    )
 
 
 def test_category_action_rejects_when_unknown_loss_dominates() -> None:
@@ -356,6 +445,105 @@ def test_category_action_rejects_when_unknown_loss_dominates() -> None:
     assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
         issue.code for issue in verdict.issues
     }
+
+
+def test_broad_category_context_caps_category_driver_at_low() -> None:
+    category = _evidence(
+        "ev-category",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    category_context = _category_context_evidence(ContextClassification.BROAD_CONTEXT)
+    overall_context = _context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
+    state = _state(
+        (category, category_context, overall_context),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={
+                    "baseline_reconciled": True,
+                    "recent_reconciled": True,
+                },
+            ),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(evidence_ids=("ev-category",), action=ActionId.CATEGORY_WINBACK),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is ContextClassification.BROAD_CONTEXT
+    assert adjustment.evidence_ids == ("ev-category-context",)
+    assert "not uniquely customer-specific" in adjustment.reason
+
+
+def test_missing_category_context_caps_and_propagates_limitation() -> None:
+    category = _evidence(
+        "ev-category",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    overall_context = _context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
+    state = _state(
+        (category, overall_context),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={
+                    "baseline_reconciled": True,
+                    "recent_reconciled": True,
+                },
+            ),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(evidence_ids=("ev-category",), action=ActionId.CATEGORY_WINBACK),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.resolved_confidence is ResolvedConfidence.MEDIUM
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is (
+        ContextClassification.INSUFFICIENT_CONTEXT
+    )
+    assert any(
+        "category-population context was unavailable" in item.casefold()
+        for item in verdict.final.propagated_limitations
+    )
 
 
 def test_visit_action_rejects_unavailable_sparse_interval_evidence() -> None:
@@ -459,6 +647,235 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
     assert VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM in {
         issue.code for issue in verdict.issues
     }
+
+
+@pytest.mark.parametrize(
+    ("summary", "expected_pass"),
+    (
+        ("This analysis cannot establish causality.", True),
+        ("The recorded pattern did not cause the household's decline.", True),
+        ("The recorded pattern caused the household's decline.", False),
+    ),
+)
+def test_causal_defense_distinguishes_denials_from_assertions(
+    summary: str,
+    expected_pass: bool,
+) -> None:
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state((_evidence("ev-1"),), (_history(),)),
+        _proposal(summary=summary),
+    )
+
+    assert verdict.passed is expected_pass
+    if not expected_pass:
+        assert VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM in {
+            issue.code for issue in verdict.issues
+        }
+
+
+def test_claim_type_cannot_exceed_evidence_support() -> None:
+    record = _evidence("ev-1").model_copy(
+        update={"maximum_claim_type": ClaimType.DESCRIPTIVE}
+    )
+    proposal = _proposal()
+    associational = proposal.driver_summary[0]
+    causal = associational.model_copy(update={"claim_type": ClaimType.CAUSAL})
+
+    associational_verdict = FinalVerifier(load_action_catalog()).verify(
+        _state((record,), (_history(),)),
+        proposal,
+    )
+    causal_verdict = FinalVerifier(load_action_catalog()).verify(
+        _state((_evidence("ev-1"),), (_history(),)),
+        proposal.model_copy(update={"driver_summary": (causal,)}),
+    )
+
+    assert VerificationIssueCode.CLAIM_STRENGTH_EXCEEDED in {
+        issue.code for issue in associational_verdict.issues
+    }
+    assert VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM in {
+        issue.code for issue in causal_verdict.issues
+    }
+
+
+def test_descriptive_claim_with_observational_evidence_passes() -> None:
+    proposal = _proposal()
+    descriptive = proposal.driver_summary[0].model_copy(
+        update={"claim_type": ClaimType.DESCRIPTIVE}
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state((_evidence("ev-1"),), (_history(),)),
+        proposal.model_copy(update={"driver_summary": (descriptive,)}),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.drivers[0].claim_type is ClaimType.DESCRIPTIVE
+
+
+def test_resolved_driver_never_upgrades_descriptive_context_evidence() -> None:
+    peer = _evidence(
+        "ev-1",
+        tool=ToolName.PEER_COMPARISON,
+        call_id="call-peer",
+        metric="target_retailer_sales_change",
+        value=-0.50,
+    ).model_copy(update={"maximum_claim_type": ClaimType.DESCRIPTIVE})
+    context = _context_evidence(ContextClassification.BROAD_CONTEXT)
+    proposal = _proposal()
+    descriptive = proposal.driver_summary[0].model_copy(
+        update={"claim_type": ClaimType.DESCRIPTIVE}
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state(
+            (peer, context),
+            (
+                _history(
+                    tool=ToolName.PEER_COMPARISON,
+                    call_id="call-peer",
+                    diagnostics={
+                        "target_excluded": True,
+                        "peer_household_ids": ["2"],
+                    },
+                ),
+            ),
+        ),
+        proposal.model_copy(update={"driver_summary": (descriptive,)}),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.drivers[0].claim_type is ClaimType.DESCRIPTIVE
+    assert "underlying reason remains unknown" in verdict.final.drivers[0].summary
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected"),
+    (
+        (
+            {
+                "target_change": -0.45,
+                "population_median_change": -0.10,
+                "population_declining_share": 0.30,
+                "peer_median_change": -0.15,
+                "peer_declining_share": 0.40,
+                "population_count": 40,
+                "peer_count": 10,
+            },
+            ContextClassification.CUSTOMER_SPECIFIC,
+        ),
+        (
+            {
+                "target_change": -0.25,
+                "population_median_change": -0.20,
+                "population_declining_share": 0.75,
+                "peer_median_change": -0.18,
+                "peer_declining_share": 0.70,
+                "population_count": 40,
+                "peer_count": 10,
+            },
+            ContextClassification.BROAD_CONTEXT,
+        ),
+        (
+            {
+                "target_change": -0.25,
+                "population_median_change": -0.10,
+                "population_declining_share": 0.70,
+                "peer_median_change": -0.20,
+                "peer_declining_share": 0.70,
+                "population_count": 40,
+                "peer_count": 10,
+            },
+            ContextClassification.MIXED,
+        ),
+        (
+            {
+                "target_change": -0.45,
+                "population_median_change": -0.20,
+                "population_declining_share": 0.70,
+                "peer_median_change": -0.20,
+                "peer_declining_share": 0.40,
+                "population_count": 40,
+                "peer_count": 10,
+            },
+            ContextClassification.MIXED,
+        ),
+        (
+            {
+                "target_change": -0.25,
+                "population_median_change": -0.20,
+                "population_declining_share": 0.75,
+                "peer_median_change": -0.18,
+                "peer_declining_share": 0.70,
+                "population_count": 19,
+                "peer_count": 10,
+            },
+            ContextClassification.INSUFFICIENT_CONTEXT,
+        ),
+    ),
+)
+def test_context_classification_uses_central_signed_change_policy(
+    kwargs: dict[str, float | int],
+    expected: ContextClassification,
+) -> None:
+    assert classify_context(**kwargs, policy=ContextPolicy()) is expected  # type: ignore[arg-type]
+
+
+def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
+    context = _context_evidence(ContextClassification.BROAD_CONTEXT)
+    state = _state(
+        (_evidence("ev-1"), context),
+        (
+            _history(),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is ContextClassification.BROAD_CONTEXT
+    assert adjustment.maximum_confidence is ResolvedConfidence.LOW
+    assert adjustment.evidence_ids == ("ev-context",)
+
+
+def test_conflicting_context_records_resolve_conservatively() -> None:
+    customer_specific = _context_evidence(
+        ContextClassification.CUSTOMER_SPECIFIC,
+        evidence_id="ev-context-customer",
+    )
+    broad = _context_evidence(
+        ContextClassification.BROAD_CONTEXT,
+        evidence_id="ev-context-broad",
+    )
+    state = _state(
+        (_evidence("ev-1"), customer_specific, broad),
+        (
+            _history(),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is ContextClassification.BROAD_CONTEXT
+    assert adjustment.evidence_ids == (
+        "ev-context-customer",
+        "ev-context-broad",
+    )
 
 
 def test_visit_action_rejects_stable_or_increasing_cadence() -> None:

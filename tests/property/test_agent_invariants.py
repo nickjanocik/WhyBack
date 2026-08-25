@@ -32,6 +32,7 @@ from whyback.config import AgentConfig
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType
 from whyback.tools.basket import basket_behavior
 from whyback.tools.category import category_decomposition
 from whyback.tools.contracts import (
@@ -150,7 +151,12 @@ def _monitor_proposal(*evidence_ids: str) -> FinishProposal:
         driver_summary=(
             DriverClaim(
                 summary="The observed pattern warrants cautious monitoring.",
+                claim_type=ClaimType.ASSOCIATIONAL,
                 supporting_evidence_ids=tuple(evidence_ids),
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("The evidence is observational.",),
             ),
         ),
         proposed_confidence=ConfidenceLevel.HIGH,
@@ -631,5 +637,10 @@ def test_valid_partial_limitations_are_propagated_without_loss(
 
     assert verdict.passed
     assert verdict.final is not None
-    assert verdict.final.propagated_limitations == tuple(limitations)
+    assert verdict.final.propagated_limitations[: len(limitations)] == tuple(
+        limitations
+    )
+    assert all(
+        limitation in verdict.final.propagated_limitations for limitation in limitations
+    )
     assert verdict.final.confidence_cap_applied
