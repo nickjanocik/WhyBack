@@ -88,6 +88,20 @@ def test_sanitizer_recursively_redacts_secret_keys_and_values() -> None:
     }
 
 
+def test_sanitizer_redacts_gemini_and_legacy_openai_api_key_fields() -> None:
+    details = sanitize_details(
+        {
+            "gemini_api_key": "gemini-placeholder-secret",
+            "openai_api_key": "legacy-placeholder-secret",
+        }
+    )
+
+    assert details == {
+        "gemini_api_key": REDACTED_VALUE,
+        "openai_api_key": REDACTED_VALUE,
+    }
+
+
 def test_sanitizer_can_reject_secrets_and_always_rejects_hidden_reasoning() -> None:
     with pytest.raises(UnsafeAuditDetailError, match="secret-like audit field"):
         sanitize_details(

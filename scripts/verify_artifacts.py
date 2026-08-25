@@ -317,6 +317,18 @@ def _trace_execution_mode(events: Sequence[AuditEvent]) -> ExecutionMode | None:
     return "scripted" if model.startswith("scripted/") else "live"
 
 
+def _model_execution_for_backend(backend: object, execution_mode: object) -> str | None:
+    """Map a manifest mode to current or preserved historical provenance."""
+
+    if execution_mode == "scripted" and backend == "scripted":
+        return "scripted_control"
+    if execution_mode == "live" and backend == "gemini":
+        return "live_gemini"
+    if execution_mode == "live" and backend == "openai":
+        return "live_openai"
+    return None
+
+
 def _integer_detail(event: AuditEvent, key: str) -> int | None:
     value = event.details.get(key)
     return value if isinstance(value, int) and not isinstance(value, bool) else None
@@ -1185,7 +1197,7 @@ def _validate_trace(
             or model.startswith("scripted/")
             or not provider_ids
             or any(
-                not isinstance(value, str) or not value.startswith("resp_")
+                not isinstance(value, str) or not value.strip()
                 for value in provider_ids
             )
         ):
@@ -2067,12 +2079,8 @@ def _validate_manifest_households(
 
     direct_report = reports_by_path.get(manifest_path.parent / "report.json")
     if direct_report is not None:
-        expected_mode = (
-            "scripted_control"
-            if data.get("execution_mode") == "scripted"
-            else "live_openai"
-            if data.get("execution_mode") == "live"
-            else None
+        expected_mode = _model_execution_for_backend(
+            data.get("backend"), data.get("execution_mode")
         )
         if (
             data.get("artifact_profile") != "standalone_run"
@@ -2167,7 +2175,7 @@ def _render_results_markdown(
 ) -> str | None:
     backend = data.get("backend")
     dataset_kind = data.get("dataset_kind")
-    if backend not in {"scripted", "openai"} or dataset_kind not in {
+    if backend not in {"scripted", "gemini", "openai"} or dataset_kind not in {
         "synthetic",
         "official_complete_journey",
     }:
@@ -2194,7 +2202,11 @@ def _render_results_markdown(
         "by the deterministic detector or registered analytical tools."
         if backend == "scripted"
         else (
-            "These runs used the configured OpenAI Responses backend."
+            "These runs used the configured Gemini function-calling backend."
+            if backend == "gemini" and reports
+            else "No live model call was attempted because GEMINI_API_KEY was absent."
+            if backend == "gemini"
+            else "These runs used the configured OpenAI Responses backend."
             if reports
             else "No live model call was attempted because OPENAI_API_KEY was absent."
         )
@@ -2492,6 +2504,10 @@ def _validate_provenance(
             and report.provenance.execution_mode != "scripted_control"
         )
         or (
+            report.provenance.backend == "gemini"
+            and report.provenance.execution_mode != "live_gemini"
+        )
+        or (
             report.provenance.backend == "openai"
             and report.provenance.execution_mode != "live_openai"
         )
@@ -2534,12 +2550,8 @@ def _validate_provenance(
                 )
             )
     execution_mode = provenance.get("execution_mode")
-    expected_execution_mode = (
-        "scripted_control"
-        if trace.mode == "scripted"
-        else "live_openai"
-        if trace.mode == "live"
-        else None
+    expected_execution_mode = _model_execution_for_backend(
+        provenance.get("backend"), trace.mode
     )
     if (
         execution_mode is not None
@@ -2552,6 +2564,33 @@ def _validate_provenance(
                 root,
                 "report_trace_provenance_mismatch",
                 "Report execution mode disagrees with its trace",
+            )
+        )
+    provider_ids = [
+        event.details.get("provider_call_id")
+        for event in trace.events
+        if event.event is AuditEventName.MODEL_DECISION_RECEIVED
+    ]
+    provider_id_mismatch = (
+        report.provenance.backend == "gemini"
+        and any(
+            not isinstance(value, str) or not value.strip() or value.startswith("resp_")
+            for value in provider_ids
+        )
+    ) or (
+        report.provenance.backend == "openai"
+        and any(
+            not isinstance(value, str) or not value.startswith("resp_")
+            for value in provider_ids
+        )
+    )
+    if trace.mode == "live" and provider_id_mismatch:
+        issues.append(
+            _issue(
+                report_path,
+                root,
+                "report_trace_provider_mismatch",
+                "Provider call identifiers disagree with report backend provenance",
             )
         )
     if report.provenance.generated_at < trace.events[-1].timestamp:
@@ -2594,10 +2633,9 @@ def _validate_provenance(
             "dataset_source_repository": manifest.data.get("dataset_source_repository"),
             "dataset_source_commit": manifest.data.get("dataset_source_commit"),
             "backend": manifest.data.get("backend"),
-            "execution_mode": {
-                "scripted": "scripted_control",
-                "live": "live_openai",
-            }.get(cast(str, manifest.data.get("execution_mode"))),
+            "execution_mode": _model_execution_for_backend(
+                manifest.data.get("backend"), manifest.data.get("execution_mode")
+            ),
         }
         if (
             manifest.data.get("dataset_kind")
@@ -2606,7 +2644,7 @@ def _validate_provenance(
             or manifest.data.get("dataset_source_repository") == "unspecified"
             or not isinstance(manifest.data.get("dataset_source_commit"), str)
             or manifest.data.get("dataset_source_commit") == "unspecified"
-            or manifest.data.get("backend") not in {"scripted", "openai"}
+            or manifest.data.get("backend") not in {"scripted", "gemini", "openai"}
             or manifest.data.get("execution_mode") not in {"scripted", "live"}
         ):
             issues.append(

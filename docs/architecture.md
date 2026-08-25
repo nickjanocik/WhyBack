@@ -142,9 +142,10 @@ model receives a compact form.
 current typed state and the currently offered tools. The two implementations
 are:
 
-- `OpenAIResponsesBackend`, which makes a fresh direct Responses API request
-  using strict functions, `tool_choice="required"`, disabled parallel calls,
-  no provider-side storage, and exactly one accepted function call; and
+- `GeminiFunctionCallingBackend`, which makes a fresh stateless Gemini
+  Interactions request using declared functions and forced function selection;
+  because Gemini may propose parallel calls, the adapter accepts exactly one
+  function call and rejects every other cardinality; and
 - `ScriptedBackend`, which supplies predetermined decisions while exercising
   the production runner, registry, tools, ledger, verifier, audit, and reports.
 

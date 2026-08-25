@@ -55,7 +55,7 @@ source_repository = "official/example"
 source_commit = "abc123"
 [agent]
 default_model = "test-model"
-default_reasoning_effort = "medium"
+default_thinking_level = "medium"
 """.strip()
         + "\n",
         encoding="utf-8",
@@ -249,7 +249,11 @@ def _write_results_files(root: Path) -> None:
         "by the deterministic detector or registered analytical tools."
         if backend == "scripted"
         else (
-            "These runs used the configured OpenAI Responses backend."
+            "These runs used the configured Gemini function-calling backend."
+            if backend == "gemini" and reports
+            else "No live model call was attempted because GEMINI_API_KEY was absent."
+            if backend == "gemini"
+            else "These runs used the configured OpenAI Responses backend."
             if reports
             else "No live model call was attempted because OPENAI_API_KEY was absent."
         )
@@ -315,7 +319,7 @@ def _write_valid_artifacts(root: Path) -> None:
                 "schema_version": 1,
                 "status": "skipped",
                 "execution_mode": "skipped",
-                "reason": "OPENAI_API_KEY was absent.",
+                "reason": "GEMINI_API_KEY was absent.",
             }
         ),
         encoding="utf-8",
@@ -541,9 +545,9 @@ def _write_live_artifacts(root: Path) -> None:
     assert isinstance(provenance, dict)
     provenance.update(
         {
-            "backend": "openai",
-            "execution_mode": "live_openai",
-            "model": "retention-production-deployment",
+            "backend": "gemini",
+            "execution_mode": "live_gemini",
+            "model": "gemini-3.7-flash",
             "generated_at": "2026-01-01T00:00:07Z",
         }
     )
@@ -582,7 +586,7 @@ def _write_live_artifacts(root: Path) -> None:
             timestamp=started,
             event=AuditEventName.RUN_STARTED,
             details={
-                "model": "retention-production-deployment",
+                "model": "gemini-3.7-flash",
                 "prompt_version": PROMPT_VERSION,
                 "prompt_hash": PROMPT_HASH,
                 "dataset_kind": "synthetic",
@@ -607,8 +611,8 @@ def _write_live_artifacts(root: Path) -> None:
             timestamp=started + timedelta(seconds=2),
             event=AuditEventName.MODEL_DECISION_RECEIVED,
             details={
-                "provider_call_id": "resp_fixture_1",
-                "model": "retention-production-deployment",
+                "provider_call_id": "gemini-function-call-fixture-1",
+                "model": "gemini-3.7-flash",
                 "decision_kind": "finish",
             },
             **common,
@@ -657,7 +661,7 @@ def _write_live_artifacts(root: Path) -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest.update(
         {
-            "backend": "openai",
+            "backend": "gemini",
             "execution_mode": "live",
             "completed_household_ids": ["77"],
             "failed_household_ids": [],
@@ -812,7 +816,7 @@ def test_eval_discovery_uses_only_the_conventional_normalized_fixture(
 def test_artifact_verifier_accepts_hashed_scripted_bundle_and_explicit_skip(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
 
     result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
@@ -854,7 +858,7 @@ def test_artifact_verifier_reconciles_complete_detector_and_failure_reason(
 def test_artifact_verifier_fails_closed_for_tampering_and_malformed_trace(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
     (tmp_path / "customer_77" / "report.json").write_text("{}\n", encoding="utf-8")
     (tmp_path / "customer_77" / "trace.jsonl").write_text(
@@ -873,7 +877,7 @@ def test_artifact_verifier_fails_closed_for_tampering_and_malformed_trace(
 def test_artifact_verifier_rejects_live_label_backed_by_scripted_trace(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
     manifest_path = tmp_path / "artifact_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -890,14 +894,14 @@ def test_artifact_verifier_rejects_live_label_backed_by_scripted_trace(
 def test_artifact_verifier_accepts_honest_skip_only_tree_with_explicit_flag(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     status_path = tmp_path / "live_model_status.json"
     status_path.write_text(
         json.dumps(
             {
                 "status": "skipped_no_api_key",
                 "execution_mode": "skipped",
-                "reason": "OPENAI_API_KEY was absent.",
+                "reason": "GEMINI_API_KEY was absent.",
             }
         ),
         encoding="utf-8",
@@ -907,7 +911,7 @@ def test_artifact_verifier_accepts_honest_skip_only_tree_with_explicit_flag(
             {
                 "schema_version": 1,
                 "execution_mode": "skipped",
-                "reason": "OPENAI_API_KEY was absent.",
+                "reason": "GEMINI_API_KEY was absent.",
                 "files": {status_path.name: sha256_file(status_path)},
             }
         ),
@@ -1062,14 +1066,71 @@ def test_live_history_and_skip_are_credential_independent(
     tmp_path: Path, monkeypatch
 ) -> None:
     _write_live_artifacts(tmp_path)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     without_current_key = verify_artifact_tree(tmp_path, allow_live_skipped=True)
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-placeholder-not-a-real-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-placeholder-not-a-real-key")
     with_current_key = verify_artifact_tree(tmp_path, allow_live_skipped=True)
 
     assert without_current_key.passed, without_current_key.issues
     assert with_current_key.passed, with_current_key.issues
     assert with_current_key.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_preserves_legacy_openai_live_provenance(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    report_path = tmp_path / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["provenance"].update(
+        {
+            "backend": "openai",
+            "execution_mode": "live_openai",
+            "model": "gpt-5.6-sol",
+        }
+    )
+    _write_exact_report_bundle(report_path, report)
+
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    rows[0]["details"]["model"] = "gpt-5.6-sol"
+    received = next(row for row in rows if row["event"] == "model_decision_received")
+    received["details"].update(
+        {"provider_call_id": "resp_fixture_1", "model": "gpt-5.6-sol"}
+    )
+    _rewrite_trace_rows(trace_path, rows)
+
+    manifest_path = tmp_path / "artifact_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["backend"] = "openai"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _write_results_files(tmp_path)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert result.passed, result.issues
+    assert result.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_rejects_provider_id_from_the_wrong_backend(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    received = next(row for row in rows if row["event"] == "model_decision_received")
+    received["details"]["provider_call_id"] = "resp_wrong_provider"
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert "report_trace_provider_mismatch" in {issue.code for issue in result.issues}
 
 
 def test_artifact_verifier_reconciles_embedded_official_data_provenance(
@@ -1135,7 +1196,7 @@ def test_quality_gate_parser_allows_skip_by_default_and_can_require_live() -> No
 def test_quality_gate_retains_preliminary_failure_and_runs_later_steps(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_gate_project(tmp_path)
     runner = FakeRunner(fail_sync=True)
     fixed_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
@@ -1238,6 +1299,7 @@ def test_quality_gate_clears_stale_per_invocation_outputs(tmp_path: Path) -> Non
         paths.junit_xml,
         paths.coverage_json,
         paths.artifact_verification_json,
+        paths.live_gemini_artifact_verification_json,
         paths.official_artifact_verification_json,
         paths.official_type_a_artifact_verification_json,
         paths.eval_json,
@@ -1258,6 +1320,7 @@ def test_quality_gate_clears_stale_per_invocation_outputs(tmp_path: Path) -> Non
     assert "stale-secret-marker" not in paths.junit_xml.read_text(encoding="utf-8")
     assert "stale-secret-marker" not in paths.coverage_json.read_text(encoding="utf-8")
     assert not paths.artifact_verification_json.exists()
+    assert not paths.live_gemini_artifact_verification_json.exists()
     assert not paths.eval_json.exists()
 
 

@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from whyback.agent.actions import load_action_catalog
 from whyback.agent.faults import DemoFaultInjector, DemoFaultScenario
-from whyback.agent.openai_backend import OpenAIResponsesBackend
+from whyback.agent.gemini_backend import GeminiFunctionCallingBackend
 from whyback.agent.runner import InvestigationOutcome, InvestigationRunner
 from whyback.agent.scripted_backend import ScriptedBackend
 from whyback.agent.scripted_plans import ScriptedPlan, build_scripted_plan
@@ -36,7 +36,7 @@ from whyback.provenance import RunProvenance
 from whyback.reporting import write_report_bundle, write_trace_html
 from whyback.tools.registry import build_tool_registry
 
-type BackendName = Literal["scripted", "openai"]
+type BackendName = Literal["scripted", "gemini"]
 type DatasetKind = Literal["synthetic", "official_complete_journey"]
 _DEMO_NAMESPACE = uuid5(NAMESPACE_URL, "https://github.com/whyback/demo")
 SYNTHETIC_DATASET_VERSION = "whyback-synthetic-fixture-v1"
@@ -327,7 +327,7 @@ def _make_backend(
     snapshot: DeclineSnapshot,
     run_id: UUID,
     plan: ScriptedPlan,
-) -> ScriptedBackend | OpenAIResponsesBackend:
+) -> ScriptedBackend | GeminiFunctionCallingBackend:
     if backend == "scripted":
         return ScriptedBackend(
             build_scripted_plan(
@@ -337,9 +337,9 @@ def _make_backend(
             )
         )
     settings = load_settings()
-    return OpenAIResponsesBackend(
+    return GeminiFunctionCallingBackend(
         model=settings.model,
-        reasoning_effort=settings.reasoning_effort,
+        thinking_level=settings.thinking_level,
     )
 
 
@@ -424,7 +424,7 @@ def run_investigation(
                     source_hashes=source_hashes,
                     backend=backend,
                     execution_mode=(
-                        "scripted_control" if backend == "scripted" else "live_openai"
+                        "scripted_control" if backend == "scripted" else "live_gemini"
                     ),
                     model=selected_backend.model_name,
                     generated_at=datetime.now(UTC),
@@ -459,7 +459,7 @@ def run_investigation(
                 "backend": backend,
                 "execution_mode": "scripted" if backend == "scripted" else "live",
                 "model_execution": (
-                    "scripted_control" if backend == "scripted" else "live_openai"
+                    "scripted_control" if backend == "scripted" else "live_gemini"
                 ),
                 "timing_mode": "actual_utc_and_monotonic",
                 "selected_household_ids": (snapshot.household_id,),
@@ -508,9 +508,9 @@ def _results_markdown(
                 "tools."
                 if backend == "scripted"
                 else (
-                    "These runs used the configured OpenAI Responses backend."
+                    "These runs used the configured Gemini function-calling backend."
                     if outcomes
-                    else "No live model call was attempted because OPENAI_API_KEY "
+                    else "No live model call was attempted because GEMINI_API_KEY "
                     "was absent."
                 )
             ),
@@ -635,13 +635,13 @@ def _write_demo_index(
         "backend": backend,
         "execution_mode": execution_mode,
         "reason": (
-            "OPENAI_API_KEY was absent; no live model call was attempted."
+            "GEMINI_API_KEY was absent; no live model call was attempted."
             if execution_mode == "skipped"
             else None
         ),
         "model_execution": {
             "scripted": "scripted_control",
-            "live": "live_openai",
+            "live": "live_gemini",
             "skipped": "skipped_no_api_key",
         }[execution_mode],
         "timing_mode": "actual_utc_and_monotonic",
@@ -667,8 +667,8 @@ def _build_synthetic_demo_contents(
 
     if customers < 1 or customers > 5:
         raise ValueError("Synthetic demos support between one and five customers")
-    if backend == "openai":
-        raise ValueError("The OpenAI demo must use official prepared data")
+    if backend == "gemini":
+        raise ValueError("The Gemini demo must use official prepared data")
     output_directory.mkdir(parents=True, exist_ok=True)
     _write_ownership_marker(output_directory)
     with TemporaryDirectory(prefix="whyback-demo-") as temporary:
@@ -840,7 +840,7 @@ def _build_official_demo_contents(
     output_directory: Path,
     *,
     customers: int = 5,
-    backend: BackendName = "openai",
+    backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Select the official top households and optionally run the live backend."""
 
@@ -873,7 +873,7 @@ def _build_official_demo_contents(
     )
 
     outcomes: list[InvestigationOutcome] = []
-    if backend == "openai" and not os.getenv("OPENAI_API_KEY"):
+    if backend == "gemini" and not os.getenv("GEMINI_API_KEY"):
         selected_ids = tuple(item.household_id for item in selected)
         _write_json(
             output_directory / "live_model_status.json",
@@ -881,11 +881,11 @@ def _build_official_demo_contents(
                 "status": "skipped_no_api_key",
                 "execution_mode": "skipped",
                 "reason": (
-                    "OPENAI_API_KEY was absent; no live model call was attempted."
+                    "GEMINI_API_KEY was absent; no live model call was attempted."
                 ),
                 "model": load_settings().model,
                 "selected_household_ids": selected_ids,
-                "exact_command": ("uv run whyback demo --customers 5 --backend openai"),
+                "exact_command": ("uv run whyback demo --customers 5 --backend gemini"),
                 "reports_generated": False,
             },
         )
@@ -935,7 +935,7 @@ def _build_official_demo_contents(
             if outcomes
             else ()
         ),
-        live_model_executed=backend == "openai" and bool(outcomes),
+        live_model_executed=backend == "gemini" and bool(outcomes),
         manifest_path=output_directory / "manifest.json",
         report_count=len(outcomes),
     )
@@ -976,7 +976,7 @@ def build_official_demo(
     output_directory: Path,
     *,
     customers: int = 5,
-    backend: BackendName = "openai",
+    backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Build official status artifacts without overwriting any prior run audit."""
 
@@ -985,7 +985,7 @@ def build_official_demo(
             "Official run artifacts already exist; choose a new output directory "
             "so no historical live or scripted audit is deleted."
         )
-    if backend == "openai" and os.getenv("OPENAI_API_KEY"):
+    if backend == "gemini" and os.getenv("GEMINI_API_KEY"):
         _initialize_live_official_output(output_directory)
         return _build_official_demo_contents(
             prepared_dir,

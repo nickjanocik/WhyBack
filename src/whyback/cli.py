@@ -210,7 +210,7 @@ def investigate(
     ],
     backend: Annotated[
         str,
-        typer.Option(help="Model backend: scripted or openai."),
+        typer.Option(help="Model backend: scripted or gemini."),
     ] = "scripted",
     output_dir: Annotated[
         Path | None,
@@ -238,8 +238,8 @@ def investigate(
         run_investigation,
     )
 
-    if backend not in {"scripted", "openai"}:
-        raise typer.BadParameter("backend must be 'scripted' or 'openai'")
+    if backend not in {"scripted", "gemini"}:
+        raise typer.BadParameter("backend must be 'scripted' or 'gemini'")
     settings = load_settings()
     prepared = data_dir or settings.data_dir / "prepared"
     destination = output_dir or (settings.artifact_dir / f"customer_{household_id}")
@@ -287,7 +287,7 @@ def demo(
     ] = 5,
     backend: Annotated[
         str,
-        typer.Option(help="scripted uses synthetic data; openai uses official data."),
+        typer.Option(help="scripted uses synthetic data; gemini uses official data."),
     ] = "scripted",
     output_dir: Annotated[
         Path | None,
@@ -302,24 +302,24 @@ def demo(
     if backend == "scripted":
         destination = output_dir or Path("artifacts/demo")
         summary = build_synthetic_demo(destination, customers=customers)
-    elif backend == "openai":
+    elif backend == "gemini":
         destination = output_dir or Path("artifacts/live")
         summary = build_official_demo(
             settings.data_dir / "prepared",
             destination,
             customers=customers,
-            backend="openai",
+            backend="gemini",
         )
     else:
-        raise typer.BadParameter("backend must be 'scripted' or 'openai'")
+        raise typer.BadParameter("backend must be 'scripted' or 'gemini'")
     console.print(
         f"Generated {summary.report_count} reports for "
         f"{', '.join(summary.selected_household_ids)}."
     )
     console.print(f"Manifest: {summary.manifest_path}")
-    if backend == "openai" and not summary.live_model_executed:
+    if backend == "gemini" and not summary.live_model_executed:
         console.print(
-            "[yellow]Live model execution was skipped because OPENAI_API_KEY is "
+            "[yellow]Live model execution was skipped because GEMINI_API_KEY is "
             "absent.[/yellow]"
         )
 
@@ -342,7 +342,7 @@ def verify_artifacts(
         console.print("[red]Artifact verifier is missing from scripts/.[/red]")
         raise typer.Exit(code=1)
     command = [sys.executable, str(verifier), str(artifact_root)]
-    if not os.getenv("OPENAI_API_KEY"):
+    if not os.getenv("GEMINI_API_KEY"):
         command.append("--allow-live-skipped")
     completed = subprocess.run(
         command,

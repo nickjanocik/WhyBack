@@ -64,6 +64,7 @@ _REQUIRED_STEP_NAMES = frozenset(
         "test_output_validation",
         "deterministic_evals",
         "artifact_verification",
+        "live_gemini_artifact_verification",
         "official_artifact_verification",
         "official_type_a_artifact_verification",
     }
@@ -137,6 +138,7 @@ class GatePaths:
     junit_xml: Path
     coverage_json: Path
     artifact_verification_json: Path
+    live_gemini_artifact_verification_json: Path
     official_artifact_verification_json: Path
     official_type_a_artifact_verification_json: Path
     eval_json: Path
@@ -152,6 +154,9 @@ class GatePaths:
             junit_xml=directory / "junit.xml",
             coverage_json=directory / "coverage.json",
             artifact_verification_json=directory / "artifact_verification.json",
+            live_gemini_artifact_verification_json=(
+                directory / "live_gemini_artifact_verification.json"
+            ),
             official_artifact_verification_json=(
                 directory / "official_artifact_verification.json"
             ),
@@ -312,15 +317,13 @@ def model_metadata(root: Path) -> dict[str, object]:
 
     config = _read_toml(root / "configs" / "app.toml")
     agent = _nested_mapping(config.get("agent"))
-    configured_model = agent.get("default_model", "gpt-5.6-sol")
-    configured_effort = agent.get("default_reasoning_effort", "medium")
+    configured_model = agent.get("default_model", "gemini-3.7-flash")
+    configured_level = agent.get("default_thinking_level", "medium")
     return {
         "model": os.getenv("RETENTION_MODEL", str(configured_model)),
-        "reasoning_effort": os.getenv(
-            "RETENTION_REASONING_EFFORT", str(configured_effort)
-        ),
-        "openai_api_key_present": bool(os.getenv("OPENAI_API_KEY")),
-        "live_execution_permitted": bool(os.getenv("OPENAI_API_KEY")),
+        "thinking_level": os.getenv("RETENTION_THINKING_LEVEL", str(configured_level)),
+        "gemini_api_key_present": bool(os.getenv("GEMINI_API_KEY")),
+        "live_execution_permitted": bool(os.getenv("GEMINI_API_KEY")),
     }
 
 
@@ -506,6 +509,15 @@ def build_command_specs(
     ]
     if allow_live_skipped:
         artifact_command.append("--allow-live-skipped")
+    live_gemini_command = [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_artifacts.py",
+        "artifacts/live-gemini-synthetic-failure",
+        "--json-output",
+        relative(paths.live_gemini_artifact_verification_json),
+    ]
     official_command = [
         "uv",
         "run",
@@ -544,6 +556,10 @@ def build_command_specs(
             ),
         ),
         CommandSpec("artifact_verification", tuple(artifact_command)),
+        CommandSpec(
+            "live_gemini_artifact_verification",
+            tuple(live_gemini_command),
+        ),
         CommandSpec("official_artifact_verification", tuple(official_command)),
         CommandSpec(
             "official_type_a_artifact_verification",
@@ -862,6 +878,7 @@ def run_quality_gate(
         paths.junit_xml,
         paths.coverage_json,
         paths.artifact_verification_json,
+        paths.live_gemini_artifact_verification_json,
         paths.official_artifact_verification_json,
         paths.official_type_a_artifact_verification_json,
         paths.eval_json,

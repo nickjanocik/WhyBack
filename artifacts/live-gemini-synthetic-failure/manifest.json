@@ -1,0 +1,30 @@
+{
+  "artifact_profile": "standalone_run",
+  "backend": "gemini",
+  "completed_household_ids": [],
+  "customer_outreach_executed": false,
+  "dataset_kind": "synthetic",
+  "dataset_source_commit": "whyback-synthetic-fixture-v1",
+  "dataset_source_repository": "whyback/synthetic-fixture",
+  "execution_mode": "live",
+  "failed_household_ids": [
+    "101"
+  ],
+  "files": {
+    "report.html": "c99141a89bb6100064386f435b874dee03cfadbaf61e66d6e003e6cd503f19d8",
+    "report.json": "6adf7a1cbb70ca65c89a71f453496c92b618485d5d295dbe9e1eca0eed43c82e",
+    "report.md": "10dac11dab99ba791edb2576f6b1205855a1d7b5b2bda4b07e923f96ecf98869",
+    "trace.html": "4b5fc644eb175f8d3f6be22086580d4e7091b73abf9be833a832c143aaea9a99",
+    "trace.jsonl": "4c8e75f8cfb0ee270e387a71ac0f9365ac68b81f3c1564e36a5ee3f70ada0f32"
+  },
+  "human_review_required": true,
+  "model_execution": "live_gemini",
+  "product": "WhyBack",
+  "schema_version": 1,
+  "selected_household_ids": [
+    "101"
+  ],
+  "skipped_household_ids": [],
+  "source_manifest": null,
+  "timing_mode": "actual_utc_and_monotonic"
+}

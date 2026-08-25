@@ -55,10 +55,8 @@ class AgentConfig(BaseModel):
     max_model_decisions: int = Field(default=6, ge=1)
     tool_timeout_seconds: float = Field(default=30.0, gt=0.0)
     max_retryable_retries: int = Field(default=1, ge=0, le=1)
-    default_model: str = "gpt-5.6-sol"
-    default_reasoning_effort: Literal[
-        "none", "low", "medium", "high", "xhigh", "max"
-    ] = "medium"
+    default_model: str = "gemini-3.7-flash"
+    default_thinking_level: Literal["low", "medium", "high"] = "medium"
 
 
 class Settings(BaseModel):
@@ -72,10 +70,8 @@ class Settings(BaseModel):
     agent: AgentConfig = AgentConfig()
     data_dir: Path = Path("data")
     artifact_dir: Path = Path("artifacts/local")
-    model: str = "gpt-5.6-sol"
-    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh", "max"] = (
-        "medium"
-    )
+    model: str = "gemini-3.7-flash"
+    thinking_level: Literal["low", "medium", "high"] = "medium"
 
 
 def load_settings(path: Path | None = None) -> Settings:
@@ -99,7 +95,7 @@ def load_settings(path: Path | None = None) -> Settings:
         data_dir=Path(os.getenv("WHYBACK_DATA_DIR", "data")),
         artifact_dir=Path(os.getenv("WHYBACK_ARTIFACT_DIR", "artifacts/local")),
         model=os.getenv("RETENTION_MODEL", agent.default_model),
-        reasoning_effort=os.getenv(  # type: ignore[arg-type]
-            "RETENTION_REASONING_EFFORT", agent.default_reasoning_effort
+        thinking_level=os.getenv(  # type: ignore[arg-type]
+            "RETENTION_THINKING_LEVEL", agent.default_thinking_level
         ),
     )

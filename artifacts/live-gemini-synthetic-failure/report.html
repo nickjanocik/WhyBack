@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack investigation report — household 101</title>
+  <style>
+    :root { color-scheme: light; --ink:#16211d; --muted:#607068; --line:#dce5df; --paper:#fbfdfb; --panel:#fff; --green:#185c45; --mint:#dff4e9; --amber:#8a5814; --amber-bg:#fff4dc; --red:#8f312b; --red-bg:#fdecea; --blue:#265d78; --blue-bg:#eaf5fa; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(145deg,#edf6f0 0,#fbfdfb 35rem); color:var(--ink); font:15px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1120px,calc(100% - 32px)); margin:32px auto 64px; }
+    header { padding:34px; color:white; border-radius:22px; background:linear-gradient(130deg,#123d31,#1f7255); box-shadow:0 18px 45px rgba(22,60,48,.18); }
+    .brand { font-size:13px; letter-spacing:.14em; text-transform:uppercase; opacity:.82; }
+    h1 { margin:.15em 0 0; font-size:clamp(30px,5vw,50px); line-height:1.05; }
+    header p { margin:10px 0 0; font-size:18px; opacity:.9; }
+    .meta,.grid,.metric-grid { display:grid; gap:14px; }
+    .meta { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; }
+    .meta div { padding:12px 14px; border:1px solid rgba(255,255,255,.22); border-radius:12px; background:rgba(255,255,255,.08); overflow-wrap:anywhere; }
+    .meta span,.eyebrow { display:block; color:inherit; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; opacity:.72; }
+    section { margin-top:20px; padding:26px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.94); box-shadow:0 8px 30px rgba(29,56,45,.06); }
+    h2 { margin:0 0 18px; font-size:22px; }
+    h3 { margin:0 0 8px; font-size:16px; }
+    p { margin:8px 0; }
+    .metric-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .metric { padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .metric strong { display:block; margin-top:4px; font-size:20px; }
+    .metric small { color:var(--muted); }
+    .score { background:var(--mint); border-color:#b9dfcc; }
+    .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .step,.evidence,.driver,.warning,.action { padding:17px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+    .step + .step,.driver + .driver,.warning + .warning { margin-top:11px; }
+    .step-head,.evidence-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+    .badge { display:inline-block; padding:3px 9px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+    .badge.partial,.badge.retryable_error { color:var(--amber); background:var(--amber-bg); }
+    .badge.missing_data,.badge.invalid_request,.badge.fatal_error { color:var(--red); background:var(--red-bg); }
+    .badge.context { color:var(--blue); background:var(--blue-bg); }
+    .details { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:11px; color:var(--muted); font-size:13px; }
+    code { padding:2px 6px; border-radius:6px; background:#edf2ef; color:#244a3d; overflow-wrap:anywhere; }
+    dl { display:grid; grid-template-columns:max-content 1fr; gap:5px 14px; margin:12px 0 0; }
+    dt { color:var(--muted); } dd { margin:0; font-weight:650; }
+    ul { padding-left:20px; } li + li { margin-top:7px; }
+    .callout { padding:18px; border-left:5px solid var(--green); border-radius:10px; background:var(--mint); }
+    .warning { border-color:#edcf98; background:var(--amber-bg); }
+    .human { color:white; background:linear-gradient(130deg,#172d26,#274a3d); border:0; }
+    .human h2,.human p { color:white; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-size:11px; letter-spacing:.07em; text-transform:uppercase; }
+    .empty { color:var(--muted); font-style:italic; }
+    footer { padding:22px 6px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:760px) { .meta,.metric-grid,.grid.two { grid-template-columns:1fr; } header,section { padding:20px; } .step-head,.evidence-head { display:block; } .badge { margin-top:8px; } table { display:block; overflow-x:auto; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } header,section { box-shadow:none; break-inside:avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack Investigator</div>
+    <h1>WhyBack</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="meta">
+      <div><span>Household</span>101</div>
+      <div><span>Run</span>716a66bd-6ce6-4451-98aa-12f1f67a9937</div>
+      <div><span>Status</span>Failed</div>
+      <div><span>Dataset</span>Synthetic</div>
+      <div><span>Execution</span>Live Gemini</div>
+      <div><span>Model</span>gemini-3.7-flash</div>
+    </div>
+  </header>
+
+  <section id="provenance">
+    <span class="eyebrow">Standalone provenance</span><h2>Execution provenance</h2>
+    <dl>
+      <dt>Source</dt><dd><code>whyback/synthetic-fixture</code> @ <code>whyback-synthetic-fixture-v1</code></dd>
+      <dt>Backend</dt><dd><code>gemini</code></dd>
+      <dt>Application</dt><dd><code>0.1.0</code></dd>
+      <dt>Prompt</dt><dd><code>whyback-investigator-v1</code> / <code>3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b</code></dd>
+      <dt>Generated</dt><dd><code>2026-08-25T04:39:38.940238+00:00</code></dd>
+      <dt>Timing</dt><dd>Actual Utc And Monotonic</dd>
+      <dt>Bound hashes</dt><dd>Immutable file identities are embedded in the structured JSON report.</dd>
+    </dl>
+  </section>
+
+  <section id="decline-summary">
+    <span class="eyebrow">Detection</span><h2>Decline summary</h2>
+    <p>Baseline weeks <strong>1–8</strong> compared with recent weeks <strong>9–16</strong>.</p>
+    <p class="details">Detector evidence <code>detector_716a66bd-6ce6-4451-98aa-12f1f67a9937</code> is owned by this run and household.</p>
+    <div class="metric-grid">
+      <div class="metric"><small>Retailer sales value</small><strong>$160.00 → $12.00</strong><small>92.5% recorded drop</small></div>
+      <div class="metric"><small>Distinct baskets</small><strong>16 → 2</strong><small>87.5% recorded drop</small></div>
+      <div class="metric"><small>Active weeks</small><strong>8 → 2</strong><small>75.0% recorded drop</small></div>
+      <div class="metric score"><small>Decline score</small><strong>0.875</strong><small>Weighted heuristic, not a probability</small></div>
+    </div>
+    <div class="details"><span>Eligible: <strong>yes</strong></span><span>Flagged: <strong>yes</strong></span></div>
+  </section>
+
+  <section id="investigation-path">
+    <span class="eyebrow">Bounded analysis</span><h2>Investigation path</h2>
+    <article class="step">
+      <div class="step-head"><div><h3>1. Customer trend</h3><p>Investigate the next permitted evidence source.</p></div><span class="badge ok">Ok</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 24.6931 ms</span><span>Evidence <code>ev_call-716a66bd6c-01-customer_trend_001</code> <code>ev_call-716a66bd6c-01-customer_trend_002</code> <code>ev_call-716a66bd6c-01-customer_trend_003</code> <code>ev_call-716a66bd6c-01-customer_trend_004</code> <code>ev_call-716a66bd6c-01-customer_trend_005</code> <code>ev_call-716a66bd6c-01-customer_trend_006</code> <code>ev_call-716a66bd6c-01-customer_trend_007</code> <code>ev_call-716a66bd6c-01-customer_trend_008</code> <code>ev_call-716a66bd6c-01-customer_trend_009</code> <code>ev_call-716a66bd6c-01-customer_trend_010</code> <code>ev_call-716a66bd6c-01-customer_trend_011</code> <code>ev_call-716a66bd6c-01-customer_trend_012</code> <code>ev_call-716a66bd6c-01-customer_trend_013</code> <code>ev_call-716a66bd6c-01-customer_trend_014</code> <code>ev_call-716a66bd6c-01-customer_trend_015</code> <code>ev_call-716a66bd6c-01-customer_trend_016</code> <code>ev_call-716a66bd6c-01-customer_trend_017</code> <code>ev_call-716a66bd6c-01-customer_trend_018</code> <code>ev_call-716a66bd6c-01-customer_trend_019</code> <code>ev_call-716a66bd6c-01-customer_trend_020</code> <code>ev_call-716a66bd6c-01-customer_trend_021</code> <code>ev_call-716a66bd6c-01-customer_trend_022</code> <code>ev_call-716a66bd6c-01-customer_trend_023</code> <code>ev_call-716a66bd6c-01-customer_trend_024</code> <code>ev_call-716a66bd6c-01-customer_trend_025</code> <code>ev_call-716a66bd6c-01-customer_trend_026</code> </span></div>
+    </article>
+    <article class="step">
+      <div class="step-head"><div><h3>2. Category decomposition</h3><p>Which product categories or departments account for the lost retailer sales value?</p></div><span class="badge ok">Ok</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 11.6996 ms</span><span>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_001</code> <code>ev_call-716a66bd6c-02-category_decomposition_002</code> <code>ev_call-716a66bd6c-02-category_decomposition_003</code> <code>ev_call-716a66bd6c-02-category_decomposition_004</code> <code>ev_call-716a66bd6c-02-category_decomposition_005</code> <code>ev_call-716a66bd6c-02-category_decomposition_006</code> <code>ev_call-716a66bd6c-02-category_decomposition_007</code> <code>ev_call-716a66bd6c-02-category_decomposition_008</code> <code>ev_call-716a66bd6c-02-category_decomposition_009</code> <code>ev_call-716a66bd6c-02-category_decomposition_010</code> <code>ev_call-716a66bd6c-02-category_decomposition_011</code> <code>ev_call-716a66bd6c-02-category_decomposition_012</code> <code>ev_call-716a66bd6c-02-category_decomposition_013</code> <code>ev_call-716a66bd6c-02-category_decomposition_014</code> <code>ev_call-716a66bd6c-02-category_decomposition_015</code> <code>ev_call-716a66bd6c-02-category_decomposition_016</code> </span></div>
+    </article>
+    <article class="step">
+      <div class="step-head"><div><h3>3. Basket behavior</h3><p>Did basket size, basket value, or visit cadence drive the household sales decline?</p></div><span class="badge ok">Ok</span></div>
+      <div class="details"><span>Attempts 1</span><span>Retries 0</span><span>Recorded latency 9.21437 ms</span><span>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_001</code> <code>ev_call-716a66bd6c-03-basket_behavior_002</code> <code>ev_call-716a66bd6c-03-basket_behavior_003</code> <code>ev_call-716a66bd6c-03-basket_behavior_004</code> <code>ev_call-716a66bd6c-03-basket_behavior_005</code> <code>ev_call-716a66bd6c-03-basket_behavior_006</code> <code>ev_call-716a66bd6c-03-basket_behavior_007</code> <code>ev_call-716a66bd6c-03-basket_behavior_008</code> <code>ev_call-716a66bd6c-03-basket_behavior_009</code> <code>ev_call-716a66bd6c-03-basket_behavior_010</code> <code>ev_call-716a66bd6c-03-basket_behavior_011</code> <code>ev_call-716a66bd6c-03-basket_behavior_012</code> <code>ev_call-716a66bd6c-03-basket_behavior_013</code> <code>ev_call-716a66bd6c-03-basket_behavior_014</code> <code>ev_call-716a66bd6c-03-basket_behavior_015</code> <code>ev_call-716a66bd6c-03-basket_behavior_016</code> </span></div>
+    </article>
+  </section>
+
+  <section id="likely-drivers">
+    <span class="eyebrow">Verified interpretation</span><h2>Likely drivers</h2>
+<p class="empty">No likely driver passed deterministic verification.</p>  </section>
+
+  <section id="supporting-evidence">
+    <span class="eyebrow">Immutable ledger</span><h2>Supporting evidence</h2>
+<p class="empty">No supporting evidence was accepted for a verified conclusion.</p>  </section>
+
+  <section id="counterevidence-alternatives">
+    <span class="eyebrow">Challenge the hypothesis</span><h2>Counterevidence and alternative explanations</h2>
+<p class="empty">No evidence record was designated as counterevidence.</p><p class="empty">No verified alternative explanation was recorded.</p>  </section>
+
+  <section id="next-best-action">
+    <span class="eyebrow">Catalog governed</span><h2>Next Best Action</h2>
+<p class="empty">No Next Best Action passed deterministic verification. No customer action should be taken from this report.</p>  </section>
+
+  <section id="measurement-plan">
+    <span class="eyebrow">Learn safely</span><h2>Measurement plan</h2>
+<p class="empty">No measurement plan is available because no action passed verification.</p>  </section>
+
+  <section id="limitations">
+    <span class="eyebrow">Use with care</span><h2>Limitations</h2>
+<ul><li>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</li><li>Gemini Interactions request failed</li></ul>  </section>
+
+  <section id="failures-partial-warnings">
+    <span class="eyebrow">Reliability record</span><h2>Failures and partial-result warnings</h2>
+<p class="empty">No failed, partial, or retried analytical result was recorded.</p><ul><li>Verification issue: Gemini Interactions request failed</li></ul>  </section>
+
+  <section id="human-review" class="human">
+    <span class="eyebrow">Required control</span><h2>Human-review requirement</h2>
+    <p><strong>Human review is required before any action.</strong> WhyBack recommends catalog-governed actions for review; it does not contact customers, mutate a CRM, or execute outreach.</p>
+  </section>
+
+  <section id="evidence-ledger">
+    <span class="eyebrow">Audit index</span><h2>Evidence ledger</h2>
+<table><thead><tr><th>Evidence ID</th><th>Role</th><th>Tool</th><th>Status</th><th>Metric</th><th>Limitations</th></tr></thead><tbody><tr><td><code>ev_call-716a66bd6c-01-customer_trend_001</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_002</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Distinct Trips</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_003</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Active Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_004</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Average Retailer Sales Value Per Trip</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_005</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Median Retailer Sales Value Per Trip</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_006</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Recorded Quantity</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_007</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Distinct Products</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_008</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Recency Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_009</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value Slope</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_010</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_011</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_012</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_013</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_014</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_015</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_016</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_017</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_018</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_019</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_020</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_021</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_022</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_023</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_024</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_025</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Weekly Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-01-customer_trend_026</code></td><td>Context</td><td><code>customer_trend</code></td><td>Ok</td><td>Full Window Weekly Retailer Sales Value Slope</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_001</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_002</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Product Mapping Line Item Coverage</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_003</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Product Mapping Distinct Product Coverage</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_004</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Unknown Group Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_005</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_006</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Percentage Change</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_007</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Share Shift</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_008</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Contribution To Lost Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_009</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_010</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Percentage Change</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_011</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Share Shift</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_012</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Contribution To Lost Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_013</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_014</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Percentage Change</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_015</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Category Share Shift</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-02-category_decomposition_016</code></td><td>Context</td><td><code>category_decomposition</code></td><td>Ok</td><td>Contribution To Lost Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_001</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Basket Count</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_002</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Active Weeks</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_003</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Baskets Per Calendar Week</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_004</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Mean Basket Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_005</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Median Basket Retailer Sales Value</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_006</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Mean Recorded Quantity Per Basket</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_007</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Median Recorded Quantity Per Basket</td><td>Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_008</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Mean Distinct Products Per Basket</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_009</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Mean Distinct Categories Per Basket</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_010</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Mean Basket Interval Days</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_011</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Median Basket Interval Days</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_012</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Primary Store Share</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_013</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Stores Visited</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_014</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Consecutive Store Switch Rate</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_015</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Primary Store Changed</td><td>None recorded</td></tr><tr><td><code>ev_call-716a66bd6c-03-basket_behavior_016</code></td><td>Context</td><td><code>basket_behavior</code></td><td>Ok</td><td>Recent Baskets At New Store Share</td><td>None recorded</td></tr></tbody></table>  </section>
+
+  <footer>WhyBack · Find the why. Choose the way back. · Deterministic evidence report</footer>
+</main>
+</body>
+</html>

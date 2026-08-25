@@ -161,22 +161,37 @@ the source manifest and generated artifacts are the proper provenance records.
 
 ## Live-model status
 
-The live backend is implemented against direct Responses API calls, but
-`OPENAI_API_KEY` was absent during submission generation. Live GPT-5.6
-investigations were therefore skipped, not replaced with scripted output under
-a live label. Baseline CI never requires a key.
+The preserved prior-submission artifacts record that the OpenAI Responses
+backend was not run because `OPENAI_API_KEY` was absent. Live GPT-5.6
+investigations were skipped rather than replaced with scripted output under a
+live label. That remains truthful historical evidence and is not a current
+provider-status claim.
 
-Once a credential is available:
+The current live backend uses Gemini function calling through the Interactions
+API. A live request over a fabricated decline snapshot returned a valid
+analytical function call and provider-issued call ID. A longer synthetic run
+completed three live decision/tool turns before a later provider request reached
+the adapter's timeout and the run failed closed. No completed live investigation
+result is claimed, no official customer-behavior data was sent to Gemini, and
+baseline CI remains credential-free. See
+[ADR 007](adr/007-use-gemini-function-calling.md) for the provider decision.
+The verified synthetic failure bundle is available at
+[`artifacts/live-gemini-synthetic-failure/`](../artifacts/live-gemini-synthetic-failure/).
+
+To run a separately authorized official-data investigation:
 
 ```bash
-export OPENAI_API_KEY="..."
-uv run whyback demo --customers 5 --backend openai
+export GEMINI_API_KEY="..."
+export RETENTION_MODEL="gemini-3.7-flash"
+export RETENTION_THINKING_LEVEL="medium"
+uv run whyback demo --customers 5 --backend gemini
 uv run whyback verify-artifacts artifacts/live
 uv run python scripts/run_quality_gate.py
 ```
 
-The resulting manifest and traces must show a live execution mode and real
-provider call IDs before any live-result claim is made.
+The resulting manifest and traces must show backend `gemini`, a live Gemini
+execution mode, and provider-issued Gemini interaction or function-call IDs
+before any live-result claim is made.
 
 ## Reading the results
 

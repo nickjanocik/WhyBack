@@ -66,6 +66,7 @@ _SECRET_KEYS = frozenset(
         "cookie",
         "credential",
         "credentials",
+        "gemini_api_key",
         "openai_api_key",
         "password",
         "passwd",

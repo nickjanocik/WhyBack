@@ -5,6 +5,10 @@ Status legend: **planned**, **implemented**, **verified**, **blocked**, or
 
 ## Milestones and commit boundaries
 
+Milestones 1–10 are the prior submission record. Their OpenAI/GPT terminology,
+executed check counts, and skip status intentionally describe what was true at
+that time; they are not current live-provider instructions.
+
 | # | Milestone | Depends on | Acceptance and checks | Status |
 |---|---|---|---|---|
 | 1 | Project scaffold and guardrails | — | Naming, `src` layout, `uv` lock, CLI help, Ruff/Pyright/Pytest configuration, secret/data ignores, `AGENTS.md`; run scaffold tests and static checks | verified (2 tests; Ruff and Pyright clean) |
@@ -17,6 +21,7 @@ Status legend: **planned**, **implemented**, **verified**, **blocked**, or
 | 8 | Audit, reports, demo, and evals | 6–7 | Append-only JSONL, static trace and customer HTML, JSON/Markdown output, deterministic synthetic demo/failure example/golden trace, scenario metrics and artifact verifier | verified (five synthetic reports, persistent-failure and partial-data controls, six passing scenario contracts, and strict artifact verification) |
 | 9 | Quality audit and CI | 1–8 | Unit/property/integration/orchestration coverage, branch-aware coverage target, machine-generated command audit, frozen CI without data/key/network dependencies | verified (complete gate PASS: 187 passed, one expected live-key skip, 86.89% branch coverage, all required artifact and evaluation checks passed) |
 | 10 | Official data and reviewer docs | 2–9 | Full-data preparation and top-five deterministic selection where available; live GPT run only with a key; README compliance matrix, six ADRs, productionization, final red-team, commit summary | verified: official manifest v2 and Type A report pass strict verification; live GPT honestly skipped for absent key; independent red-team found no remaining core-code blocker; actual Git history summarized |
+| 11 | Gemini live-provider migration | 6–10 | Replace the active provider with Gemini Interactions function calling; use `GEMINI_API_KEY`, backend `gemini`, default model `gemini-3.7-flash`, and `RETENTION_THINKING_LEVEL`; preserve legacy artifact reads; update tests and current docs | implemented; deterministic checks and live analytical-call contract passed; final gate pending |
 
 Each row is intended to become one coherent commit, with adjacent rows split or
 combined only when it improves reviewability. Every commit must remain usable
@@ -62,21 +67,30 @@ and include only checks that actually passed.
   counterevidence, approved action prerequisites, confidence cap, promotion and
   category invariants, and absence of free-form numerical claims.
 
-### 5. Reviewer artifacts
+### 5. Reviewer artifacts (prior submission plan)
 
 - Generate deterministic synthetic reviewer artifacts in baseline CI.
 - Attempt official full data acquisition and top-five runs independently of the
   missing live-model key. Never substitute synthetic output under a real label.
-- If `OPENAI_API_KEY` remains absent, record live runs as skipped and provide the
-  exact command; do not manufacture reports.
+- Under the prior submission policy, if `OPENAI_API_KEY` remained absent, record
+  live runs as skipped and provide the exact command; do not manufacture
+  reports.
 
-Current execution record: all official source files were prepared under a clean
-manifest v2 bound to source commit `960c098`; the
+Prior submission execution record: all official source files were prepared
+under a clean manifest v2 bound to source commit `960c098`; the
 detector selected households `5`, `181`, `423`, `472`, and `682`. The six tools
 were smoke-tested against full prepared data, including a legitimate Type A
-partial case for household `181`. `OPENAI_API_KEY` remains absent, so live
-GPT-5.6 runs are skipped; scripted outputs retain an explicit execution-mode
-label.
+partial case for household `181`. `OPENAI_API_KEY` was absent, so live GPT-5.6
+runs were skipped; scripted outputs retained an explicit execution-mode label.
+
+Current Gemini migration record: the active provider has been changed to
+Gemini, with backend `gemini`, default model `gemini-3.7-flash`, explicit
+`GEMINI_API_KEY`, and `RETENTION_THINKING_LEVEL`. A synthetic live analytical
+call returned a provider-issued function-call ID. A longer synthetic attempt
+completed three decision/tool turns before the fourth provider request timed out
+and the application failed closed. No completed live investigation or live
+customer artifact is claimed, and official customer-behavior data was not sent
+to Gemini.
 
 ## Expected testing by layer
 
@@ -99,11 +113,15 @@ label.
 | Python 3.12/`uv` unavailable | Resolved: locked Python 3.12 environment is present | CI and reviewers install from the frozen lock; record any acquisition blocker |
 | Restricted network | Resolved for source acquisition after approved network access | Keep pinned URLs/hashes; never use unofficial data or require network in baseline CI |
 | Full promotions memory | Resolved locally: 20,940,529 rows prepared and canonicalized once | Retain manifest/idempotence; prefer cancellable warehouse SQL in production |
-| OpenAI credential | `OPENAI_API_KEY` remains unset | Scripted backend and deterministic evals are baseline; record live execution as skipped with exact command |
+| Prior OpenAI credential (historical) | `OPENAI_API_KEY` was unset for the prior submission | Preserve the skip record and its artifacts as historical evidence |
+| Gemini credential and live validation | Synthetic analytical-call contract passed; a longer synthetic attempt later reached its bounded provider timeout | Keep scripted tests as the baseline; claim contract validation only, and require separate authorization before transmitting official data |
 | Empty remote | Resolved: milestone commits are on `origin/codex/whyback-build` | Continue on the approved branch and push without force |
 | Optional ecosystem drift | MCP/telemetry APIs can change | Omit from core unless verified against current official APIs and isolated behind extras |
 
-## Final artifact checklist
+## Prior submission final artifact checklist
+
+This completed checklist records the OpenAI-era submission and remains
+unchanged as historical evidence.
 
 - [x] Pinned data manifest and semantics/provenance documentation
 - [x] Ranked candidates and threshold sensitivity
@@ -114,7 +132,7 @@ label.
 - [x] Structured/Markdown/HTML reports and static trace viewer
 - [x] Deterministic synthetic demo, persistent-failure demo, golden trace
 - [x] Official top-five selection; live investigations explicitly skipped while
-      `OPENAI_API_KEY` is absent
+      `OPENAI_API_KEY` was absent
 - [x] Legitimate official Type A missing-exposure report and trace for household 181
 - [x] Scenario catalog and generated deterministic evaluation summary
 - [x] Machine-generated JUnit, coverage JSON, test audit, and artifact checks
@@ -124,3 +142,16 @@ label.
 - [x] Actual Git history summary (independent red-team findings are resolved)
 - [x] Final quality gate passed and captured
 - [x] Branch clean; all possible commits pushed without force
+
+## Current Gemini migration checklist
+
+- [x] Active backend and commands use `gemini` and `GEMINI_API_KEY`
+- [x] Default model is `gemini-3.7-flash`; thinking uses
+      `RETENTION_THINKING_LEVEL`
+- [x] Legacy OpenAI artifact provenance remains readable and historically labeled
+- [x] ADR 007 records the provider migration and its boundaries
+- [x] Bounded live synthetic failure artifact generated, verified, and labeled
+- [ ] Deterministic migration quality gate rerun and captured
+- [x] Live Gemini analytical-call contract validated with a provider-issued call ID
+- [ ] Completed live official-data artifacts generated with explicit authorization
+- [ ] Migration worktree clean and all possible commits pushed without force

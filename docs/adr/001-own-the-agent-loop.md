@@ -1,6 +1,7 @@
 # ADR 001 — Own the agent loop
 
-- **Status:** Accepted
+- **Status:** Accepted; live-provider choice superseded by
+  [ADR 007](007-use-gemini-function-calling.md)
 - **Date:** 2026-08-24
 
 ## Context

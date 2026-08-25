@@ -21,5 +21,5 @@ max_tool_executions = 5
 max_model_decisions = 6
 tool_timeout_seconds = 30.0
 max_retryable_retries = 1
-default_model = "gpt-5.6-sol"
-default_reasoning_effort = "medium"
+default_model = "gemini-3.7-flash"
+default_thinking_level = "medium"

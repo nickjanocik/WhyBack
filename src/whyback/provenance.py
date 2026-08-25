@@ -23,10 +23,10 @@ class RunProvenance(BaseModel):
     dataset_source_repository: str = "unspecified"
     dataset_source_commit: str = "unspecified"
     source_hashes: dict[str, str] = Field(default_factory=dict)
-    backend: Literal["scripted", "openai", "unspecified"] = "unspecified"
-    execution_mode: Literal["scripted_control", "live_openai", "unspecified"] = (
-        "unspecified"
-    )
+    backend: Literal["scripted", "gemini", "openai", "unspecified"] = "unspecified"
+    execution_mode: Literal[
+        "scripted_control", "live_gemini", "live_openai", "unspecified"
+    ] = "unspecified"
     model: str = "unspecified"
     application_version: str = __version__
     prompt_version: str = PROMPT_VERSION

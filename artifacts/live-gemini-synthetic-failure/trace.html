@@ -1,0 +1,2781 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+  <title>WhyBack trace viewer — household 101</title>
+  <style>
+    :root { color-scheme:light; --ink:#17221e; --muted:#68766f; --paper:#f7faf8; --panel:#fff; --line:#dbe5df; --green:#176046; --mint:#e1f4ea; --blue:#285f79; --blue-bg:#eaf5fa; --amber:#8a5814; --amber-bg:#fff3db; --red:#93362f; --red-bg:#fdecea; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(1040px,calc(100% - 30px)); margin:28px auto 60px; }
+    header { padding:28px; border-radius:18px; color:white; background:linear-gradient(130deg,#173d31,#236b51); }
+    h1 { margin:4px 0 0; font-size:34px; } header p { margin:5px 0 0; opacity:.85; }
+    .brand { font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; opacity:.75; }
+    .summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:18px; }
+    .summary div { padding:11px; border:1px solid rgba(255,255,255,.2); border-radius:10px; background:rgba(255,255,255,.08); }
+    .summary span { display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.7; }
+    .identity { margin-top:10px; overflow-wrap:anywhere; font-size:12px; opacity:.8; }
+    .timeline { position:relative; margin-top:24px; padding-left:28px; }
+    .timeline::before { content:""; position:absolute; left:8px; top:9px; bottom:9px; width:2px; background:var(--line); }
+    article { position:relative; margin:0 0 14px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); box-shadow:0 6px 20px rgba(35,62,51,.05); }
+    article::before { content:""; position:absolute; left:-26px; top:23px; width:11px; height:11px; border:3px solid var(--paper); border-radius:50%; background:var(--green); }
+    article.tool::before { background:var(--blue); } article.retry::before { background:var(--amber); } article.verifier::before { background:#6f4b92; } article.evidence::before { background:#3a7b35; }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    h2 { margin:0; font-size:17px; } time { color:var(--muted); font-size:12px; white-space:nowrap; }
+    .code { margin-top:2px; color:var(--muted); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .chip { padding:4px 8px; border-radius:100vmax; color:var(--green); background:var(--mint); font-size:11px; font-weight:700; }
+    .chip.tool { color:var(--blue); background:var(--blue-bg); } .chip.retry { color:var(--amber); background:var(--amber-bg); } .chip.failed,.chip.rejected { color:var(--red); background:var(--red-bg); }
+    code { padding:2px 5px; border-radius:5px; background:#eef3f0; color:#23503f; overflow-wrap:anywhere; }
+    details { margin-top:13px; border-top:1px solid var(--line); padding-top:10px; } summary { color:var(--muted); cursor:pointer; font-weight:650; }
+    pre { max-height:360px; margin:10px 0 0; padding:12px; overflow:auto; border-radius:9px; background:#18221e; color:#dff2e8; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .empty { margin-top:24px; padding:30px; border:1px dashed var(--line); border-radius:14px; color:var(--muted); text-align:center; }
+    footer { padding:20px; color:var(--muted); text-align:center; font-size:12px; }
+    @media (max-width:700px) { .summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .top { display:block; } time { display:block; margin-top:4px; } header { padding:20px; } }
+    @media print { body { background:white; } main { width:100%; margin:0; } article { box-shadow:none; break-inside:avoid; } details { display:none; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">WhyBack audit</div>
+    <h1>Trace viewer</h1>
+    <p>Find the why. Choose the way back.</p>
+    <div class="summary">
+      <div><span>Events</span>76</div>
+      <div><span>Decisions</span>3</div>
+      <div><span>Tool attempts</span>3</div>
+      <div><span>Retries</span>0</div>
+    </div>
+    <div class="identity">Run 716a66bd-6ce6-4451-98aa-12f1f67a9937 · Household 101 · Verifier not recorded · Final action not recorded</div>
+  </header>
+
+<div class="timeline">    <article class="run">
+      <div class="top"><div><h2>1. Investigation started</h2><div class="code">run_started</div></div><time>2026-08-25T04:37:08.324414Z</time></div>
+      <div class="chips">
+        <span class="chip">run</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;application_version&#34;: &#34;0.1.0&#34;,
+  &#34;dataset_kind&#34;: &#34;synthetic&#34;,
+  &#34;dataset_source_commit&#34;: &#34;whyback-synthetic-fixture-v1&#34;,
+  &#34;dataset_source_repository&#34;: &#34;whyback/synthetic-fixture&#34;,
+  &#34;decline_score&#34;: 0.8750000000000001,
+  &#34;demo_fault&#34;: null,
+  &#34;detector_snapshot&#34;: {
+    &#34;active_week_drop&#34;: 0.75,
+    &#34;baseline_active_weeks&#34;: 8,
+    &#34;baseline_distinct_baskets&#34;: 16,
+    &#34;baseline_end_week&#34;: 8,
+    &#34;baseline_retailer_sales_value&#34;: 160.0,
+    &#34;baseline_start_week&#34;: 1,
+    &#34;decline_score&#34;: 0.8750000000000001,
+    &#34;eligible&#34;: true,
+    &#34;flagged&#34;: true,
+    &#34;household_id&#34;: &#34;101&#34;,
+    &#34;partial_week_limitation&#34;: null,
+    &#34;recent_active_weeks&#34;: 2,
+    &#34;recent_distinct_baskets&#34;: 2,
+    &#34;recent_end_week&#34;: 16,
+    &#34;recent_retailer_sales_value&#34;: 12.0,
+    &#34;recent_start_week&#34;: 9,
+    &#34;sales_drop&#34;: 0.925,
+    &#34;trip_drop&#34;: 0.875
+  },
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;remaining_turn_budget&#34;: 6,
+  &#34;timing_mode&#34;: &#34;actual_utc_and_monotonic&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>2. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T04:37:08.325601Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;remaining_turn_budget&#34;: 6,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>3. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T04:38:01.150060Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool customer_trend</span><span class="chip">latency 52822.71220814437 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Choose one bounded, evidence-seeking next step.&#34;,
+  &#34;input_tokens&#34;: 4368,
+  &#34;investigation_question&#34;: &#34;Investigate the next permitted evidence source.&#34;,
+  &#34;latency_ms&#34;: 52822.71220814437,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;output_tokens&#34;: 76,
+  &#34;provider_call_id&#34;: &#34;call_106615&#34;,
+  &#34;selected_tool&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>4. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T04:38:01.150835Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;Investigate the next permitted evidence source.&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;
+  },
+  &#34;tool_name&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>5. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T04:38:01.151094Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;
+  },
+  &#34;remaining_tool_budget&#34;: 5,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+  &#34;tool_name&#34;: &#34;customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>6. Tool completed</h2><div class="code">tool_completed</div></div><time>2026-08-25T04:38:01.190833Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool customer_trend</span><span class="chip ok">status ok</span><span class="chip">latency 24.693125393241644 ms</span>      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_001</code> <code>ev_call-716a66bd6c-01-customer_trend_002</code> <code>ev_call-716a66bd6c-01-customer_trend_003</code> <code>ev_call-716a66bd6c-01-customer_trend_004</code> <code>ev_call-716a66bd6c-01-customer_trend_005</code> <code>ev_call-716a66bd6c-01-customer_trend_006</code> <code>ev_call-716a66bd6c-01-customer_trend_007</code> <code>ev_call-716a66bd6c-01-customer_trend_008</code> <code>ev_call-716a66bd6c-01-customer_trend_009</code> <code>ev_call-716a66bd6c-01-customer_trend_010</code> <code>ev_call-716a66bd6c-01-customer_trend_011</code> <code>ev_call-716a66bd6c-01-customer_trend_012</code> <code>ev_call-716a66bd6c-01-customer_trend_013</code> <code>ev_call-716a66bd6c-01-customer_trend_014</code> <code>ev_call-716a66bd6c-01-customer_trend_015</code> <code>ev_call-716a66bd6c-01-customer_trend_016</code> <code>ev_call-716a66bd6c-01-customer_trend_017</code> <code>ev_call-716a66bd6c-01-customer_trend_018</code> <code>ev_call-716a66bd6c-01-customer_trend_019</code> <code>ev_call-716a66bd6c-01-customer_trend_020</code> <code>ev_call-716a66bd6c-01-customer_trend_021</code> <code>ev_call-716a66bd6c-01-customer_trend_022</code> <code>ev_call-716a66bd6c-01-customer_trend_023</code> <code>ev_call-716a66bd6c-01-customer_trend_024</code> <code>ev_call-716a66bd6c-01-customer_trend_025</code> <code>ev_call-716a66bd6c-01-customer_trend_026</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;baseline_transaction_rows&#34;: 16,
+    &#34;recent_transaction_rows&#34;: 2,
+    &#34;zero_filled_week_count&#34;: 16
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-716a66bd6c-01-customer_trend_001&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_002&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_003&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_004&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_005&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_006&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_007&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_008&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_009&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_010&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_011&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_012&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_013&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_014&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_015&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_016&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_017&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_018&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_019&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_020&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_021&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_022&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_023&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_024&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_025&#34;,
+    &#34;ev_call-716a66bd6c-01-customer_trend_026&#34;
+  ],
+  &#34;latency_ms&#34;: 24.693125393241644,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 18,
+  &#34;status&#34;: &#34;ok&#34;,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+  &#34;tool_name&#34;: &#34;customer_trend&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: 160.0,
+        &#34;change&#34;: -148.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_001&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 12.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 16.0,
+        &#34;change&#34;: -14.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_002&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;distinct_trips&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 8.0,
+        &#34;change&#34;: -6.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_003&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;active_weeks&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 10.0,
+        &#34;change&#34;: -4.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_004&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;average_retailer_sales_value_per_trip&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_trip&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 10.0,
+        &#34;change&#34;: -4.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_005&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_retailer_sales_value_per_trip&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_trip&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 16.0,
+        &#34;change&#34;: -14.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_006&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;recorded_quantity&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 3.0,
+        &#34;change&#34;: -1.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_007&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;distinct_products&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: 6.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_008&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;recency_weeks&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: -0.8571428571428571,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_009&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value_slope&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: -0.8571428571428571,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_week&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;1&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_010&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;2&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_011&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;3&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_012&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;4&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_013&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;5&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_014&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;6&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_015&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;7&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_016&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;8&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_017&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 20.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;9&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_018&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 6.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;10&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_019&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 6.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;11&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_020&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;12&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_021&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;13&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_022&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;14&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_023&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;15&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_024&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;week&#34;: &#34;16&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_025&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_026&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;full_window_weekly_retailer_sales_value_slope&#34;,
+        &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;customer_trend&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_week&#34;,
+        &#34;value&#34;: -1.8470588235294119
+      }
+    ],
+    &#34;limitations&#34;: [
+      &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+    ],
+    &#34;model_summary&#34;: {
+      &#34;baseline&#34;: {
+        &#34;active_weeks&#34;: 8,
+        &#34;average_retailer_sales_value_per_trip&#34;: 10.0,
+        &#34;distinct_products&#34;: 3,
+        &#34;median_retailer_sales_value_per_trip&#34;: 10.0,
+        &#34;recency_weeks&#34;: 0,
+        &#34;recorded_quantity&#34;: 16.0,
+        &#34;retailer_sales_value&#34;: 160.0,
+        &#34;trips&#34;: 16,
+        &#34;weekly_retailer_sales_value_slope&#34;: 0.0
+      },
+      &#34;changes&#34;: {
+        &#34;active_weeks&#34;: {
+          &#34;absolute_change&#34;: -6.0,
+          &#34;baseline&#34;: 8,
+          &#34;recent&#34;: 2,
+          &#34;relative_change&#34;: -0.75
+        },
+        &#34;average_retailer_sales_value_per_trip&#34;: {
+          &#34;absolute_change&#34;: -4.0,
+          &#34;baseline&#34;: 10.0,
+          &#34;recent&#34;: 6.0,
+          &#34;relative_change&#34;: -0.4
+        },
+        &#34;distinct_products&#34;: {
+          &#34;absolute_change&#34;: -1.0,
+          &#34;baseline&#34;: 3,
+          &#34;recent&#34;: 2,
+          &#34;relative_change&#34;: -0.3333333333333333
+        },
+        &#34;distinct_trips&#34;: {
+          &#34;absolute_change&#34;: -14.0,
+          &#34;baseline&#34;: 16,
+          &#34;recent&#34;: 2,
+          &#34;relative_change&#34;: -0.875
+        },
+        &#34;median_retailer_sales_value_per_trip&#34;: {
+          &#34;absolute_change&#34;: -4.0,
+          &#34;baseline&#34;: 10.0,
+          &#34;recent&#34;: 6.0,
+          &#34;relative_change&#34;: -0.4
+        },
+        &#34;recency_weeks&#34;: {
+          &#34;absolute_change&#34;: 6.0,
+          &#34;baseline&#34;: 0,
+          &#34;recent&#34;: 6,
+          &#34;relative_change&#34;: null
+        },
+        &#34;recorded_quantity&#34;: {
+          &#34;absolute_change&#34;: -14.0,
+          &#34;baseline&#34;: 16.0,
+          &#34;recent&#34;: 2.0,
+          &#34;relative_change&#34;: -0.875
+        },
+        &#34;retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: -148.0,
+          &#34;baseline&#34;: 160.0,
+          &#34;recent&#34;: 12.0,
+          &#34;relative_change&#34;: -0.925
+        },
+        &#34;weekly_retailer_sales_value_slope&#34;: {
+          &#34;absolute_change&#34;: -0.8571428571428571,
+          &#34;baseline&#34;: 0.0,
+          &#34;recent&#34;: -0.8571428571428571,
+          &#34;relative_change&#34;: null
+        }
+      },
+      &#34;full_window_weekly_retailer_sales_value_slope&#34;: -1.8470588235294119,
+      &#34;recent&#34;: {
+        &#34;active_weeks&#34;: 2,
+        &#34;average_retailer_sales_value_per_trip&#34;: 6.0,
+        &#34;distinct_products&#34;: 2,
+        &#34;median_retailer_sales_value_per_trip&#34;: 6.0,
+        &#34;recency_weeks&#34;: 6,
+        &#34;recorded_quantity&#34;: 2.0,
+        &#34;retailer_sales_value&#34;: 12.0,
+        &#34;trips&#34;: 2,
+        &#34;weekly_retailer_sales_value_slope&#34;: -0.8571428571428571
+      },
+      &#34;weekly_series&#34;: [
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 1
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 2
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 3
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 4
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 5
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 6
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 7
+        },
+        {
+          &#34;distinct_products&#34;: 2,
+          &#34;recorded_quantity&#34;: 2.0,
+          &#34;retailer_sales_value&#34;: 20.0,
+          &#34;trips&#34;: 2,
+          &#34;week&#34;: 8
+        },
+        {
+          &#34;distinct_products&#34;: 1,
+          &#34;recorded_quantity&#34;: 1.0,
+          &#34;retailer_sales_value&#34;: 6.0,
+          &#34;trips&#34;: 1,
+          &#34;week&#34;: 9
+        },
+        {
+          &#34;distinct_products&#34;: 1,
+          &#34;recorded_quantity&#34;: 1.0,
+          &#34;retailer_sales_value&#34;: 6.0,
+          &#34;trips&#34;: 1,
+          &#34;week&#34;: 10
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 11
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 12
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 13
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 14
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 15
+        },
+        {
+          &#34;distinct_products&#34;: 0,
+          &#34;recorded_quantity&#34;: 0.0,
+          &#34;retailer_sales_value&#34;: 0.0,
+          &#34;trips&#34;: 0,
+          &#34;week&#34;: 16
+        }
+      ]
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;whyback-synthetic-fixture-v1&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;baseline_transaction_rows&#34;: 16,
+        &#34;recent_transaction_rows&#34;: 2,
+        &#34;zero_filled_week_count&#34;: 16
+      },
+      &#34;elapsed_ms&#34;: 24.693125393241644,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 8,
+          &#34;baseline_start&#34;: 1,
+          &#34;recent_end&#34;: 16,
+          &#34;recent_start&#34;: 9
+        },
+        &#34;household_id&#34;: &#34;101&#34;
+      },
+      &#34;query_hash&#34;: &#34;79b962b199f53bf780269baefe7956f1c2e9c10402d9ebfb4af1f638f27ccbb3&#34;,
+      &#34;rows_examined&#34;: 18,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;5f2e9d8b9b1ca71991789427c2410e4b6ee81d0d0806470006e44397860cdc7c&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;4a445ce26e3b582d1953c5ba4010a5c1b8065d6941c8063b19a9571b06e133cc&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;652616240aa22ca180347e2e3896b8effc78a23c9f8baf0d6b1c166101f7f9f4&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;d60c52b82ef3053c406c465f9c576637b73364ac7aedef4edae3eae68e537188&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;3b26cbe8ada18b4f4bf33962e4711f002cd17558b31ee257b1e71a9c5615d81a&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;6d0425d2364e25cd3be499fc1323b677178d75b979266209a42ec2890dc554ca&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;bac6d4041d20bd756b4ac775dbc552aa8ba8e93407f558dbc9b4706de5a365f4&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;a329942978201ba0fc51ac228cd99f09fa85b7db8e7c5f2ee9611d440c16325c&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;dd64998e3e0eb98657d5cb0e038f9b07b1cff46c5c7e2d6b0dbc6e2bf1286688&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d7aef498c692948164b89cad187dc02877196b5db7df43127b61c5dcae3249b2&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;41b09d7973da17acc7c441321f3df5654179bb972549bc6a3e6bd651947a8e16&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;ok&#34;,
+    &#34;tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;,
+    &#34;tool_name&#34;: &#34;customer_trend&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>7. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.193776Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_001&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>8. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.193864Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_002&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;distinct_trips&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>9. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.193919Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;active_weeks&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>10. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.193966Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;average_retailer_sales_value_per_trip&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>11. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194020Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_retailer_sales_value_per_trip&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>12. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194063Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_006&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;recorded_quantity&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>13. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194119Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_007&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;distinct_products&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>14. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194167Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_008</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_008&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;recency_weeks&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>15. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194208Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_009</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_009&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value_slope&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>16. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194250Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_010</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_010&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>17. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194291Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_011</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_011&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>18. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194333Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_012</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_012&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>19. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194373Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_013</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_013&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>20. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194413Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_014&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>21. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194453Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_015</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_015&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>22. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194495Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_016&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>23. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194534Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_017</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_017&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>24. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194573Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_018</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_018&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>25. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194616Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_019</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_019&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>26. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194664Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_020</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_020&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>27. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194707Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_021</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_021&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>28. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194753Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_022</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_022&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>29. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194792Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_023</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_023&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>30. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194832Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_024</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_024&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>31. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194874Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_025</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_025&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;weekly_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>32. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:01.194912Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-01-customer_trend_026</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-01-customer_trend_026&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;full_window_weekly_retailer_sales_value_slope&#34;,
+  &#34;source_tool&#34;: &#34;customer_trend&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-01-customer_trend&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>33. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T04:38:01.195870Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 4,
+  &#34;remaining_turn_budget&#34;: 5,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>34. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T04:38:14.360933Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool category_decomposition</span><span class="chip">latency 13162.61479165405 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Decomposing retailer sales value changes across categories to identify key drivers of decline.&#34;,
+  &#34;input_tokens&#34;: 8705,
+  &#34;investigation_question&#34;: &#34;Which product categories or departments account for the lost retailer sales value?&#34;,
+  &#34;latency_ms&#34;: 13162.61479165405,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;output_tokens&#34;: 72,
+  &#34;provider_call_id&#34;: &#34;call_273901&#34;,
+  &#34;selected_tool&#34;: &#34;category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>35. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T04:38:14.362102Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool category_decomposition</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;Which product categories or departments account for the lost retailer sales value?&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;,
+    &#34;top_n&#34;: 8
+  },
+  &#34;tool_name&#34;: &#34;category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>36. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T04:38:14.362410Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool category_decomposition</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;,
+    &#34;top_n&#34;: 8
+  },
+  &#34;remaining_tool_budget&#34;: 4,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+  &#34;tool_name&#34;: &#34;category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>37. Tool completed</h2><div class="code">tool_completed</div></div><time>2026-08-25T04:38:14.387658Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool category_decomposition</span><span class="chip ok">status ok</span><span class="chip">latency 11.699624825268984 ms</span>      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_001</code> <code>ev_call-716a66bd6c-02-category_decomposition_002</code> <code>ev_call-716a66bd6c-02-category_decomposition_003</code> <code>ev_call-716a66bd6c-02-category_decomposition_004</code> <code>ev_call-716a66bd6c-02-category_decomposition_005</code> <code>ev_call-716a66bd6c-02-category_decomposition_006</code> <code>ev_call-716a66bd6c-02-category_decomposition_007</code> <code>ev_call-716a66bd6c-02-category_decomposition_008</code> <code>ev_call-716a66bd6c-02-category_decomposition_009</code> <code>ev_call-716a66bd6c-02-category_decomposition_010</code> <code>ev_call-716a66bd6c-02-category_decomposition_011</code> <code>ev_call-716a66bd6c-02-category_decomposition_012</code> <code>ev_call-716a66bd6c-02-category_decomposition_013</code> <code>ev_call-716a66bd6c-02-category_decomposition_014</code> <code>ev_call-716a66bd6c-02-category_decomposition_015</code> <code>ev_call-716a66bd6c-02-category_decomposition_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;baseline_reconciled&#34;: true,
+    &#34;baseline_reconciliation_delta&#34;: 0.0,
+    &#34;category_group_count&#34;: 3,
+    &#34;recent_reconciled&#34;: true,
+    &#34;recent_reconciliation_delta&#34;: 0.0
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-716a66bd6c-02-category_decomposition_001&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_002&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_003&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_004&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_005&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_006&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_007&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_008&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_009&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_010&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_011&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_012&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_013&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_014&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_015&#34;,
+    &#34;ev_call-716a66bd6c-02-category_decomposition_016&#34;
+  ],
+  &#34;latency_ms&#34;: 11.699624825268984,
+  &#34;limitations&#34;: [],
+  &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 18,
+  &#34;status&#34;: &#34;ok&#34;,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+  &#34;tool_name&#34;: &#34;category_decomposition&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: 160.0,
+        &#34;change&#34;: -148.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_001&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 12.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_002&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;product_mapping_line_item_coverage&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;ratio&#34;,
+        &#34;value&#34;: 1.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_003&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;product_mapping_distinct_product_coverage&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;ratio&#34;,
+        &#34;value&#34;: 1.0
+      },
+      {
+        &#34;baseline_value&#34;: 60.0,
+        &#34;change&#34;: -54.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_004&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;unknown_group_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 60.0,
+        &#34;change&#34;: -54.0,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;PRODUCE&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;UNKNOWN&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_005&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;PRODUCE&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;UNKNOWN&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_006&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_percentage_change&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;ratio&#34;,
+        &#34;value&#34;: -0.9
+      },
+      {
+        &#34;baseline_value&#34;: 0.375,
+        &#34;change&#34;: 0.125,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;PRODUCE&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;UNKNOWN&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_007&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_share_shift&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 0.5,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;PRODUCE&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;UNKNOWN&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_008&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: 0.36486486486486486
+      },
+      {
+        &#34;baseline_value&#34;: 50.0,
+        &#34;change&#34;: -50.0,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;SOUP&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_009&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;SOUP&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_010&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_percentage_change&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;ratio&#34;,
+        &#34;value&#34;: -1.0
+      },
+      {
+        &#34;baseline_value&#34;: 0.3125,
+        &#34;change&#34;: -0.3125,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;SOUP&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_011&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_share_shift&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;SOUP&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_012&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: 0.33783783783783783
+      },
+      {
+        &#34;baseline_value&#34;: 50.0,
+        &#34;change&#34;: -44.0,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;PASTA&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_013&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;PASTA&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_014&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_percentage_change&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;ratio&#34;,
+        &#34;value&#34;: -0.88
+      },
+      {
+        &#34;baseline_value&#34;: 0.3125,
+        &#34;change&#34;: 0.1875,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;PASTA&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_015&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;category_share_shift&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: 0.5,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;direction&#34;: &#34;loss&#34;,
+          &#34;product_category&#34;: &#34;PASTA&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_016&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: 0.2972972972972973
+      }
+    ],
+    &#34;limitations&#34;: [],
+    &#34;model_summary&#34;: {
+      &#34;baseline_total_retailer_sales_value&#34;: 160.0,
+      &#34;gross_lost_retailer_sales_value&#34;: 148.0,
+      &#34;mapping_coverage&#34;: {
+        &#34;distinct_product_coverage&#34;: 1.0,
+        &#34;line_item_coverage&#34;: 1.0,
+        &#34;mapped_distinct_products&#34;: 3,
+        &#34;mapped_line_items&#34;: 18,
+        &#34;total_distinct_products&#34;: 3,
+        &#34;total_line_items&#34;: 18
+      },
+      &#34;net_change&#34;: -148.0,
+      &#34;recent_total_retailer_sales_value&#34;: 12.0,
+      &#34;reconciliation&#34;: {
+        &#34;baseline_category_total&#34;: 160.0,
+        &#34;baseline_delta&#34;: 0.0,
+        &#34;baseline_reconciled&#34;: true,
+        &#34;baseline_transaction_total&#34;: 160.0,
+        &#34;recent_category_total&#34;: 12.0,
+        &#34;recent_delta&#34;: 0.0,
+        &#34;recent_reconciled&#34;: true,
+        &#34;recent_transaction_total&#34;: 12.0
+      },
+      &#34;top_gains&#34;: [],
+      &#34;top_losses&#34;: [
+        {
+          &#34;absolute_change&#34;: -54.0,
+          &#34;baseline_retailer_sales_value&#34;: 60.0,
+          &#34;baseline_share&#34;: 0.375,
+          &#34;department&#34;: &#34;PRODUCE&#34;,
+          &#34;loss_contribution_share&#34;: 0.36486486486486486,
+          &#34;percentage_change&#34;: -0.9,
+          &#34;product_category&#34;: &#34;UNKNOWN&#34;,
+          &#34;recent_retailer_sales_value&#34;: 6.0,
+          &#34;recent_share&#34;: 0.5,
+          &#34;share_shift&#34;: 0.125
+        },
+        {
+          &#34;absolute_change&#34;: -50.0,
+          &#34;baseline_retailer_sales_value&#34;: 50.0,
+          &#34;baseline_share&#34;: 0.3125,
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;loss_contribution_share&#34;: 0.33783783783783783,
+          &#34;percentage_change&#34;: -1.0,
+          &#34;product_category&#34;: &#34;SOUP&#34;,
+          &#34;recent_retailer_sales_value&#34;: 0.0,
+          &#34;recent_share&#34;: 0.0,
+          &#34;share_shift&#34;: -0.3125
+        },
+        {
+          &#34;absolute_change&#34;: -44.0,
+          &#34;baseline_retailer_sales_value&#34;: 50.0,
+          &#34;baseline_share&#34;: 0.3125,
+          &#34;department&#34;: &#34;GROCERY&#34;,
+          &#34;loss_contribution_share&#34;: 0.2972972972972973,
+          &#34;percentage_change&#34;: -0.88,
+          &#34;product_category&#34;: &#34;PASTA&#34;,
+          &#34;recent_retailer_sales_value&#34;: 6.0,
+          &#34;recent_share&#34;: 0.5,
+          &#34;share_shift&#34;: 0.1875
+        }
+      ],
+      &#34;unknown_group&#34;: {
+        &#34;baseline_retailer_sales_value&#34;: 60.0,
+        &#34;recent_retailer_sales_value&#34;: 6.0
+      }
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;whyback-synthetic-fixture-v1&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;baseline_reconciled&#34;: true,
+        &#34;baseline_reconciliation_delta&#34;: 0.0,
+        &#34;category_group_count&#34;: 3,
+        &#34;recent_reconciled&#34;: true,
+        &#34;recent_reconciliation_delta&#34;: 0.0
+      },
+      &#34;elapsed_ms&#34;: 11.699624825268984,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 8,
+          &#34;baseline_start&#34;: 1,
+          &#34;recent_end&#34;: 16,
+          &#34;recent_start&#34;: 9
+        },
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;top_n&#34;: 8
+      },
+      &#34;query_hash&#34;: &#34;697aa96f6c8b0b69eba4b9dbff433005ef79f2fa0b2e4f2bbb652a41aa65c761&#34;,
+      &#34;rows_examined&#34;: 18,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;5f2e9d8b9b1ca71991789427c2410e4b6ee81d0d0806470006e44397860cdc7c&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;4a445ce26e3b582d1953c5ba4010a5c1b8065d6941c8063b19a9571b06e133cc&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;652616240aa22ca180347e2e3896b8effc78a23c9f8baf0d6b1c166101f7f9f4&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;d60c52b82ef3053c406c465f9c576637b73364ac7aedef4edae3eae68e537188&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;3b26cbe8ada18b4f4bf33962e4711f002cd17558b31ee257b1e71a9c5615d81a&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;6d0425d2364e25cd3be499fc1323b677178d75b979266209a42ec2890dc554ca&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;bac6d4041d20bd756b4ac775dbc552aa8ba8e93407f558dbc9b4706de5a365f4&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;a329942978201ba0fc51ac228cd99f09fa85b7db8e7c5f2ee9611d440c16325c&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;dd64998e3e0eb98657d5cb0e038f9b07b1cff46c5c7e2d6b0dbc6e2bf1286688&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d7aef498c692948164b89cad187dc02877196b5db7df43127b61c5dcae3249b2&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;41b09d7973da17acc7c441321f3df5654179bb972549bc6a3e6bd651947a8e16&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;ok&#34;,
+    &#34;tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;,
+    &#34;tool_name&#34;: &#34;category_decomposition&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>38. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389664Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_001&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>39. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389744Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_002&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;product_mapping_line_item_coverage&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>40. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389801Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;product_mapping_distinct_product_coverage&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>41. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389856Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;unknown_group_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>42. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389904Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>43. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.389956Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_006&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_percentage_change&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>44. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390002Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_007&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_share_shift&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>45. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390047Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_008</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_008&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>46. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390093Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_009</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_009&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>47. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390137Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_010</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_010&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_percentage_change&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>48. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390180Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_011</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_011&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_share_shift&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>49. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390223Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_012</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_012&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>50. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390268Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_013</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_013&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>51. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390311Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_014&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_percentage_change&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>52. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390361Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_015</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_015&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;category_share_shift&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>53. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:14.390405Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-02-category_decomposition_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-02-category_decomposition_016&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;contribution_to_lost_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;category_decomposition&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-02-category_decomposition&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>54. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T04:38:14.391352Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 3,
+  &#34;remaining_turn_budget&#34;: 4,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>55. Decision received</h2><div class="code">model_decision_received</div></div><time>2026-08-25T04:38:38.901850Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+<span class="chip tool">tool basket_behavior</span><span class="chip">latency 24507.051166612655 ms</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;decision_kind&#34;: &#34;tool&#34;,
+  &#34;decision_summary&#34;: &#34;Choose one bounded, evidence-seeking next step.&#34;,
+  &#34;input_tokens&#34;: 11371,
+  &#34;investigation_question&#34;: &#34;Did basket size, basket value, or visit cadence drive the household sales decline?&#34;,
+  &#34;latency_ms&#34;: 24507.051166612655,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;output_tokens&#34;: 68,
+  &#34;provider_call_id&#34;: &#34;call_476156&#34;,
+  &#34;selected_tool&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>56. Analytical tool requested</h2><div class="code">tool_requested</div></div><time>2026-08-25T04:38:38.902468Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;arguments_valid&#34;: true,
+  &#34;investigation_question&#34;: &#34;Did basket size, basket value, or visit cadence drive the household sales decline?&#34;,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;
+  },
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>57. Tool attempt started</h2><div class="code">tool_started</div></div><time>2026-08-25T04:38:38.902779Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;normalized_arguments&#34;: {
+    &#34;household_id&#34;: &#34;101&#34;
+  },
+  &#34;remaining_tool_budget&#34;: 3,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="tool">
+      <div class="top"><div><h2>58. Tool completed</h2><div class="code">tool_completed</div></div><time>2026-08-25T04:38:38.923026Z</time></div>
+      <div class="chips">
+        <span class="chip">tool</span>
+<span class="chip tool">tool basket_behavior</span><span class="chip ok">status ok</span><span class="chip">latency 9.214374702423811 ms</span>      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_001</code> <code>ev_call-716a66bd6c-03-basket_behavior_002</code> <code>ev_call-716a66bd6c-03-basket_behavior_003</code> <code>ev_call-716a66bd6c-03-basket_behavior_004</code> <code>ev_call-716a66bd6c-03-basket_behavior_005</code> <code>ev_call-716a66bd6c-03-basket_behavior_006</code> <code>ev_call-716a66bd6c-03-basket_behavior_007</code> <code>ev_call-716a66bd6c-03-basket_behavior_008</code> <code>ev_call-716a66bd6c-03-basket_behavior_009</code> <code>ev_call-716a66bd6c-03-basket_behavior_010</code> <code>ev_call-716a66bd6c-03-basket_behavior_011</code> <code>ev_call-716a66bd6c-03-basket_behavior_012</code> <code>ev_call-716a66bd6c-03-basket_behavior_013</code> <code>ev_call-716a66bd6c-03-basket_behavior_014</code> <code>ev_call-716a66bd6c-03-basket_behavior_015</code> <code>ev_call-716a66bd6c-03-basket_behavior_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;attempt&#34;: 1,
+  &#34;diagnostics&#34;: {
+    &#34;baseline_baskets&#34;: 16,
+    &#34;recent_baskets&#34;: 2
+  },
+  &#34;evidence_ids&#34;: [
+    &#34;ev_call-716a66bd6c-03-basket_behavior_001&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_002&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_003&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_004&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_005&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_006&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_007&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_008&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_009&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_010&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_011&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_012&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_013&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_014&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_015&#34;,
+    &#34;ev_call-716a66bd6c-03-basket_behavior_016&#34;
+  ],
+  &#34;latency_ms&#34;: 9.214374702423811,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+  &#34;retryable&#34;: false,
+  &#34;rows_examined&#34;: 18,
+  &#34;status&#34;: &#34;ok&#34;,
+  &#34;tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+  &#34;tool_name&#34;: &#34;basket_behavior&#34;,
+  &#34;tool_result&#34;: {
+    &#34;evidence&#34;: [
+      {
+        &#34;baseline_value&#34;: 16.0,
+        &#34;change&#34;: -14.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_001&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;basket_count&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 8.0,
+        &#34;change&#34;: -6.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_002&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;active_weeks&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 2.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;weeks&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 2.0,
+        &#34;change&#34;: -1.75,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_003&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;baskets_per_calendar_week&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.25,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;baskets_per_week&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 10.0,
+        &#34;change&#34;: -4.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_004&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_basket_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 10.0,
+        &#34;change&#34;: -4.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_005&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_basket_retailer_sales_value&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 6.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;retailer_sales_value_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_006&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;mean_recorded_quantity_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_007&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [
+          &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+        ],
+        &#34;metric&#34;: &#34;median_recorded_quantity_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;recorded_quantity_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_008&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_distinct_products_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;products_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_009&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_distinct_categories_per_basket&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;categories_per_basket&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 3.3333333333333335,
+        &#34;change&#34;: 3.6666666666666665,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_010&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;mean_basket_interval_days&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 7.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;days&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 6.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_011&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;median_basket_interval_days&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 7.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;days&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_012&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;primary_store_share&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 1.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_013&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;stores_visited&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 1.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;count&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: 0.0,
+        &#34;change&#34;: 0.0,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_014&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;consecutive_store_switch_rate&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: 0.0,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: null
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {
+          &#34;baseline_primary_store&#34;: &#34;11&#34;,
+          &#34;recent_primary_store&#34;: &#34;11&#34;
+        },
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_015&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;primary_store_changed&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;boolean_indicator&#34;,
+        &#34;value&#34;: 0.0
+      },
+      {
+        &#34;baseline_value&#34;: null,
+        &#34;change&#34;: null,
+        &#34;dimensions&#34;: {},
+        &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_016&#34;,
+        &#34;household_id&#34;: &#34;101&#34;,
+        &#34;limitations&#34;: [],
+        &#34;metric&#34;: &#34;recent_baskets_at_new_store_share&#34;,
+        &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+        &#34;recent_value&#34;: null,
+        &#34;run_id&#34;: &#34;716a66bd-6ce6-4451-98aa-12f1f67a9937&#34;,
+        &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+        &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+        &#34;unit&#34;: &#34;share&#34;,
+        &#34;value&#34;: 0.0
+      }
+    ],
+    &#34;limitations&#34;: [
+      &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+    ],
+    &#34;model_summary&#34;: {
+      &#34;baseline&#34;: {
+        &#34;active_weeks&#34;: 8,
+        &#34;basket_count&#34;: 16,
+        &#34;baskets_per_calendar_week&#34;: 2.0,
+        &#34;consecutive_store_switch_rate&#34;: 0.0,
+        &#34;mean_basket_interval_days&#34;: 3.3333333333333335,
+        &#34;mean_basket_retailer_sales_value&#34;: 10.0,
+        &#34;mean_distinct_categories_per_basket&#34;: 1.0,
+        &#34;mean_distinct_products_per_basket&#34;: 1.0,
+        &#34;mean_recorded_quantity_per_basket&#34;: 1.0,
+        &#34;median_basket_interval_days&#34;: 1.0,
+        &#34;median_basket_retailer_sales_value&#34;: 10.0,
+        &#34;median_recorded_quantity_per_basket&#34;: 1.0,
+        &#34;primary_store_id&#34;: &#34;11&#34;,
+        &#34;primary_store_share&#34;: 1.0,
+        &#34;stores_visited&#34;: 1
+      },
+      &#34;changes&#34;: {
+        &#34;active_weeks&#34;: {
+          &#34;absolute_change&#34;: -6.0,
+          &#34;baseline&#34;: 8,
+          &#34;recent&#34;: 2,
+          &#34;relative_change&#34;: -0.75
+        },
+        &#34;basket_count&#34;: {
+          &#34;absolute_change&#34;: -14.0,
+          &#34;baseline&#34;: 16,
+          &#34;recent&#34;: 2,
+          &#34;relative_change&#34;: -0.875
+        },
+        &#34;baskets_per_calendar_week&#34;: {
+          &#34;absolute_change&#34;: -1.75,
+          &#34;baseline&#34;: 2.0,
+          &#34;recent&#34;: 0.25,
+          &#34;relative_change&#34;: -0.875
+        },
+        &#34;consecutive_store_switch_rate&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 0.0,
+          &#34;recent&#34;: 0.0,
+          &#34;relative_change&#34;: null
+        },
+        &#34;mean_basket_interval_days&#34;: {
+          &#34;absolute_change&#34;: 3.6666666666666665,
+          &#34;baseline&#34;: 3.3333333333333335,
+          &#34;recent&#34;: 7.0,
+          &#34;relative_change&#34;: 1.0999999999999999
+        },
+        &#34;mean_basket_retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: -4.0,
+          &#34;baseline&#34;: 10.0,
+          &#34;recent&#34;: 6.0,
+          &#34;relative_change&#34;: -0.4
+        },
+        &#34;mean_distinct_categories_per_basket&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 1.0,
+          &#34;relative_change&#34;: 0.0
+        },
+        &#34;mean_distinct_products_per_basket&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 1.0,
+          &#34;relative_change&#34;: 0.0
+        },
+        &#34;mean_recorded_quantity_per_basket&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 1.0,
+          &#34;relative_change&#34;: 0.0
+        },
+        &#34;median_basket_interval_days&#34;: {
+          &#34;absolute_change&#34;: 6.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 7.0,
+          &#34;relative_change&#34;: 6.0
+        },
+        &#34;median_basket_retailer_sales_value&#34;: {
+          &#34;absolute_change&#34;: -4.0,
+          &#34;baseline&#34;: 10.0,
+          &#34;recent&#34;: 6.0,
+          &#34;relative_change&#34;: -0.4
+        },
+        &#34;median_recorded_quantity_per_basket&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 1.0,
+          &#34;relative_change&#34;: 0.0
+        },
+        &#34;primary_store_share&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1.0,
+          &#34;recent&#34;: 1.0,
+          &#34;relative_change&#34;: 0.0
+        },
+        &#34;stores_visited&#34;: {
+          &#34;absolute_change&#34;: 0.0,
+          &#34;baseline&#34;: 1,
+          &#34;recent&#34;: 1,
+          &#34;relative_change&#34;: 0.0
+        }
+      },
+      &#34;recent&#34;: {
+        &#34;active_weeks&#34;: 2,
+        &#34;basket_count&#34;: 2,
+        &#34;baskets_per_calendar_week&#34;: 0.25,
+        &#34;consecutive_store_switch_rate&#34;: 0.0,
+        &#34;mean_basket_interval_days&#34;: 7.0,
+        &#34;mean_basket_retailer_sales_value&#34;: 6.0,
+        &#34;mean_distinct_categories_per_basket&#34;: 1.0,
+        &#34;mean_distinct_products_per_basket&#34;: 1.0,
+        &#34;mean_recorded_quantity_per_basket&#34;: 1.0,
+        &#34;median_basket_interval_days&#34;: 7.0,
+        &#34;median_basket_retailer_sales_value&#34;: 6.0,
+        &#34;median_recorded_quantity_per_basket&#34;: 1.0,
+        &#34;primary_store_id&#34;: &#34;11&#34;,
+        &#34;primary_store_share&#34;: 1.0,
+        &#34;stores_visited&#34;: 1
+      },
+      &#34;store_switching&#34;: {
+        &#34;baseline_primary_store_id&#34;: &#34;11&#34;,
+        &#34;primary_store_changed&#34;: false,
+        &#34;recent_baskets_at_new_store_share&#34;: 0.0,
+        &#34;recent_primary_store_id&#34;: &#34;11&#34;
+      }
+    },
+    &#34;provenance&#34;: {
+      &#34;application_version&#34;: &#34;0.1.0&#34;,
+      &#34;cache_hit&#34;: false,
+      &#34;dataset_source_commit&#34;: &#34;whyback-synthetic-fixture-v1&#34;,
+      &#34;diagnostics&#34;: {
+        &#34;baseline_baskets&#34;: 16,
+        &#34;recent_baskets&#34;: 2
+      },
+      &#34;elapsed_ms&#34;: 9.214374702423811,
+      &#34;normalized_parameters&#34;: {
+        &#34;analysis_window&#34;: {
+          &#34;baseline_end&#34;: 8,
+          &#34;baseline_start&#34;: 1,
+          &#34;recent_end&#34;: 16,
+          &#34;recent_start&#34;: 9
+        },
+        &#34;household_id&#34;: &#34;101&#34;
+      },
+      &#34;query_hash&#34;: &#34;052eb021f0b2fe528fcfcf10d647eb7754737a2595bc13b3c5e7c5cf24ddbc88&#34;,
+      &#34;rows_examined&#34;: 18,
+      &#34;source_hashes&#34;: {
+        &#34;manifest/manifest.json&#34;: &#34;5f2e9d8b9b1ca71991789427c2410e4b6ee81d0d0806470006e44397860cdc7c&#34;,
+        &#34;prepared/baskets.parquet&#34;: &#34;4a445ce26e3b582d1953c5ba4010a5c1b8065d6941c8063b19a9571b06e133cc&#34;,
+        &#34;prepared/campaign_descriptions.parquet&#34;: &#34;652616240aa22ca180347e2e3896b8effc78a23c9f8baf0d6b1c166101f7f9f4&#34;,
+        &#34;prepared/campaigns.parquet&#34;: &#34;d60c52b82ef3053c406c465f9c576637b73364ac7aedef4edae3eae68e537188&#34;,
+        &#34;prepared/coupon_redemptions.parquet&#34;: &#34;3b26cbe8ada18b4f4bf33962e4711f002cd17558b31ee257b1e71a9c5615d81a&#34;,
+        &#34;prepared/coupons.parquet&#34;: &#34;6d0425d2364e25cd3be499fc1323b677178d75b979266209a42ec2890dc554ca&#34;,
+        &#34;prepared/demographics.parquet&#34;: &#34;bac6d4041d20bd756b4ac775dbc552aa8ba8e93407f558dbc9b4706de5a365f4&#34;,
+        &#34;prepared/household_week.parquet&#34;: &#34;a329942978201ba0fc51ac228cd99f09fa85b7db8e7c5f2ee9611d440c16325c&#34;,
+        &#34;prepared/products.parquet&#34;: &#34;dd64998e3e0eb98657d5cb0e038f9b07b1cff46c5c7e2d6b0dbc6e2bf1286688&#34;,
+        &#34;prepared/promotion_state.parquet&#34;: &#34;d7aef498c692948164b89cad187dc02877196b5db7df43127b61c5dcae3249b2&#34;,
+        &#34;prepared/transactions.parquet&#34;: &#34;41b09d7973da17acc7c441321f3df5654179bb972549bc6a3e6bd651947a8e16&#34;
+      }
+    },
+    &#34;retryable&#34;: false,
+    &#34;status&#34;: &#34;ok&#34;,
+    &#34;tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;,
+    &#34;tool_name&#34;: &#34;basket_behavior&#34;
+  }
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>59. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924742Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_001</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_001&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;basket_count&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>60. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924798Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_002</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_002&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;active_weeks&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>61. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924842Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_003</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_003&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;baskets_per_calendar_week&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>62. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924880Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_004</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_004&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_basket_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>63. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924920Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_005</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_005&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_basket_retailer_sales_value&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>64. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.924961Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_006</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_006&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;mean_recorded_quantity_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>65. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925007Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_007</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_007&#34;,
+  &#34;limitations&#34;: [
+    &#34;Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.&#34;
+  ],
+  &#34;metric&#34;: &#34;median_recorded_quantity_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>66. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925050Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_008</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_008&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_distinct_products_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>67. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925084Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_009</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_009&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_distinct_categories_per_basket&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>68. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925118Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_010</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_010&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;mean_basket_interval_days&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>69. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925152Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_011</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_011&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;median_basket_interval_days&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>70. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925194Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_012</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_012&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;primary_store_share&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>71. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925228Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_013</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_013&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;stores_visited&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>72. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925262Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_014</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_014&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;consecutive_store_switch_rate&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>73. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925297Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_015</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_015&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;primary_store_changed&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="evidence">
+      <div class="top"><div><h2>74. Evidence added to ledger</h2><div class="code">evidence_added</div></div><time>2026-08-25T04:38:38.925330Z</time></div>
+      <div class="chips">
+        <span class="chip">evidence</span>
+      </div>
+<p>Evidence <code>ev_call-716a66bd6c-03-basket_behavior_016</code> </p>      <details><summary>Recorded event details</summary><pre>{
+  &#34;evidence_id&#34;: &#34;ev_call-716a66bd6c-03-basket_behavior_016&#34;,
+  &#34;limitations&#34;: [],
+  &#34;metric&#34;: &#34;recent_baskets_at_new_store_share&#34;,
+  &#34;source_tool&#34;: &#34;basket_behavior&#34;,
+  &#34;source_tool_call_id&#34;: &#34;call-716a66bd6c-03-basket_behavior&#34;
+}</pre></details>
+    </article>
+    <article class="decision">
+      <div class="top"><div><h2>75. Decision requested</h2><div class="code">model_decision_requested</div></div><time>2026-08-25T04:38:38.926135Z</time></div>
+      <div class="chips">
+        <span class="chip">decision</span>
+      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;allowed_tools&#34;: [
+    &#34;customer_trend&#34;,
+    &#34;category_decomposition&#34;,
+    &#34;basket_behavior&#34;,
+    &#34;promotion_response&#34;,
+    &#34;coupon_campaign_history&#34;,
+    &#34;peer_comparison&#34;
+  ],
+  &#34;finish_available&#34;: true,
+  &#34;model&#34;: &#34;gemini-3.7-flash&#34;,
+  &#34;prompt_hash&#34;: &#34;3b8db5a1842e54d077fcd4d8948c63aa593810e1d322400407c67d9cf698949b&#34;,
+  &#34;prompt_version&#34;: &#34;whyback-investigator-v1&#34;,
+  &#34;remaining_tool_budget&#34;: 2,
+  &#34;remaining_turn_budget&#34;: 3,
+  &#34;repair_requested&#34;: false
+}</pre></details>
+    </article>
+    <article class="run">
+      <div class="top"><div><h2>76. Investigation completed</h2><div class="code">run_completed</div></div><time>2026-08-25T04:39:38.939275Z</time></div>
+      <div class="chips">
+        <span class="chip">run</span>
+<span class="chip failed">status failed</span>      </div>
+      <details><summary>Recorded event details</summary><pre>{
+  &#34;failure_type&#34;: &#34;ModelBackendError&#34;,
+  &#34;message&#34;: &#34;Gemini Interactions request failed&#34;,
+  &#34;status&#34;: &#34;failed&#34;
+}</pre></details>
+    </article>
+</div>  <footer>Static, self-contained viewer · chronological append-only events · no network connection required</footer>
+</main>
+</body>
+</html>

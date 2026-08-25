@@ -59,7 +59,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         arguments.prepared_dir,
         arguments.official_output,
         customers=arguments.customers,
-        backend="openai",
+        backend="gemini",
     )
     print(f"Official manifest: {official.manifest_path}")
     return 0

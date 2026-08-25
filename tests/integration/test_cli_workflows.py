@@ -106,3 +106,50 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
     assert "backend must be" in invalid_demo.stderr
     assert invalid_investigation.exit_code == 2
     assert "backend must be" in invalid_investigation.stderr
+
+
+def test_cli_rejects_retired_openai_backend(tmp_path: Path) -> None:
+    _, environment = _prepared_fixture(tmp_path)
+    runner = CliRunner()
+
+    demo_result = runner.invoke(
+        app,
+        ["demo", "--backend", "openai", "--output-dir", str(tmp_path / "demo")],
+        env=environment,
+    )
+    investigation_result = runner.invoke(
+        app,
+        ["investigate", "--household-id", "101", "--backend", "openai"],
+        env=environment,
+    )
+
+    expected = "backend must be 'scripted' or 'gemini'"
+    assert demo_result.exit_code == 2
+    assert expected in demo_result.stderr
+    assert investigation_result.exit_code == 2
+    assert expected in investigation_result.stderr
+
+
+def test_cli_gemini_investigation_reports_missing_key(tmp_path: Path) -> None:
+    data_root, environment = _prepared_fixture(tmp_path)
+    environment["GEMINI_API_KEY"] = ""
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "investigate",
+            "--household-id",
+            "101",
+            "--backend",
+            "gemini",
+            "--data-dir",
+            str(data_root / "prepared"),
+            "--output-dir",
+            str(tmp_path / "gemini-run"),
+        ],
+        env=environment,
+    )
+
+    assert result.exit_code == 1
+    assert "GEMINI_API_KEY is required for the gemini backend" in result.stdout

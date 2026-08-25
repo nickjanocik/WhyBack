@@ -74,21 +74,31 @@ Parquet tables with SHA-256 hashes. Raw R files and prepared Parquet are ignored
 by Git. The local detector selected the canonical top five households `5`,
 `181`, `423`, `472`, and `682`.
 
-`OPENAI_API_KEY` was not present during submission generation. Therefore, no
-live GPT-5.6 investigation is claimed. Credential-free scripted investigations
-exercise the same runner, tools, verifier, report renderer, and trace writer;
-their manifests label the execution mode. Once a key is available, run:
+The preserved prior-submission artifacts record that `OPENAI_API_KEY` was absent
+and that the then-current live GPT investigation was skipped. That is historical
+evidence, not the status of the current provider. The active live backend is now
+Gemini. A live synthetic contract request returned a provider-issued Gemini
+function-call ID and one valid analytical decision. A longer synthetic attempt
+completed three model/tool turns before a later provider request reached its
+bounded timeout and failed closed. No completed live Gemini investigation is
+therefore claimed, and no official customer-behavior data was sent to Gemini.
+Credential-free scripted investigations exercise the same runner, tools,
+verifier, report renderer, and trace writer; their manifests label the execution
+mode.
+
+To run an explicitly authorized live investigation, keep the credential out of
+Git and run:
 
 ```bash
-export OPENAI_API_KEY="..."
-uv run whyback investigate --household-id 5 --backend openai
-uv run whyback demo --customers 5 --backend openai
+export GEMINI_API_KEY="..."
+uv run whyback investigate --household-id 5 --backend gemini
+uv run whyback demo --customers 5 --backend gemini
 uv run whyback verify-artifacts artifacts/live
 ```
 
-The default model is `gpt-5.6-sol`, overridable with `RETENTION_MODEL`; reasoning
-effort defaults to `medium` and is overridable with
-`RETENTION_REASONING_EFFORT`.
+The default model is `gemini-3.7-flash`, overridable with `RETENTION_MODEL`.
+Thinking level defaults to `medium` and is overridable with
+`RETENTION_THINKING_LEVEL` using `low`, `medium`, or `high`.
 
 ## Architecture
 
@@ -112,8 +122,9 @@ WhyBack separates control from calculation:
   and prohibited numerical or causal free text before rendering.
 
 See [Architecture](docs/architecture.md),
-[Reliability](docs/reliability.md), and the
-[ADRs](docs/adr/001-own-the-agent-loop.md).
+[Reliability](docs/reliability.md), the original
+[agent-loop ADR](docs/adr/001-own-the-agent-loop.md), and the current
+[Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md).
 
 ## Decline detector
 
@@ -153,10 +164,13 @@ For source-specific caveats, see
 
 ## Agent loop
 
-`OpenAIResponsesBackend` calls the Responses API directly with strict function
-schemas, required tool choice, parallel calls disabled, and fresh compact state.
-`ScriptedBackend` provides credential-free, deterministic decisions for tests
-and demos. Both pass through the same `InvestigationRunner`.
+`GeminiFunctionCallingBackend` calls the Gemini Interactions API through
+Google's official Gen AI SDK with explicit function schemas, forced function
+selection, stateless requests, and fresh compact state. Gemini can propose
+parallel calls, so the adapter rejects any response that does not contain
+exactly one function call. `ScriptedBackend` provides credential-free,
+deterministic decisions for tests and demos. Both pass through the same
+`InvestigationRunner`.
 
 The runner permits at most five actual analytical attempts and six model
 decisions by default. It rejects exact normalized duplicates, enforces the
@@ -211,10 +225,15 @@ known, while the exact 16 delivered coupon identities are not.
 
 `artifacts/demo/` contains five investigations over a compact synthetic fixture;
 they are explicitly labeled `scripted` and demonstrate orchestration and
-deterministic analytics, not live-model quality. `artifacts/official/` records
-the official top-five selection and no-key skip status, without manufacturing
-customer reports. The artifact manifest is the authoritative record of
-execution mode, source, hashes, and omissions.
+deterministic analytics, not live-model quality. `artifacts/official/` is the
+preserved OpenAI-era submission record: it records the official top-five
+selection and then-current no-key skip status without manufacturing customer
+reports. It is not evidence of a live Gemini run.
+`artifacts/live-gemini-synthetic-failure/` is the current live-provider audit:
+three Gemini-selected analytical tools completed over fabricated data, then the
+fourth provider request timed out and the run failed closed without a customer
+action. The artifact manifest is the authoritative record of execution mode,
+source, hashes, and omissions.
 
 | Scripted control | Decline score | Verified action | Report | Trace |
 | --- | ---: | --- | --- | --- |
@@ -230,8 +249,11 @@ Reviewer entry points:
   [strict artifact manifest](artifacts/demo/manifest.json).
 - [Persistent retry-failure report](artifacts/demo/failure_example/report.html)
   and [trace](artifacts/demo/failure_example/trace.html).
-- [Official full-data no-key status](artifacts/official/live_model_status.json)
+- [Prior OpenAI-era official full-data no-key status](artifacts/official/live_model_status.json)
   and [manifest](artifacts/official/manifest.json).
+- [Live Gemini synthetic bounded-timeout report](artifacts/live-gemini-synthetic-failure/report.html),
+  [trace](artifacts/live-gemini-synthetic-failure/trace.html), and
+  [manifest](artifacts/live-gemini-synthetic-failure/manifest.json).
 - [Official Type A household 181 report](artifacts/official-type-a/customer_181/report.html),
   [trace](artifacts/official-type-a/customer_181/trace.html), and
   [embedded data provenance](artifacts/official-type-a/data_provenance.json).
@@ -247,11 +269,12 @@ verifier events, and final status. It never stores hidden reasoning.
 `trace.html` is a self-contained, offline timeline with the same validated
 events. Start with the [household 101 trace](artifacts/demo/customer_101/trace.html),
 then inspect the [persistent-failure trace](artifacts/demo/failure_example/trace.html)
+the [live Gemini bounded-timeout trace](artifacts/live-gemini-synthetic-failure/trace.html),
 and [official Type A trace](artifacts/official-type-a/customer_181/trace.html).
 
 ## Testing and evaluations
 
-The baseline is independent of full data, OpenAI, Phoenix, MCP, and other
+The baseline is independent of full data, Gemini, Phoenix, MCP, and other
 services. Tests cover hand-calculated analytics, data contracts, properties,
 prepared-data integration, bounded orchestration, evidence verification,
 failure injection, reports, and trace sanitation. Six behavioral scenarios
@@ -317,7 +340,7 @@ not hidden core dependencies.
 | Official pinned data and hashes | Verified downloader, contracts, idempotent R-to-Parquet preparation, manifest | `src/whyback/data/`, `docs/data-semantics.md` |
 | Transparent decline detection | Max-week 8+8 windows, eligibility, weighted score, sensitivity | `src/whyback/detection/decline.py`, detector artifacts |
 | Six deterministic tools | Strict inputs/results, DuckDB calculations, provenance | `src/whyback/tools/`, unit/property tests |
-| Dynamic model selection | Provider-neutral backend; fresh strict Responses calls or scripted decisions | `src/whyback/agent/backend.py`, `openai_backend.py`, `scripted_backend.py` |
+| Dynamic model selection | Provider-neutral backend; fresh Gemini function-calling requests or scripted decisions | `src/whyback/agent/backend.py`, `gemini_backend.py`, `scripted_backend.py` |
 | Bounded reliable loop | Tool/turn budgets, duplicate refusal, timeout, one retry, one repair | `src/whyback/agent/runner.py`, orchestration tests |
 | Evidence grounding | Immutable ledger, run/household ownership, evidence-ID finish schema | `src/whyback/agent/evidence.py`, verifier tests |
 | Governed human-reviewed NBA | Exact six-action catalog and deterministic prerequisites | `configs/actions.yaml`, `src/whyback/agent/actions.py` |
@@ -328,8 +351,8 @@ not hidden core dependencies.
 | Reports | Strict JSON plus deterministic Markdown/HTML | report tests, `artifacts/demo/` |
 | Behavioral evaluations | Six versioned scenarios and deterministic aggregate metrics | `evals/`, `artifacts/evals/` |
 | Quality and CI | Frozen install, Ruff, Pyright, branch coverage/JUnit, artifact check | `.github/workflows/ci.yml`, `artifacts/tests/` |
-| Honest live status | Live backend implemented; no-key execution recorded as skipped | artifact manifests and this README |
-| Design and operations record | Architecture, reliability, evaluation, six ADRs, production plan | `docs/` |
+| Honest live status | Gemini analytical-call contract validated on synthetic state; longer synthetic run timed out safely; no official data sent and no completed live investigation claimed | this README, ADR 007, and artifact manifests |
+| Design and operations record | Architecture, reliability, evaluation, seven ADRs, production plan | `docs/` |
 
 ## Repository map
 
