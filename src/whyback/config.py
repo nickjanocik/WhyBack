@@ -16,7 +16,7 @@ SOURCE_COMMIT = "5b5d06192b9856edd04e4d405787af2f2e4a1fef"
 class ApplicationConfig(BaseModel):
     """Stable product identity."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str = "WhyBack"
     agent_name: str = "WhyBack Investigator"
@@ -26,7 +26,7 @@ class ApplicationConfig(BaseModel):
 class DataConfig(BaseModel):
     """Pinned data source and analytical window configuration."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     source_repository: str = SOURCE_REPOSITORY
     source_commit: str = SOURCE_COMMIT
@@ -37,7 +37,7 @@ class DataConfig(BaseModel):
 class DetectionConfig(BaseModel):
     """Transparent decline-detector policy."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     minimum_baseline_active_weeks: int = Field(default=4, ge=1)
     minimum_baseline_distinct_baskets: int = Field(default=6, ge=1)
@@ -49,7 +49,7 @@ class DetectionConfig(BaseModel):
 class AgentConfig(BaseModel):
     """Hard investigation budgets and model defaults."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_tool_executions: int = Field(default=5, ge=1)
     max_model_decisions: int = Field(default=6, ge=1)
@@ -64,7 +64,7 @@ class AgentConfig(BaseModel):
 class Settings(BaseModel):
     """Complete application configuration."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     application: ApplicationConfig = ApplicationConfig()
     data: DataConfig = DataConfig()
@@ -78,9 +78,13 @@ class Settings(BaseModel):
     )
 
 
-def load_settings(path: Path = Path("configs/app.toml")) -> Settings:
+def load_settings(path: Path | None = None) -> Settings:
     """Load checked-in defaults and apply narrowly scoped environment overrides."""
 
+    if path is None:
+        packaged = Path(__file__).with_name("resources") / "app.toml"
+        repository = Path(__file__).parents[2] / "configs" / "app.toml"
+        path = packaged if packaged.is_file() else repository
     raw: dict[str, object] = {}
     if path.exists():
         with path.open("rb") as handle:

@@ -41,7 +41,10 @@ human-reviewed Next Best Action.
    state, not raw data or an unbounded transcript.
 3. Exactly one analytical action is allowed per model turn. Runs have strict
    tool, turn, retry, timeout, and duplicate-call bounds.
-4. Every quantitative report claim resolves from an immutable evidence record.
+4. Every customer-behavior quantity resolves from run-owned detector evidence
+   or an immutable tool `EvidenceRecord`. Operational attempt, retry, and timing
+   facts resolve from typed application history and audit events. No displayed
+   quantity comes from model-authored prose.
 5. The deterministic verifier decides what can be claimed and which catalog
    action is permitted. It checks ownership, limitations, reconciliation,
    failed-tool provenance, confidence, and forbidden numerical prose.
@@ -73,7 +76,7 @@ human-reviewed Next Best Action.
 Use the lockfile and project environment:
 
 ```bash
-uv sync --frozen
+uv sync --frozen --extra dev
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright

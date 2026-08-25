@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import pytest
 
 from tests.fixtures.source_frames import minimal_source_frames
 from whyback.data.prepare import prepare_frames_for_tests
@@ -56,3 +59,27 @@ def test_repository_fails_when_required_table_is_missing(tmp_path: Path) -> None
         assert "transactions.parquet" in str(error)
     else:  # pragma: no cover - defensive assertion with a clearer failure
         raise AssertionError("Expected missing prepared table to fail")
+
+
+def test_repository_rejects_a_prepared_table_changed_after_manifest(
+    tmp_path: Path,
+) -> None:
+    prepare_frames_for_tests(minimal_source_frames(), tmp_path)
+    transactions = tmp_path / "transactions.parquet"
+    transactions.write_bytes(transactions.read_bytes() + b"tampered")
+
+    with pytest.raises(PreparedDataError, match="hash mismatch"):
+        DataRepository(tmp_path, required_tables=("transactions",))
+
+
+def test_repository_rejects_forged_official_source_provenance(tmp_path: Path) -> None:
+    prepare_frames_for_tests(minimal_source_frames(), tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["source_repository"] = "bradleyboehmke/completejourney"
+    manifest["source_commit"] = "5b5d06192b9856edd04e4d405787af2f2e4a1fef"
+    manifest["sources"] = []
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(PreparedDataError, match="exact pinned source-file set"):
+        DataRepository(tmp_path, required_tables=("transactions",))

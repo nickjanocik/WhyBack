@@ -43,9 +43,13 @@ class AuditJsonlWriter:
         return self._stream.closed
 
     def append(self, event: AuditEvent) -> None:
-        """Append one validated event without truncating prior records."""
+        """Revalidate and append one event without truncating prior records."""
 
-        line = event.model_dump_json()
+        # Revalidation is a defense-in-depth publication boundary. It prevents an
+        # unsafe value introduced through an exotic mutation or deserialization
+        # path from bypassing the sanitizer at persistence time.
+        validated = AuditEvent.model_validate_json(event.model_dump_json())
+        line = validated.model_dump_json()
         with self._lock:
             if self._stream.closed:
                 raise ValueError("Cannot append to a closed audit writer")

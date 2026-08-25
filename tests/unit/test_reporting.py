@@ -5,6 +5,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
+import pytest
+from pydantic import ValidationError
+
 from whyback.agent.actions import ActionId
 from whyback.agent.runner import InvestigationOutcome
 from whyback.agent.state import (
@@ -22,6 +25,7 @@ from whyback.detection.decline import DeclineSnapshot
 from whyback.observability import AuditEvent, AuditEventName, AuditJsonlWriter
 from whyback.reporting import (
     build_report_data,
+    build_trace_view,
     render_report_html,
     render_report_json,
     render_report_markdown,
@@ -185,6 +189,8 @@ def test_report_boundary_resolves_evidence_and_preserves_status_limitations() ->
     assert report.tool_warnings[0].final_status is ToolStatus.PARTIAL
     assert "The result retained UNKNOWN mappings." in report.limitations
     assert report.action is not None and report.action.human_review_required
+    with pytest.raises(TypeError, match="immutable"):
+        report.supporting_evidence[0].dimensions["category"] = "mutated"
 
 
 def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None:
@@ -215,6 +221,48 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
     assert "Partial" in markdown
     assert "UNKNOWN mappings remain visible" in markdown
     assert "&lt;script&gt;" in markdown
+    assert f"`{SUPPORT_ID}`" in markdown
+    assert "`ev\\_support\\_category`" not in markdown
+    assert "\n- Baseline: 90" in markdown
+    assert "\n- Recent: 30" in markdown
+    assert "\n- Change: -60" in markdown
+    assert "\n## Counterevidence and alternative explanations\n" in markdown
+    assert "\n- Alternative:" in markdown
+
+
+def test_markdown_keeps_ordered_investigation_steps_on_separate_lines() -> None:
+    outcome = _outcome()
+    first = outcome.state.tool_history[0]
+    second = first.model_copy(
+        update={
+            "decision_number": 2,
+            "tool_name": ToolName.BASKET_BEHAVIOR,
+            "normalized_signature": "basket-signature",
+            "investigation_question": "Did basket cadence change?",
+        }
+    )
+    state = outcome.state.model_copy(update={"tool_history": (first, second)})
+
+    markdown = render_report_markdown(
+        build_report_data(outcome.model_copy(update={"state": state}))
+    )
+
+    assert "\n1. **Category decomposition**" in markdown
+    assert "\n2. **Basket behavior**" in markdown
+    assert "`ev-counter-category`\n\n2. **Basket behavior**" in markdown
+
+
+def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
+    report = build_report_data(_outcome())
+    missing_action = report.model_dump(mode="json")
+    missing_action["action"] = None
+    with pytest.raises(ValidationError, match="completed report"):
+        type(report).model_validate(missing_action)
+
+    wrong_owner = report.model_dump(mode="json")
+    wrong_owner["evidence_ledger"][0]["household_id"] = "different"
+    with pytest.raises(ValidationError, match="belong"):
+        type(report).model_validate(wrong_owner)
 
 
 def test_html_is_escaped_self_contained_and_auditable() -> None:
@@ -321,6 +369,9 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
         for event in events:
             writer.append(event)
 
+    trace_view = build_trace_view(events)
+    with pytest.raises(TypeError, match="immutable"):
+        trace_view.events[0].details["new"] = "mutated"
     html = render_trace_html(trace_path)
 
     assert html.index("Investigation started") < html.index("Decision received")

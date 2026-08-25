@@ -76,9 +76,9 @@
     },
     {"event": "model_decision_requested"},
     {"event": "model_decision_received"},
-    {"event": "finish_requested", "action": "PERSONALIZED_CHECK_IN"},
+    {"event": "finish_requested", "action": "VISIT_FREQUENCY_REACTIVATION"},
     {"event": "verification_started"},
-    {"event": "verification_passed", "action": "PERSONALIZED_CHECK_IN"},
-    {"event": "run_completed", "status": "completed", "action": "PERSONALIZED_CHECK_IN"}
+    {"event": "verification_passed", "action": "VISIT_FREQUENCY_REACTIVATION"},
+    {"event": "run_completed", "status": "completed", "action": "VISIT_FREQUENCY_REACTIVATION"}
   ]
 }

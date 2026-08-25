@@ -95,13 +95,21 @@ def test_sanitizer_can_reject_secrets_and_always_rejects_hidden_reasoning() -> N
             secret_handling=SecretHandling.REJECT,
         )
 
-    with pytest.raises(ValidationError, match="hidden reasoning"):
-        AuditEvent(
-            event=AuditEventName.MODEL_DECISION_RECEIVED,
-            run_id=RUN_ID,
-            household_id="181",
-            details={"chain_of_thought": "must never be persisted"},
-        )
+    for key in (
+        "chain_of_thought",
+        "thought_process",
+        "reasoning_trace",
+        "deliberation",
+        "internal_analysis",
+        "private_thoughts",
+    ):
+        with pytest.raises(ValidationError, match="hidden reasoning"):
+            AuditEvent(
+                event=AuditEventName.MODEL_DECISION_RECEIVED,
+                run_id=RUN_ID,
+                household_id="181",
+                details={key: "must never be persisted"},
+            )
 
 
 def test_audit_event_normalizes_aware_timestamp_to_utc() -> None:
@@ -127,6 +135,8 @@ def test_audit_event_is_strict_and_immutable() -> None:
 
     with pytest.raises(ValidationError, match="Instance is frozen"):
         event.household_id = "changed"
+    with pytest.raises(TypeError, match="immutable"):
+        event.details["chain_of_thought"] = "must never be persisted"
     with pytest.raises(ValidationError):
         AuditEvent.model_validate(
             {
@@ -135,3 +145,18 @@ def test_audit_event_is_strict_and_immutable() -> None:
                 "household_id": "181",
             }
         )
+
+
+def test_writer_revalidates_an_event_at_the_persistence_boundary(
+    tmp_path: Path,
+) -> None:
+    event = _event(AuditEventName.RUN_STARTED, step=0)
+    # Simulate an exotic caller bypassing the public immutable interface.
+    dict.__setitem__(event.details, "api_key", "plaintext-secret")
+
+    path = tmp_path / "trace.jsonl"
+    with AuditJsonlWriter(path) as writer:
+        writer.append(event)
+
+    persisted = json.loads(path.read_text(encoding="utf-8"))
+    assert persisted["details"]["api_key"] == REDACTED_VALUE

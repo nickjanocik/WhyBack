@@ -152,7 +152,11 @@ def detect(
         settings.data_dir / "prepared", required_tables=("household_week",)
     ) as repository:
         candidates = detect_declines(
-            repository, settings.detection, threshold=threshold
+            repository,
+            settings.detection,
+            baseline_weeks=settings.data.baseline_weeks,
+            recent_weeks=settings.data.recent_weeks,
+            threshold=threshold,
         )
     applied_threshold = (
         settings.detection.decline_threshold if threshold is None else threshold
@@ -227,7 +231,12 @@ def investigate(
 
     from whyback.agent.faults import DemoFaultScenario
     from whyback.agent.scripted_plans import ScriptedPlan
-    from whyback.demo import BackendName, locate_snapshot, run_investigation
+    from whyback.demo import (
+        BackendName,
+        identify_prepared_dataset,
+        locate_snapshot,
+        run_investigation,
+    )
 
     if backend not in {"scripted", "openai"}:
         raise typer.BadParameter("backend must be 'scripted' or 'openai'")
@@ -244,15 +253,22 @@ def investigate(
         )
     plan = ScriptedPlan.PROMOTION_TIMEOUT if fault else ScriptedPlan.STANDARD
     try:
-        snapshot = locate_snapshot(prepared, household_id)
+        snapshot = locate_snapshot(
+            prepared,
+            household_id,
+            baseline_weeks=settings.data.baseline_weeks,
+            recent_weeks=settings.data.recent_weeks,
+        )
+        dataset_kind = identify_prepared_dataset(prepared)
         outcome = run_investigation(
             prepared_dir=prepared,
             snapshot=snapshot,
             output_directory=destination,
             backend=cast(BackendName, backend),
-            dataset_kind="official_complete_journey",
+            dataset_kind=dataset_kind,
             plan=plan,
             demo_fault=fault,
+            write_manifest=True,
         )
     except (OSError, RuntimeError, ValueError) as error:
         console.print(f"[red]Investigation failed:[/red] {error}")
@@ -317,7 +333,11 @@ def verify_artifacts(
 ) -> None:
     """Validate hashes, report grounding, trace order, and execution labels."""
 
-    verifier = Path("scripts/verify_artifacts.py")
+    repository_verifier = Path(__file__).parents[2] / "scripts" / "verify_artifacts.py"
+    packaged_verifier = Path(__file__).with_name("_scripts") / "verify_artifacts.py"
+    verifier = (
+        repository_verifier if repository_verifier.is_file() else packaged_verifier
+    )
     if not verifier.is_file():
         console.print("[red]Artifact verifier is missing from scripts/.[/red]")
         raise typer.Exit(code=1)
@@ -335,3 +355,28 @@ def verify_artifacts(
         console.print(completed.stderr, style="red", end="")
     if completed.returncode != 0:
         raise typer.Exit(code=1)
+
+
+@app.command("official-type-a")
+def official_type_a(
+    output_dir: Annotated[
+        Path,
+        typer.Option(help="Reviewer-artifact directory for the scripted control."),
+    ] = Path("artifacts/official-type-a"),
+) -> None:
+    """Build the official-data Type A partial-evidence scripted control."""
+
+    from whyback.demo import build_official_type_a_example
+
+    settings = load_settings()
+    try:
+        summary = build_official_type_a_example(
+            settings.data_dir / "prepared", output_dir
+        )
+    except (OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Type A control failed:[/red] {error}")
+        raise typer.Exit(code=1) from error
+    console.print(
+        "Generated official Type A scripted control for "
+        f"{', '.join(summary.selected_household_ids)}: {summary.manifest_path}"
+    )

@@ -8,6 +8,7 @@ and verification signals from an ``InvestigationOutcome``, an
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
@@ -237,16 +238,41 @@ class AggregateMetrics(BaseModel):
     unsupported_evidence_rate: RateMetric
 
 
+class EvaluationProvenance(BaseModel):
+    """Exact input identities and execution labels for one evaluation report."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    normalized_input_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    scenario_catalog_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    input_materialization: Literal["file_bytes", "canonical_in_memory"]
+    dataset_kind: str = Field(min_length=1)
+    backend: str = Field(min_length=1)
+    execution_mode: str = Field(min_length=1)
+    model_invoked: Literal[False] = False
+
+
 class EvaluationReport(BaseModel):
     """Stable JSON- and Markdown-friendly evaluation output."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
+    passed: bool
+    provenance: EvaluationProvenance
     scenario_catalog_ids: tuple[str, ...]
     missing_scenario_ids: tuple[str, ...]
     runs: tuple[RunEvaluation, ...]
     aggregate: AggregateMetrics
+
+    @model_validator(mode="after")
+    def validate_pass_state(self) -> Self:
+        expected = not self.missing_scenario_ids and all(
+            run.scenario_contract_passed for run in self.runs
+        )
+        if self.passed != expected:
+            raise ValueError("Evaluation pass state must match all scenario contracts")
+        return self
 
 
 def load_scenario_catalog(path: Path | str | None = None) -> ScenarioCatalog:
@@ -472,11 +498,19 @@ def evaluate_run(
         and failure_satisfied
         and evidence_grounded
     )
+    limitation_satisfied = not limitation_applicable or limitation_propagated
+    graceful_satisfied = not graceful_applicable or graceful_succeeded
     scenario_contract = (
         relevant_selected
         and irrelevant_avoided
         and partial_satisfied
         and failure_satisfied
+        and budget_respected
+        and summary.verification_passed
+        and evidence_grounded
+        and limitation_satisfied
+        and graceful_satisfied
+        and summary.duplicate_call_count == 0
     )
     return RunEvaluation(
         scenario_id=scenario.scenario_id,
@@ -526,6 +560,7 @@ def evaluate_runs(
     *,
     catalog: ScenarioCatalog | None = None,
     scenario_ids: Sequence[str] | None = None,
+    provenance: EvaluationProvenance | None = None,
 ) -> EvaluationReport:
     """Evaluate normalized or application-owned runs and aggregate exact metrics."""
 
@@ -581,13 +616,36 @@ def evaluate_runs(
         ),
     )
     represented = {item.scenario_id for item in evaluated}
+    missing = tuple(
+        identifier
+        for identifier in EXPECTED_SCENARIO_IDS
+        if identifier not in represented
+    )
+    if provenance is None:
+        normalized_bytes = json.dumps(
+            [item.model_dump(mode="json") for item in normalized],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        catalog_bytes = json.dumps(
+            scenarios.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        provenance = EvaluationProvenance(
+            normalized_input_sha256=hashlib.sha256(normalized_bytes).hexdigest(),
+            scenario_catalog_sha256=hashlib.sha256(catalog_bytes).hexdigest(),
+            input_materialization="canonical_in_memory",
+            dataset_kind="unspecified",
+            backend="unspecified",
+            execution_mode="deterministic_evaluation_no_model",
+            model_invoked=False,
+        )
     return EvaluationReport(
+        passed=not missing and all(item.scenario_contract_passed for item in evaluated),
+        provenance=provenance,
         scenario_catalog_ids=tuple(lookup),
-        missing_scenario_ids=tuple(
-            identifier
-            for identifier in EXPECTED_SCENARIO_IDS
-            if identifier not in represented
-        ),
+        missing_scenario_ids=missing,
         runs=tuple(evaluated),
         aggregate=aggregate,
     )
@@ -617,6 +675,8 @@ def render_markdown(report: EvaluationReport) -> str:
     )
     lines = [
         "# WhyBack deterministic evaluation",
+        "",
+        f"Overall result: **{'PASS' if report.passed else 'FAIL'}**",
         "",
         f"Runs evaluated: {metrics.run_count}",
         "",
@@ -672,12 +732,31 @@ def load_normalized_runs(path: Path | str) -> tuple[NormalizedRunSummary, ...]:
     return tuple(summaries)
 
 
+def _normalized_input_metadata(path: Path) -> Mapping[str, object]:
+    raw: object = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, Mapping):
+        return {}
+    provenance = raw.get("provenance")
+    return provenance if isinstance(provenance, Mapping) else {}
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Score normalized WhyBack runs without invoking a model."
     )
     parser.add_argument("input", type=Path, help="Normalized run-summary JSON")
     parser.add_argument("--scenarios", type=Path, default=None)
+    parser.add_argument("--dataset-kind", default=None)
+    parser.add_argument("--backend", default=None)
+    parser.add_argument("--execution-mode", default=None)
     parser.add_argument("--json-output", type=Path, default=None)
     parser.add_argument("--markdown-output", type=Path, default=None)
     return parser
@@ -687,8 +766,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the file-based deterministic evaluator."""
 
     arguments = _parser().parse_args(argv)
-    catalog = load_scenario_catalog(arguments.scenarios)
-    report = evaluate_runs(load_normalized_runs(arguments.input), catalog=catalog)
+    input_path = cast(Path, arguments.input)
+    scenario_path = cast(Path | None, arguments.scenarios) or Path(__file__).with_name(
+        "scenarios.yaml"
+    )
+    declared = _normalized_input_metadata(input_path)
+    catalog = load_scenario_catalog(scenario_path)
+    provenance = EvaluationProvenance(
+        normalized_input_sha256=_sha256_file(input_path),
+        scenario_catalog_sha256=_sha256_file(scenario_path),
+        input_materialization="file_bytes",
+        dataset_kind=str(
+            arguments.dataset_kind or declared.get("dataset_kind") or "unspecified"
+        ),
+        backend=str(arguments.backend or declared.get("backend") or "unspecified"),
+        execution_mode=str(
+            arguments.execution_mode
+            or declared.get("execution_mode")
+            or "deterministic_evaluation_no_model"
+        ),
+        model_invoked=False,
+    )
+    report = evaluate_runs(
+        load_normalized_runs(input_path), catalog=catalog, provenance=provenance
+    )
     json_text = report.model_dump_json(indent=2) + "\n"
     markdown_text = render_markdown(report)
     json_output = cast(Path | None, arguments.json_output)
@@ -699,7 +800,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         markdown_output.write_text(markdown_text, encoding="utf-8")
     if json_output is None and markdown_output is None:
         print(json_text, end="")
-    return 0
+    return 0 if report.passed else 1
 
 
 if __name__ == "__main__":

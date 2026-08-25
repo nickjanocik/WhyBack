@@ -12,7 +12,7 @@ help:
 	@echo "  make quality  Run the auditable quality gate"
 
 sync:
-	uv sync --all-extras
+	uv sync --frozen --all-extras
 
 format:
 	uv run ruff format .

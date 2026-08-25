@@ -13,13 +13,16 @@ import duckdb
 import pandas as pd
 import pyreadr
 
+from whyback.config import SOURCE_COMMIT
 from whyback.data.contracts import normalize_frame, validate_relations
 from whyback.data.download import SOURCE_FILES, verify_sources
 from whyback.data.manifest import (
+    PREPARATION_TRANSFORM_VERSION,
     DataManifest,
     SourceManifestEntry,
     new_manifest_timestamp,
     parquet_manifest_entry,
+    preparation_code_sha256,
     read_manifest,
     write_manifest,
 )
@@ -54,6 +57,18 @@ BASE_DEFINITIONS: Final[dict[str, str]] = {
     ),
     "coupon_redemptions": "Normalized observed household coupon redemptions.",
 }
+PREPARED_TABLE_ORDER: Final = (
+    "transactions",
+    "products",
+    "demographics",
+    "campaigns",
+    "campaign_descriptions",
+    "coupons",
+    "coupon_redemptions",
+    "promotion_state",
+    "household_week",
+    "baskets",
+)
 
 
 def _read_r_frame(path: Path, table: str) -> pd.DataFrame:
@@ -69,21 +84,40 @@ def _read_r_frame(path: Path, table: str) -> pd.DataFrame:
     return next(iter(objects.values()))
 
 
-def _source_tree_version() -> str:
+def _source_tree_identity() -> tuple[str, bool]:
     configured = os.getenv("WHYBACK_SOURCE_TREE_VERSION")
     if configured:
-        return configured
+        return configured, os.getenv("WHYBACK_SOURCE_TREE_DIRTY") == "1"
+    repository_root = Path(__file__).resolve().parents[3]
     try:
-        result = subprocess.run(
+        revision = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             check=True,
             capture_output=True,
             text=True,
             timeout=5,
+            cwd=repository_root,
+        )
+        status = subprocess.run(
+            [
+                "git",
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+                "--",
+                ".",
+                ":(exclude)artifacts",
+                ":(exclude)data",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            cwd=repository_root,
         )
     except (OSError, subprocess.SubprocessError):
-        return "unavailable"
-    return result.stdout.strip() or "unavailable"
+        return "unavailable", True
+    return revision.stdout.strip() or "unavailable", bool(status.stdout.strip())
 
 
 def _write_parquet(frame: pd.DataFrame, path: Path) -> None:
@@ -211,6 +245,12 @@ def manifest_is_current(manifest_path: Path, raw_dir: Path, prepared_dir: Path) 
         actual_sources = verify_sources(raw_dir)
     except (ValueError, OSError):
         return False
+    if (
+        manifest.preparation_transform_version != PREPARATION_TRANSFORM_VERSION
+        or manifest.preparation_code_sha256 != preparation_code_sha256()
+        or manifest.source_commit != SOURCE_COMMIT
+    ):
+        return False
     expected_sources = {entry.filename: entry.sha256 for entry in manifest.sources}
     if actual_sources != expected_sources:
         return False
@@ -283,23 +323,11 @@ def prepare_data(
         **derived_definitions,
         "promotion_state": promotion_definition,
     }
-    table_order = (
-        "transactions",
-        "products",
-        "demographics",
-        "campaigns",
-        "campaign_descriptions",
-        "coupons",
-        "coupon_redemptions",
-        "promotion_state",
-        "household_week",
-        "baskets",
-    )
     prepared_entries = tuple(
         parquet_manifest_entry(
             table, prepared_dir / f"{table}.parquet", definitions[table]
         )
-        for table in table_order
+        for table in PREPARED_TABLE_ORDER
     )
     diagnostics["promotion_state_rows"] = next(
         entry.row_count
@@ -309,9 +337,12 @@ def prepare_data(
     diagnostics["promotion_rows_collapsed"] = int(diagnostics["promotion_rows"]) - int(
         diagnostics["promotion_state_rows"]
     )
+    source_tree_version, source_tree_dirty = _source_tree_identity()
     manifest = DataManifest(
         preparation_timestamp=new_manifest_timestamp(),
-        source_tree_version=_source_tree_version(),
+        preparation_code_sha256=preparation_code_sha256(),
+        source_tree_version=source_tree_version,
+        source_tree_dirty=source_tree_dirty,
         sources=tuple(source_entries),
         prepared=prepared_entries,
         diagnostics=diagnostics,
@@ -332,8 +363,45 @@ def prepare_frames_for_tests(
     normalized["coupons"] = normalized["coupons"].drop_duplicates(
         ["coupon_upc", "campaign_id", "product_id"]
     )
-    validate_relations(normalized)
-    _write_promotion_state(normalized.pop("promotions"), prepared_dir)
+    diagnostics: dict[str, float | int | str] = dict(validate_relations(normalized))
+    promotion_definition = _write_promotion_state(
+        normalized.pop("promotions"), prepared_dir
+    )
     for table, frame in normalized.items():
         _write_parquet(frame, prepared_dir / f"{table}.parquet")
-    _build_derived_tables(prepared_dir)
+    derived_definitions = _build_derived_tables(prepared_dir)
+    definitions = {
+        **BASE_DEFINITIONS,
+        **derived_definitions,
+        "promotion_state": promotion_definition,
+    }
+    prepared_entries = tuple(
+        parquet_manifest_entry(
+            table,
+            prepared_dir / f"{table}.parquet",
+            definitions[table],
+        )
+        for table in PREPARED_TABLE_ORDER
+    )
+    diagnostics["promotion_state_rows"] = next(
+        entry.row_count
+        for entry in prepared_entries
+        if entry.table == "promotion_state"
+    )
+    diagnostics["promotion_rows_collapsed"] = int(diagnostics["promotion_rows"]) - int(
+        diagnostics["promotion_state_rows"]
+    )
+    write_manifest(
+        DataManifest(
+            source_repository="whyback/synthetic-fixture",
+            source_commit="whyback-synthetic-fixture-v1",
+            preparation_timestamp=new_manifest_timestamp(),
+            preparation_code_sha256=preparation_code_sha256(),
+            source_tree_version="synthetic-fixture",
+            source_tree_dirty=False,
+            sources=(),
+            prepared=prepared_entries,
+            diagnostics=diagnostics,
+        ),
+        prepared_dir / "manifest.json",
+    )

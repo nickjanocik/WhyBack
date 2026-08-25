@@ -12,6 +12,7 @@ from typing import Any, Literal, Protocol, cast
 from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
+from whyback.agent.actions import ActionCatalog, load_action_catalog
 from whyback.agent.backend import (
     BackendDecision,
     MalformedModelResponse,
@@ -124,10 +125,12 @@ class OpenAIResponsesBackend:
         reasoning_effort: ReasoningEffort = "medium",
         client: _ResponsesClient | None = None,
         timeout_seconds: float = 60.0,
+        action_catalog: ActionCatalog | None = None,
     ) -> None:
         self._model_name = model or os.getenv("RETENTION_MODEL", "gpt-5.6-sol")
         self._reasoning_effort = reasoning_effort
         self._timeout_seconds = timeout_seconds
+        self._action_catalog = action_catalog or load_action_catalog()
         if client is not None:
             self._client = client
         else:
@@ -155,6 +158,7 @@ class OpenAIResponsesBackend:
         functions.append(_finish_function())
         request_input = {
             "state": state.compact_model_context(),
+            "action_catalog": self._action_catalog.compact_model_context(),
             "repair_issues": list(repair_issues),
         }
         safety_identifier = hashlib.sha256(
@@ -187,7 +191,10 @@ class OpenAIResponsesBackend:
             )
         if getattr(response, "error", None) is not None:
             raise MalformedModelResponse("Response contained a provider error")
-        output = cast(list[Any], getattr(response, "output", []))
+        raw_output = getattr(response, "output", None)
+        if not isinstance(raw_output, (list, tuple)):
+            raise MalformedModelResponse("Response output was not a sequence")
+        output = cast(list[Any] | tuple[Any, ...], raw_output)
         calls = [
             item for item in output if getattr(item, "type", None) == "function_call"
         ]
@@ -208,7 +215,7 @@ class OpenAIResponsesBackend:
             decision = self._parse_call(
                 str(call.name),
                 arguments,
-                offered_tools=frozenset(item.name for item in tools),
+                offered_tools={item.name: item for item in tools},
             )
         except (
             AttributeError,
@@ -222,15 +229,24 @@ class OpenAIResponsesBackend:
             ) from error
 
         usage = getattr(response, "usage", None)
-        input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
-        output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
-        total_tokens = int(
-            getattr(usage, "total_tokens", input_tokens + output_tokens)
-            or input_tokens + output_tokens
-        )
+        try:
+            input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
+            output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+            total_tokens = int(
+                getattr(usage, "total_tokens", input_tokens + output_tokens)
+                or input_tokens + output_tokens
+            )
+        except (TypeError, ValueError) as error:
+            raise MalformedModelResponse(
+                "Response usage contained a non-integer token count"
+            ) from error
+        raw_response_id = getattr(response, "id", None)
+        if not isinstance(raw_response_id, str) or not raw_response_id.strip():
+            raise MalformedModelResponse("Response did not include a provider ID")
+        response_id = raw_response_id.strip()
         return BackendDecision(
             decision=decision,
-            provider_call_id=str(getattr(call, "call_id", "call-unknown")),
+            provider_call_id=response_id,
             model=self.model_name,
             usage=ModelUsage(
                 decisions=1,
@@ -246,7 +262,7 @@ class OpenAIResponsesBackend:
         name: str,
         raw: object,
         *,
-        offered_tools: frozenset[ToolName],
+        offered_tools: Mapping[ToolName, ToolDefinition],
     ) -> ModelDecision:
         if name == "finish_investigation":
             payload = _FinishPayload.model_validate(raw)
@@ -259,9 +275,23 @@ class OpenAIResponsesBackend:
             tool_name = ToolName(name)
         except ValueError as error:
             raise ValueError(f"Unknown analytical function: {name}") from error
-        if tool_name not in offered_tools:
+        definition = offered_tools.get(tool_name)
+        if definition is None:
             raise ValueError(f"Analytical function was not offered: {name}")
         payload = _ToolPayload.model_validate(raw)
+        properties = definition.input_schema.get("properties")
+        required = definition.input_schema.get("required")
+        if not isinstance(properties, Mapping) or not isinstance(required, list):
+            raise ValueError(f"Analytical function has an invalid schema: {name}")
+        actual_keys = set(payload.arguments)
+        allowed_keys = {str(key) for key in properties}
+        required_keys = {str(key) for key in required}
+        if not required_keys.issubset(actual_keys) or not actual_keys.issubset(
+            allowed_keys
+        ):
+            raise ValueError(
+                f"Analytical function arguments do not match the offered schema: {name}"
+            )
         return ToolDecision(
             investigation_question=payload.investigation_question,
             decision_summary=payload.decision_summary,

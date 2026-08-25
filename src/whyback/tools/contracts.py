@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Literal, Self
 from uuid import UUID
 
 from pydantic import (
@@ -16,6 +16,7 @@ from pydantic import (
 
 from whyback import __version__
 from whyback.config import SOURCE_COMMIT
+from whyback.immutability import frozen_mapping
 
 
 class ToolName(StrEnum):
@@ -103,6 +104,11 @@ class ToolExecutionContext(BaseModel):
     source_hashes: dict[str, str] = Field(default_factory=dict)
     application_version: str = __version__
 
+    @model_validator(mode="after")
+    def freeze_source_hashes(self) -> Self:
+        object.__setattr__(self, "source_hashes", frozen_mapping(self.source_hashes))
+        return self
+
 
 class EvidenceRecord(BaseModel):
     """One immutable deterministic value eligible for report grounding."""
@@ -136,6 +142,7 @@ class EvidenceRecord(BaseModel):
             )
         ):
             raise ValueError("Evidence must contain at least one computed value")
+        object.__setattr__(self, "dimensions", frozen_mapping(self.dimensions))
         return self
 
 
@@ -153,6 +160,12 @@ class ToolProvenance(BaseModel):
     cache_hit: bool = False
     application_version: str = __version__
     diagnostics: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def freeze_mappings(self) -> Self:
+        for field in ("source_hashes", "normalized_parameters", "diagnostics"):
+            object.__setattr__(self, field, frozen_mapping(getattr(self, field)))
+        return self
 
 
 SUCCESS_STATUSES = frozenset({ToolStatus.OK, ToolStatus.PARTIAL})
@@ -189,6 +202,7 @@ class ToolResult(BaseModel):
                 raise ValueError("Evidence source tool does not match the result")
             if item.source_tool_call_id != self.tool_call_id:
                 raise ValueError("Evidence source call does not match the result")
+        object.__setattr__(self, "model_summary", frozen_mapping(self.model_summary))
         return self
 
 

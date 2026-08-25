@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal, Self, cast
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -13,10 +13,12 @@ from pydantic import (
     JsonValue,
     TypeAdapter,
     field_validator,
+    model_validator,
 )
 
 from whyback.agent.actions import ActionId
 from whyback.detection.decline import DeclineSnapshot
+from whyback.immutability import frozen_mapping
 from whyback.tools.contracts import AnalysisWindow, EvidenceRecord, ToolName, ToolStatus
 
 
@@ -100,6 +102,16 @@ class ToolHistoryEntry(BaseModel):
     evidence_ids: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
 
+    @model_validator(mode="after")
+    def freeze_history_mappings(self) -> Self:
+        for field in (
+            "normalized_arguments",
+            "model_summary",
+            "provenance_diagnostics",
+        ):
+            object.__setattr__(self, field, frozen_mapping(getattr(self, field)))
+        return self
+
 
 class DriverClaim(BaseModel):
     """One qualitative driver mapped to its deterministic support."""
@@ -149,6 +161,11 @@ class ToolDecision(BaseModel):
     selected_tool: ToolName
     arguments: dict[str, JsonValue]
     decision_summary: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def freeze_arguments(self) -> Self:
+        object.__setattr__(self, "arguments", frozen_mapping(self.arguments))
+        return self
 
 
 class FinishDecision(BaseModel):

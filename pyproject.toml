@@ -40,6 +40,11 @@ whyback = "whyback.cli:app"
 [tool.hatch.build.targets.wheel]
 packages = ["src/whyback"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"configs/actions.yaml" = "whyback/resources/actions.yaml"
+"configs/app.toml" = "whyback/resources/app.toml"
+"scripts/verify_artifacts.py" = "whyback/_scripts/verify_artifacts.py"
+
 [tool.ruff]
 target-version = "py312"
 line-length = 88

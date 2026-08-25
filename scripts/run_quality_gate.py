@@ -21,8 +21,17 @@ from typing import Literal, Protocol, cast
 from uuid import uuid4
 
 StepStatus = Literal["passed", "failed", "skipped"]
+GateLifecycle = Literal["running", "completed"]
 
-_SOURCE_DIRECTORIES = ("src", "tests", "scripts", "evals", "configs", ".github")
+_SOURCE_DIRECTORIES = (
+    "src",
+    "tests",
+    "scripts",
+    "evals",
+    "configs",
+    "docs",
+    ".github",
+)
 _SOURCE_FILES = (
     ".env.example",
     ".gitignore",
@@ -42,6 +51,21 @@ _IGNORED_PARTS = frozenset(
         ".ruff_cache",
         ".venv",
         "__pycache__",
+    }
+)
+_REQUIRED_STEP_NAMES = frozenset(
+    {
+        "coverage_configuration",
+        "frozen_sync",
+        "ruff_format",
+        "ruff_lint",
+        "pyright",
+        "pytest",
+        "test_output_validation",
+        "deterministic_evals",
+        "artifact_verification",
+        "official_artifact_verification",
+        "official_type_a_artifact_verification",
     }
 )
 
@@ -113,6 +137,8 @@ class GatePaths:
     junit_xml: Path
     coverage_json: Path
     artifact_verification_json: Path
+    official_artifact_verification_json: Path
+    official_type_a_artifact_verification_json: Path
     eval_json: Path
     eval_markdown: Path
 
@@ -126,6 +152,12 @@ class GatePaths:
             junit_xml=directory / "junit.xml",
             coverage_json=directory / "coverage.json",
             artifact_verification_json=directory / "artifact_verification.json",
+            official_artifact_verification_json=(
+                directory / "official_artifact_verification.json"
+            ),
+            official_type_a_artifact_verification_json=(
+                directory / "official_type_a_artifact_verification.json"
+            ),
             eval_json=directory / "eval_report.json",
             eval_markdown=directory / "EVAL_REPORT.md",
         )
@@ -474,6 +506,26 @@ def build_command_specs(
     ]
     if allow_live_skipped:
         artifact_command.append("--allow-live-skipped")
+    official_command = [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_artifacts.py",
+        "artifacts/official",
+        "--json-output",
+        relative(paths.official_artifact_verification_json),
+    ]
+    if allow_live_skipped:
+        official_command.append("--allow-live-skipped")
+    official_type_a_command = [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_artifacts.py",
+        "artifacts/official-type-a",
+        "--json-output",
+        relative(paths.official_type_a_artifact_verification_json),
+    ]
     return (
         CommandSpec("frozen_sync", ("uv", "sync", "--frozen", "--extra", "dev")),
         CommandSpec("ruff_format", ("uv", "run", "ruff", "format", "--check", ".")),
@@ -492,6 +544,11 @@ def build_command_specs(
             ),
         ),
         CommandSpec("artifact_verification", tuple(artifact_command)),
+        CommandSpec("official_artifact_verification", tuple(official_command)),
+        CommandSpec(
+            "official_type_a_artifact_verification",
+            tuple(official_type_a_command),
+        ),
     )
 
 
@@ -544,20 +601,20 @@ def _internal_step(
     )
 
 
-def _skipped_eval(now: Callable[[], datetime]) -> StepRecord:
+def _missing_eval(now: Callable[[], datetime]) -> StepRecord:
     timestamp = _timestamp(now())
     return StepRecord(
         name="deterministic_evals",
         kind="command",
-        required=False,
-        status="skipped",
+        required=True,
+        status="failed",
         command=(),
         started_at=timestamp,
         completed_at=timestamp,
         duration_seconds=0.0,
-        exit_code=None,
+        exit_code=1,
         stdout="",
-        stderr="No normalized-run eval fixture was available.\n",
+        stderr="Required normalized-run eval fixture was unavailable.\n",
     )
 
 
@@ -725,12 +782,22 @@ def _audit_document(
     failure_observations: Sequence[str],
     test_summary: Mapping[str, object],
     prior_invocations: Sequence[Mapping[str, object]],
+    lifecycle: GateLifecycle,
 ) -> dict[str, object]:
-    passed = all(step.status == "passed" for step in steps if step.required)
+    recorded_required = {step.name for step in steps if step.required}
+    required_steps_complete = _REQUIRED_STEP_NAMES.issubset(recorded_required)
+    unique_step_names = len({step.name for step in steps}) == len(steps)
+    passed = (
+        lifecycle == "completed"
+        and required_steps_complete
+        and unique_step_names
+        and all(step.status == "passed" for step in steps if step.required)
+    )
     current: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "product_name": "WhyBack",
         "gate_name": "deterministic_quality_gate",
+        "lifecycle": lifecycle,
         "invocation_id": invocation_id,
         "started_at": _timestamp(started_at),
         "completed_at": _timestamp(completed_at),
@@ -744,6 +811,8 @@ def _audit_document(
         "test_summary": dict(test_summary),
         "steps": [step.as_json() for step in steps],
         "failure_observations": list(failure_observations),
+        "required_step_names": sorted(_REQUIRED_STEP_NAMES),
+        "required_steps_complete": required_steps_complete,
     }
     current["invocations"] = [
         *(dict(item) for item in prior_invocations),
@@ -763,7 +832,7 @@ def _persist_audit(paths: GatePaths, audit: Mapping[str, object]) -> None:
 def run_quality_gate(
     root: Path,
     *,
-    allow_live_skipped: bool = False,
+    allow_live_skipped: bool = True,
     runner: CommandRunner = subprocess_runner,
     now: Callable[[], datetime] = utc_now,
     monotonic: Callable[[], float] = time.monotonic,
@@ -787,11 +856,18 @@ def run_quality_gate(
         environment["unreadable_prior_audit"] = {
             "error": prior_audit_error,
             "sha256": sha256_file(paths.audit_json),
-            "raw_content": paths.audit_json.read_text(
-                encoding="utf-8", errors="replace"
-            ),
         }
     paths.directory.mkdir(parents=True, exist_ok=True)
+    for stale_output in (
+        paths.junit_xml,
+        paths.coverage_json,
+        paths.artifact_verification_json,
+        paths.official_artifact_verification_json,
+        paths.official_type_a_artifact_verification_json,
+        paths.eval_json,
+        paths.eval_markdown,
+    ):
+        stale_output.unlink(missing_ok=True)
     try:
         minimum = coverage_threshold(root)
         coverage_configuration_error: str | None = None
@@ -818,6 +894,7 @@ def run_quality_gate(
             failure_observations=failure_observations,
             test_summary=test_summary,
             prior_invocations=prior_invocations,
+            lifecycle="running",
         )
         _persist_audit(paths, audit)
 
@@ -850,7 +927,7 @@ def run_quality_gate(
         if spec.name == "artifact_verification":
             eval_input = discover_eval_input(root)
             if eval_input is None:
-                eval_record = _skipped_eval(now)
+                eval_record = _missing_eval(now)
             else:
                 eval_record = _run_step(
                     CommandSpec(
@@ -908,6 +985,7 @@ def run_quality_gate(
         failure_observations=failure_observations,
         test_summary=test_summary,
         prior_invocations=prior_invocations,
+        lifecycle="completed",
     )
     _persist_audit(paths, audit)
     return (0 if bool(audit["passed"]) else 1), audit
@@ -923,9 +1001,20 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--allow-live-skipped",
+        dest="allow_live_skipped",
         action="store_true",
-        help="Declare absent live credentials and reject any live-labeled output.",
+        help=(
+            "Permit an honestly recorded skipped-live status (the default when "
+            "credentials are unavailable)."
+        ),
     )
+    parser.add_argument(
+        "--require-live",
+        dest="allow_live_skipped",
+        action="store_false",
+        help="Require the official artifact to contain completed live model runs.",
+    )
+    parser.set_defaults(allow_live_skipped=True)
     return parser
 
 

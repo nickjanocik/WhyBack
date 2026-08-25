@@ -147,12 +147,16 @@ class ToolRegistry:
     ) -> ToolResult:
         try:
             parameters, _ = self.normalize_arguments(name, arguments)
-        except (KeyError, ValidationError) as error:
+        except (KeyError, ValidationError):
             return ToolResult(
                 tool_call_id=context.tool_call_id,
                 tool_name=name,
                 status=ToolStatus.INVALID_REQUEST,
-                model_summary={"validation_error": str(error)},
+                model_summary={
+                    "validation_error": (
+                        "Arguments did not match the strict tool schema."
+                    )
+                },
                 limitations=("Tool arguments failed strict schema validation.",),
                 provenance=ToolProvenance(
                     dataset_source_commit=context.source_commit,

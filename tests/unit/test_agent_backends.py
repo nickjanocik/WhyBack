@@ -113,7 +113,7 @@ def _response(name: str, arguments: str) -> SimpleNamespace:
         call_id="call-1",
     )
     usage = SimpleNamespace(input_tokens=20, output_tokens=10, total_tokens=30)
-    return SimpleNamespace(id="resp-1", output=[call], usage=usage)
+    return SimpleNamespace(id="resp_1", output=[call], usage=usage)
 
 
 def test_investigation_state_is_frozen_and_budget_bounded() -> None:
@@ -184,6 +184,7 @@ def test_openai_backend_sends_one_strict_function_decision() -> None:
     result = backend.decide_next_step(_state(), ToolRegistry().definitions())
 
     assert result.decision == _tool_decision()
+    assert result.provider_call_id == "resp_1"
     assert result.usage.total_tokens == 30
     request = client.responses.kwargs
     assert request["model"] == "gpt-5.6-sol"
@@ -191,6 +192,10 @@ def test_openai_backend_sends_one_strict_function_decision() -> None:
     assert request["tool_choice"] == "required"
     assert request["store"] is False
     assert request["reasoning"] == {"effort": "medium"}
+    request_input = __import__("json").loads(request["input"])
+    assert {item["action_id"] for item in request_input["action_catalog"]} == {
+        item.value for item in ActionId
+    }
     functions = request["tools"]
     assert len(functions) == 7
     assert all(item["strict"] is True for item in functions)
@@ -247,6 +252,44 @@ def test_openai_backend_rejects_incomplete_response() -> None:
     backend = OpenAIResponsesBackend(client=_FakeClient(response))
 
     with pytest.raises(MalformedModelResponse, match="status"):
+        backend.decide_next_step(_state(), ToolRegistry().definitions())
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        (lambda response: setattr(response, "output", None), "not a sequence"),
+        (
+            lambda response: setattr(response.usage, "input_tokens", "not-an-int"),
+            "non-integer",
+        ),
+        (lambda response: setattr(response, "id", None), "provider ID"),
+    ),
+)
+def test_openai_backend_wraps_malformed_provider_metadata(
+    mutation: Any, message: str
+) -> None:
+    response = _response(
+        "customer_trend",
+        '{"investigation_question":"Inspect?","decision_summary":"Inspect.",'
+        '"arguments":{"household_id":"42"}}',
+    )
+    mutation(response)
+    backend = OpenAIResponsesBackend(client=_FakeClient(response))
+
+    with pytest.raises(MalformedModelResponse, match=message):
+        backend.decide_next_step(_state(), ToolRegistry().definitions())
+
+
+def test_openai_backend_rejects_arguments_outside_the_offered_schema() -> None:
+    response = _response(
+        "customer_trend",
+        '{"investigation_question":"Inspect?","decision_summary":"Inspect.",'
+        '"arguments":{"household_id":"42","thought_process":"private"}}',
+    )
+    backend = OpenAIResponsesBackend(client=_FakeClient(response))
+
+    with pytest.raises(MalformedModelResponse, match="offered schema"):
         backend.decide_next_step(_state(), ToolRegistry().definitions())
 
 

@@ -63,12 +63,29 @@
       <div><span>Household</span>{{ report.household_id }}</div>
       <div><span>Run</span>{{ report.run_id }}</div>
       <div><span>Status</span>{{ report.run_status.value | humanize }}</div>
+      <div><span>Dataset</span>{{ report.provenance.dataset_kind | humanize }}</div>
+      <div><span>Execution</span>{{ report.provenance.execution_mode | humanize }}</div>
+      <div><span>Model</span>{{ report.provenance.model }}</div>
     </div>
   </header>
+
+  <section id="provenance">
+    <span class="eyebrow">Standalone provenance</span><h2>Execution provenance</h2>
+    <dl>
+      <dt>Source</dt><dd><code>{{ report.provenance.dataset_source_repository }}</code> @ <code>{{ report.provenance.dataset_source_commit }}</code></dd>
+      <dt>Backend</dt><dd><code>{{ report.provenance.backend }}</code></dd>
+      <dt>Application</dt><dd><code>{{ report.provenance.application_version }}</code></dd>
+      <dt>Prompt</dt><dd><code>{{ report.provenance.prompt_version }}</code> / <code>{{ report.provenance.prompt_hash }}</code></dd>
+      <dt>Generated</dt><dd><code>{{ report.provenance.generated_at.isoformat() }}</code></dd>
+      <dt>Timing</dt><dd>{{ report.provenance.timing_mode | humanize }}</dd>
+      <dt>Bound hashes</dt><dd>Immutable file identities are embedded in the structured JSON report.</dd>
+    </dl>
+  </section>
 
   <section id="decline-summary">
     <span class="eyebrow">Detection</span><h2>Decline summary</h2>
     <p>Baseline weeks <strong>{{ report.decline.baseline_start_week }}–{{ report.decline.baseline_end_week }}</strong> compared with recent weeks <strong>{{ report.decline.recent_start_week }}–{{ report.decline.recent_end_week }}</strong>.</p>
+    <p class="details">Detector evidence <code>{{ report.decline.evidence_id }}</code> is owned by this run and household.</p>
     <div class="metric-grid">
       <div class="metric"><small>Retailer sales value</small><strong>{{ report.decline.baseline_retailer_sales_value | money }} → {{ report.decline.recent_retailer_sales_value | money }}</strong><small>{{ report.decline.sales_drop | percent }} recorded drop</small></div>
       <div class="metric"><small>Distinct baskets</small><strong>{{ report.decline.baseline_distinct_baskets | number }} → {{ report.decline.recent_distinct_baskets | number }}</strong><small>{{ report.decline.trip_drop | percent }} recorded drop</small></div>

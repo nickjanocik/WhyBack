@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from whyback.agent.actions import ActionId
 from whyback.agent.state import ResolvedConfidence, RunStatus
+from whyback.immutability import frozen_mapping
+from whyback.provenance import RunProvenance
 from whyback.tools.contracts import ToolName, ToolStatus
 
 
 class DeclineReportData(BaseModel):
-    """Detector-owned values displayed in the decline summary."""
+    """Run-owned deterministic detector evidence displayed in the summary."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
 
+    evidence_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    household_id: str = Field(min_length=1)
+    source: Literal["decline_detector"] = "decline_detector"
     baseline_start_week: int = Field(ge=1, le=53)
     baseline_end_week: int = Field(ge=1, le=53)
     recent_start_week: int = Field(ge=1, le=53)
@@ -58,6 +64,8 @@ class ReportEvidenceData(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
 
     evidence_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    household_id: str = Field(min_length=1)
     role: Literal["supporting", "counterevidence", "context"]
     source_tool: ToolName
     source_tool_call_id: str = Field(min_length=1)
@@ -71,6 +79,11 @@ class ReportEvidenceData(BaseModel):
     unit: str | None = None
     limitations: tuple[str, ...] = ()
     query_hash: str | None = None
+
+    @model_validator(mode="after")
+    def freeze_dimensions(self) -> Self:
+        object.__setattr__(self, "dimensions", frozen_mapping(self.dimensions))
+        return self
 
 
 class DriverReportData(BaseModel):
@@ -94,6 +107,7 @@ class ToolWarningData(BaseModel):
     attempt_statuses: tuple[ToolStatus, ...] = ()
     total_latency_ms: float = Field(ge=0.0)
     limitations: tuple[str, ...] = ()
+    unavailable: bool = False
 
 
 class ActionReportData(BaseModel):
@@ -116,12 +130,13 @@ class ReportData(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
 
-    schema_version: Literal[1] = 1
+    schema_version: Literal[2] = 2
     product_name: Literal["WhyBack"] = "WhyBack"
     tagline: Literal["Find the why. Choose the way back."] = (
         "Find the why. Choose the way back."
     )
     investigator_name: Literal["WhyBack Investigator"] = "WhyBack Investigator"
+    provenance: RunProvenance
     run_id: str = Field(min_length=1)
     household_id: str = Field(min_length=1)
     run_status: RunStatus
@@ -139,6 +154,53 @@ class ReportData(BaseModel):
     verification_issues: tuple[str, ...] = ()
     failure_reason: str | None = None
     human_review_required: Literal[True] = True
+
+    @model_validator(mode="after")
+    def validate_terminal_report(self) -> Self:
+        if (
+            self.decline.run_id != self.run_id
+            or self.decline.household_id != self.household_id
+        ):
+            raise ValueError("Detector evidence must belong to its run and household")
+        if self.run_status is RunStatus.RUNNING:
+            raise ValueError("Published reports must have a terminal run status")
+        if self.run_status is RunStatus.COMPLETED and (
+            self.action is None
+            or self.action.action_id is ActionId.INSUFFICIENT_EVIDENCE
+        ):
+            raise ValueError("A completed report requires a supported catalog action")
+        if self.run_status is RunStatus.INSUFFICIENT_EVIDENCE and (
+            self.action is None
+            or self.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE
+        ):
+            raise ValueError(
+                "An insufficient-evidence report requires the governed fallback"
+            )
+        if self.run_status is RunStatus.FAILED and self.action is not None:
+            raise ValueError("A failed report cannot publish an action")
+
+        ledger = {item.evidence_id: item for item in self.evidence_ledger}
+        if len(ledger) != len(self.evidence_ledger):
+            raise ValueError("Report evidence IDs must be unique")
+        for item in self.evidence_ledger:
+            if item.run_id != self.run_id or item.household_id != self.household_id:
+                raise ValueError("Report evidence must belong to its run and household")
+        for role, records in (
+            ("supporting", self.supporting_evidence),
+            ("counterevidence", self.counterevidence),
+        ):
+            for record in records:
+                if record.role != role or ledger.get(record.evidence_id) != record:
+                    raise ValueError(
+                        f"{role.title()} evidence must exactly match the ledger"
+                    )
+        supporting_ids = {item.evidence_id for item in self.supporting_evidence}
+        for driver in self.likely_drivers:
+            if not set(driver.supporting_evidence_ids).issubset(supporting_ids):
+                raise ValueError(
+                    "Driver citations must be accepted supporting evidence"
+                )
+        return self
 
 
 class TraceEventData(BaseModel):
@@ -159,6 +221,11 @@ class TraceEventData(BaseModel):
     verifier_label: str | None = None
     final_action: str | None = None
     details: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def freeze_details(self) -> Self:
+        object.__setattr__(self, "details", frozen_mapping(self.details))
+        return self
 
 
 class TraceViewData(BaseModel):

@@ -17,6 +17,23 @@ actions:
         metric_match: any
         minimum_matching_records: 1
         minimum_distinct_tools: 1
+        predicates:
+          - metric: category_retailer_sales_value
+            field: change
+            operator: lt
+            threshold: 0.0
+            dimensions:
+              - {key: direction, operator: equals, value: loss}
+              - {key: department, operator: not_equals, value: UNKNOWN}
+              - {key: product_category, operator: not_equals, value: UNKNOWN}
+          - metric: contribution_to_lost_retailer_sales_value
+            field: value
+            operator: gt
+            threshold: 0.0
+            dimensions:
+              - {key: direction, operator: equals, value: loss}
+              - {key: department, operator: not_equals, value: UNKNOWN}
+              - {key: product_category, operator: not_equals, value: UNKNOWN}
     contraindications:
       - No category-level loss is supported by valid evidence.
       - The apparent loss is dominated by unresolved UNKNOWN product mappings.
@@ -58,6 +75,13 @@ actions:
         metric_match: any
         minimum_matching_records: 1
         minimum_distinct_tools: 1
+        predicates:
+          - {metric: distinct_trips, field: change, operator: lt, threshold: 0.0}
+          - {metric: active_weeks, field: change, operator: lt, threshold: 0.0}
+          - {metric: basket_count, field: change, operator: lt, threshold: 0.0}
+          - {metric: baskets_per_calendar_week, field: change, operator: lt, threshold: 0.0}
+          - {metric: mean_basket_interval_days, field: change, operator: gt, threshold: 0.0}
+          - {metric: median_basket_interval_days, field: change, operator: gt, threshold: 0.0}
     contraindications:
       - Visit cadence is stable or improving in the recent window.
       - Sparse basket history makes cadence or interval evidence unreliable.
@@ -96,10 +120,16 @@ actions:
           - mailer_associated_retailer_sales_value
           - transaction_coupon_baskets
           - recorded_coupon_discount
-          - coupon_redemption_count
         metric_match: any
         minimum_matching_records: 1
         minimum_distinct_tools: 1
+        predicates:
+          - {metric: promotion_associated_retailer_sales_value, field: change, operator: lt, threshold: 0.0}
+          - {metric: promotion_associated_share, field: change, operator: lt, threshold: 0.0}
+          - {metric: display_associated_retailer_sales_value, field: change, operator: lt, threshold: 0.0}
+          - {metric: mailer_associated_retailer_sales_value, field: change, operator: lt, threshold: 0.0}
+          - {metric: transaction_coupon_baskets, field: change, operator: lt, threshold: 0.0}
+          - {metric: recorded_coupon_discount, field: change, operator: lt, threshold: 0.0}
     contraindications:
       - Promotion enrichment has an unresolved reconciliation failure.
       - The rationale depends on claiming household exposure from availability data.
@@ -147,6 +177,20 @@ actions:
         metric_match: any
         minimum_matching_records: 2
         minimum_distinct_tools: 2
+        predicates:
+          - {metric: retailer_sales_value, field: change, operator: lt, threshold: 0.0}
+          - {metric: distinct_trips, field: change, operator: lt, threshold: 0.0}
+          - {metric: basket_count, field: change, operator: lt, threshold: 0.0}
+          - metric: category_retailer_sales_value
+            field: change
+            operator: lt
+            threshold: 0.0
+            dimensions:
+              - {key: direction, operator: equals, value: loss}
+          - {metric: primary_store_changed, field: value, operator: eq, threshold: 1.0}
+          - {metric: promotion_associated_share, field: change, operator: lt, threshold: 0.0}
+          - {metric: transaction_coupon_baskets, field: change, operator: lt, threshold: 0.0}
+          - {metric: target_retailer_sales_change_percentile, field: value, operator: lt, threshold: 50.0}
     contraindications:
       - Evidence clearly supports a narrower catalog action.
       - Required consent, contact-preference, or service-capacity review is unavailable.
@@ -188,6 +232,12 @@ actions:
         metric_match: any
         minimum_matching_records: 1
         minimum_distinct_tools: 1
+        predicates:
+          - {metric: retailer_sales_value, field: change, operator: lt, threshold: 0.0}
+          - {metric: distinct_trips, field: change, operator: lt, threshold: 0.0}
+          - {metric: basket_count, field: change, operator: lt, threshold: 0.0}
+          - {metric: target_retailer_sales_change, field: value, operator: lt, threshold: 0.0}
+          - {metric: target_retailer_sales_change_percentile, field: value, operator: lt, threshold: 50.0}
     contraindications:
       - Multiple independent tools support a severe and sustained decline.
       - A clear, catalog-supported driver warrants a reviewer-approved test.

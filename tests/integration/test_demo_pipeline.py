@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from scripts.verify_artifacts import verify_artifact_tree
-from whyback.demo import build_synthetic_demo
+from whyback.demo import _initialize_live_official_output, build_synthetic_demo
 from whyback.observability import read_audit_events
 
 
@@ -64,6 +66,12 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     )
     assert standard["run_status"] == "completed"
     assert standard["action"]["human_review_required"] is True
+    assert standard["provenance"]["dataset_kind"] == "synthetic"
+    assert standard["provenance"]["execution_mode"] == "scripted_control"
+    assert standard["provenance"]["dataset_source_repository"] == (
+        "whyback/synthetic-fixture"
+    )
+    assert all("partial calendar weeks" not in item for item in standard["limitations"])
 
     failure = json.loads(
         (tmp_path / "failure_example" / "report.json").read_text(encoding="utf-8")
@@ -108,3 +116,70 @@ def test_persistent_failure_trace_matches_normalized_golden(tmp_path: Path) -> N
     )
 
     assert actual == golden
+
+
+def test_synthetic_demo_rerun_replaces_the_exact_owned_tree(tmp_path: Path) -> None:
+    build_synthetic_demo(tmp_path, customers=2)
+    assert (tmp_path / "customer_102").is_dir()
+
+    summary = build_synthetic_demo(tmp_path, customers=1)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+
+    assert summary.selected_household_ids == ("101",)
+    assert not (tmp_path / "customer_102").exists()
+    assert all("customer_102/" not in path for path in manifest["files"])
+
+
+def test_synthetic_demo_refuses_to_replace_an_unowned_directory(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "valuable"
+    destination.mkdir()
+    note = destination / "keep.txt"
+    note.write_text("must survive", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not marked"):
+        build_synthetic_demo(destination, customers=1)
+
+    assert note.read_text(encoding="utf-8") == "must survive"
+
+
+def test_live_official_transition_exactly_replaces_an_owned_skipped_tree(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "official"
+    destination.mkdir()
+    (destination / ".whyback-owned-artifact-root.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "product": "WhyBack",
+                "scope": "replaceable_generated_artifact_tree",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (destination / "live_model_status.json").write_text(
+        json.dumps({"status": "skipped_no_api_key"}),
+        encoding="utf-8",
+    )
+    (destination / "manifest.json").write_text("{}", encoding="utf-8")
+
+    _initialize_live_official_output(destination)
+
+    assert (destination / ".whyback-owned-artifact-root.json").is_file()
+    assert not (destination / "live_model_status.json").exists()
+    assert not (destination / "manifest.json").exists()
+
+
+def test_live_official_transition_preserves_prior_run_artifacts(tmp_path: Path) -> None:
+    destination = tmp_path / "official"
+    customer = destination / "customer_181"
+    customer.mkdir(parents=True)
+    trace = customer / "trace.jsonl"
+    trace.write_text("historical audit\n", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="already exist"):
+        _initialize_live_official_output(destination)
+
+    assert trace.read_text(encoding="utf-8") == "historical audit\n"

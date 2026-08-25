@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Final, Literal
 
 import pyarrow.parquet as pq
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,11 +15,30 @@ from whyback import __version__
 from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY
 from whyback.data.download import sha256_file
 
+PREPARATION_TRANSFORM_VERSION: Final = "whyback-complete-journey-v1"
+_PREPARATION_CODE_FILES: Final = (
+    Path(__file__).with_name("contracts.py"),
+    Path(__file__),
+    Path(__file__).with_name("prepare.py"),
+)
+
+
+def preparation_code_sha256() -> str:
+    """Hash the exact modules that define canonical preparation semantics."""
+
+    digest = hashlib.sha256()
+    for path in sorted(_PREPARATION_CODE_FILES, key=lambda item: item.name):
+        name = path.name.encode()
+        digest.update(len(name).to_bytes(8, "big"))
+        digest.update(name)
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
 
 class SourceManifestEntry(BaseModel):
     """Verified identity and observed schema of one official source file."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     filename: str
     sha256: str
@@ -30,7 +51,7 @@ class SourceManifestEntry(BaseModel):
 class PreparedManifestEntry(BaseModel):
     """Identity and schema of one canonical Parquet table."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     table: str
     filename: str
@@ -44,14 +65,19 @@ class PreparedManifestEntry(BaseModel):
 class DataManifest(BaseModel):
     """Replayable provenance for a complete preparation run."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    manifest_version: int = 1
+    manifest_version: Literal[2] = 2
     source_repository: str = SOURCE_REPOSITORY
     source_commit: str = SOURCE_COMMIT
     preparation_timestamp: datetime
     application_version: str = __version__
+    preparation_transform_version: Literal["whyback-complete-journey-v1"] = (
+        PREPARATION_TRANSFORM_VERSION
+    )
+    preparation_code_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_tree_version: str
+    source_tree_dirty: bool
     sources: tuple[SourceManifestEntry, ...]
     prepared: tuple[PreparedManifestEntry, ...]
     diagnostics: dict[str, float | int | str]

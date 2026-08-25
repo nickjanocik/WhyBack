@@ -59,6 +59,10 @@ def _evidence(
     metric: str = "retailer_sales_value",
     household_id: str = "1",
     limitations: tuple[str, ...] = (),
+    baseline_value: float = 8.0,
+    recent_value: float = 0.0,
+    value: float | None = None,
+    dimensions: dict[str, str] | None = None,
 ) -> EvidenceRecord:
     return EvidenceRecord(
         evidence_id=evidence_id,
@@ -67,9 +71,11 @@ def _evidence(
         source_tool=tool,
         source_tool_call_id=call_id,
         metric=metric,
-        baseline_value=8.0,
-        recent_value=0.0,
-        change=-8.0,
+        dimensions=dimensions or {},
+        baseline_value=baseline_value,
+        recent_value=recent_value,
+        value=value,
+        change=recent_value - baseline_value,
         unit="retailer_sales_value",
         limitations=limitations,
         query_hash="query",
@@ -157,6 +163,8 @@ def test_evidence_ledger_is_immutable_and_checks_ownership() -> None:
     assert ledger.records == (record,)
     with pytest.raises(ValidationError):
         ledger.records = ()  # type: ignore[misc]
+    with pytest.raises(TypeError, match="immutable"):
+        record.dimensions["tampered"] = "yes"
     with pytest.raises(EvidenceLedgerError, match="another household"):
         EvidenceLedger().add_tool_result(
             result, run_id=RUN_ID, household_id="different"
@@ -190,28 +198,33 @@ def test_verifier_caps_high_confidence_and_propagates_partial_limitation() -> No
 
 def test_high_confidence_requires_two_tools_without_limitations() -> None:
     trend = _evidence("ev-trend")
-    basket = _evidence(
-        "ev-basket",
-        tool=ToolName.BASKET_BEHAVIOR,
-        call_id="call-basket",
-        metric="basket_count",
+    peer = _evidence(
+        "ev-peer",
+        tool=ToolName.PEER_COMPARISON,
+        call_id="call-peer",
+        metric="target_retailer_sales_change_percentile",
+        value=20.0,
     )
     state = _state(
-        (trend, basket),
+        (trend, peer),
         (
             _history(),
-            _history(tool=ToolName.BASKET_BEHAVIOR, call_id="call-basket"),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
         ),
     )
     proposal = FinishProposal(
         driver_summary=(
             DriverClaim(
                 summary="Multiple behavioral signals suggest an ambiguous decline.",
-                supporting_evidence_ids=("ev-trend", "ev-basket"),
+                supporting_evidence_ids=("ev-trend", "ev-peer"),
             ),
         ),
         proposed_confidence=ConfidenceLevel.HIGH,
-        supporting_evidence_ids=("ev-trend", "ev-basket"),
+        supporting_evidence_ids=("ev-trend", "ev-peer"),
         counterevidence_ids=(),
         next_best_action_id=ActionId.PERSONALIZED_CHECK_IN,
         rationale="Independent behavioral families support a reviewed test.",
@@ -225,6 +238,162 @@ def test_high_confidence_requires_two_tools_without_limitations() -> None:
     assert verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.HIGH
     assert not verdict.final.confidence_cap_applied
+
+
+def test_personalized_check_in_rejects_support_for_a_narrower_action() -> None:
+    trend = _evidence("ev-trend", metric="distinct_trips")
+    basket = _evidence(
+        "ev-basket",
+        tool=ToolName.BASKET_BEHAVIOR,
+        call_id="call-basket",
+        metric="basket_count",
+    )
+    state = _state(
+        (trend, basket),
+        (_history(), _history(tool=ToolName.BASKET_BEHAVIOR, call_id="call-basket")),
+    )
+    proposal = FinishProposal(
+        driver_summary=(
+            DriverClaim(
+                summary="Recorded visit cadence is a plausible decline driver.",
+                supporting_evidence_ids=("ev-trend", "ev-basket"),
+            ),
+        ),
+        proposed_confidence=ConfidenceLevel.MEDIUM,
+        supporting_evidence_ids=("ev-trend", "ev-basket"),
+        counterevidence_ids=(),
+        next_best_action_id=ActionId.PERSONALIZED_CHECK_IN,
+        rationale="Distinct computed measures support human review.",
+        alternative_explanations=("Behavior may have shifted elsewhere.",),
+        uncertainties=("Customer intent is not observed.",),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_insufficient_action_rejects_a_satisfiable_ledger() -> None:
+    state = _state(
+        (_evidence("ev-1", metric="distinct_trips"),),
+        (_history(),),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(evidence_ids=(), action=ActionId.INSUFFICIENT_EVIDENCE),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_monitor_rejects_ledger_supporting_a_narrower_cadence_action() -> None:
+    state = _state(
+        (_evidence("ev-1", metric="distinct_trips"),),
+        (_history(),),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_category_action_rejects_when_unknown_loss_dominates() -> None:
+    known = _evidence(
+        "ev-known",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    unknown = _evidence(
+        "ev-unknown",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="unknown_group_retailer_sales_value",
+        baseline_value=20.0,
+        recent_value=5.0,
+        dimensions={"direction": "loss"},
+    )
+    state = _state(
+        (known, unknown),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={
+                    "baseline_reconciled": True,
+                    "recent_reconciled": True,
+                },
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(
+            evidence_ids=("ev-known",),
+            action=ActionId.CATEGORY_WINBACK,
+        ),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_visit_action_rejects_unavailable_sparse_interval_evidence() -> None:
+    interval = _evidence(
+        "ev-interval",
+        tool=ToolName.BASKET_BEHAVIOR,
+        call_id="call-basket",
+        metric="mean_basket_interval_days",
+        baseline_value=2.0,
+        recent_value=8.0,
+    )
+    limitation = (
+        "Basket intervals require at least two baskets; unavailable for recent."
+    )
+    state = _state(
+        (interval,),
+        (
+            _history(
+                tool=ToolName.BASKET_BEHAVIOR,
+                call_id="call-basket",
+                status=ToolStatus.PARTIAL,
+                limitations=(limitation,),
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(
+            evidence_ids=("ev-interval",),
+            action=ActionId.VISIT_FREQUENCY_REACTIVATION,
+        ),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_CONTRAINDICATION in {
+        issue.code for issue in verdict.issues
+    }
 
 
 @pytest.mark.parametrize(
@@ -257,6 +426,162 @@ def test_verifier_rejects_unsupported_claims(
 
     assert not verdict.passed
     assert code in {issue.code for issue in verdict.issues}
+
+
+@pytest.mark.parametrize(
+    "summary",
+    (
+        "Promotion availability drove the decline.",
+        "The loss resulted from promotion changes.",
+        "The decline happened because of fewer offers.",
+        "This action will increase engagement.",
+        "The household was exposed to the recorded promotion.",
+        "An outside purchase explains the decline.",
+        "The change was due to a category shift.",
+        "The category triggered the decline.",
+        "This action will boost engagement.",
+        "The intervention is guaranteed to retain the customer.",
+        "The customer got the promotion.",
+        "The shopper viewed an offer.",
+    ),
+)
+def test_verifier_rejects_adversarial_causal_and_exposure_claims(
+    summary: str,
+) -> None:
+    state = _state((_evidence("ev-1"),), (_history(),))
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(summary=summary),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_visit_action_rejects_stable_or_increasing_cadence() -> None:
+    increasing = _evidence(
+        "ev-1",
+        metric="distinct_trips",
+        baseline_value=5.0,
+        recent_value=6.0,
+    )
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state((increasing,), (_history(),)),
+        _proposal(action=ActionId.VISIT_FREQUENCY_REACTIVATION),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_PREREQUISITE in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_category_action_rejects_an_unknown_or_growing_category() -> None:
+    unknown_loss = _evidence(
+        "ev-1",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        dimensions={
+            "department": "UNKNOWN",
+            "product_category": "UNKNOWN",
+            "direction": "loss",
+        },
+    )
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state(
+            (unknown_loss,),
+            (
+                _history(
+                    tool=ToolName.CATEGORY_DECOMPOSITION,
+                    call_id="call-category",
+                    diagnostics={
+                        "baseline_reconciled": True,
+                        "recent_reconciled": True,
+                    },
+                ),
+            ),
+        ),
+        _proposal(action=ActionId.CATEGORY_WINBACK),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_PREREQUISITE in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_promotion_action_rejects_increasing_associated_value() -> None:
+    increasing = _evidence(
+        "ev-1",
+        tool=ToolName.PROMOTION_RESPONSE,
+        call_id="call-promotion",
+        metric="promotion_associated_share",
+        baseline_value=0.2,
+        recent_value=0.4,
+    )
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        _state(
+            (increasing,),
+            (
+                _history(
+                    tool=ToolName.PROMOTION_RESPONSE,
+                    call_id="call-promotion",
+                    diagnostics={
+                        "row_count_preserved": True,
+                        "retailer_sales_value_preserved": True,
+                    },
+                ),
+            ),
+        ),
+        _proposal(action=ActionId.PROMOTION_VALUE_REENGAGEMENT),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.ACTION_PREREQUISITE in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_verifier_publishes_catalog_grounded_driver_language() -> None:
+    state = _state((_evidence("ev-1"),), (_history(),))
+    proposal = _proposal(summary="A health crisis is a plausible driver.")
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert verdict.passed and verdict.final is not None
+    assert "health" not in verdict.final.drivers[0].summary.casefold()
+    assert "recorded decline signal" in verdict.final.drivers[0].summary.casefold()
+    assert verdict.final.alternative_explanations == (
+        "Recorded evidence does not distinguish the observed signal from "
+        "unobserved activity outside this retailer.",
+    )
+    assert "health" not in " ".join(verdict.final.alternative_explanations).casefold()
+
+
+@pytest.mark.parametrize(
+    "summary",
+    (
+        "Retailer sales fell fifty percent.",
+        "There were two visits.",
+        "Retailer sales fell by half.",
+    ),
+)
+def test_verifier_rejects_spelled_out_quantitative_claims(summary: str) -> None:
+    state = _state((_evidence("ev-1"),), (_history(),))
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(summary=summary),
+    )
+
+    assert not verdict.passed
+    assert VerificationIssueCode.UNSUPPORTED_NUMERICAL_CLAIM in {
+        issue.code for issue in verdict.issues
+    }
 
 
 def test_verifier_rejects_wrong_owner_and_failed_source() -> None:

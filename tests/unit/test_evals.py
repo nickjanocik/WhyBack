@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from uuid import UUID
@@ -15,6 +16,7 @@ from evals.run_evals import (
     evaluate_runs,
     load_normalized_runs,
     load_scenario_catalog,
+    main,
     normalize_run_summary,
     render_markdown,
 )
@@ -253,6 +255,17 @@ def test_json_boundary_and_markdown_are_deterministic(tmp_path: Path) -> None:
     assert "Missing scenarios:" in first
 
 
+def test_markdown_scenario_columns_render_their_named_checks() -> None:
+    summary = _good_summary(
+        "frequency_decline",
+        selected=(ToolName.CUSTOMER_TREND,),
+    ).model_copy(update={"actual_tool_executions": 6})
+
+    markdown = render_markdown(evaluate_runs((summary,)))
+
+    assert "| frequency_decline | fail | pass | pass | fail |" in markdown
+
+
 def test_contracts_reject_extra_fields_and_wrong_catalog_ids() -> None:
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         NormalizedRunSummary.model_validate(
@@ -266,3 +279,34 @@ def test_contracts_reject_extra_fields_and_wrong_catalog_ids() -> None:
     catalog_data["scenarios"][0]["scenario_id"] = "renamed"
     with pytest.raises(ValidationError, match="exactly match"):
         ScenarioCatalog.model_validate(catalog_data)
+
+
+def test_cli_writes_exact_provenance_and_fails_an_incomplete_suite(
+    tmp_path: Path,
+) -> None:
+    summary = _baseline_summaries()[0]
+    input_path = tmp_path / "normalized.json"
+    output_path = tmp_path / "report.json"
+    document = {
+        "provenance": {
+            "dataset_kind": "synthetic",
+            "backend": "scripted_control",
+            "execution_mode": "deterministic_evaluation_no_model",
+            "model_invoked": False,
+        },
+        "runs": [summary.model_dump(mode="json")],
+    }
+    input_path.write_text(json.dumps(document), encoding="utf-8")
+
+    exit_code = main([str(input_path), "--json-output", str(output_path)])
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert exit_code == 1
+    assert report["passed"] is False
+    assert (
+        report["provenance"]["normalized_input_sha256"]
+        == hashlib.sha256(input_path.read_bytes()).hexdigest()
+    )
+    assert report["provenance"]["dataset_kind"] == "synthetic"
+    assert report["provenance"]["backend"] == "scripted_control"
+    assert report["provenance"]["model_invoked"] is False

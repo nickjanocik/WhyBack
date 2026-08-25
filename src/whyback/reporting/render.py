@@ -12,7 +12,8 @@ from typing import Final, Literal
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from whyback.agent.runner import InvestigationOutcome
-from whyback.agent.verifier import VerifiedFinalDecision
+from whyback.agent.verifier import VerifiedFinalDecision, is_report_safe_qualitative
+from whyback.observability import REDACTED_VALUE, sanitize_public_text
 from whyback.reporting.models import (
     ActionReportData,
     DeclineReportData,
@@ -48,13 +49,22 @@ class ReportBundlePaths:
 
 
 def _deduplicate(values: list[str]) -> tuple[str, ...]:
-    return tuple(dict.fromkeys(value for value in values if value))
+    return tuple(
+        dict.fromkeys(sanitize_public_text(value) for value in values if value)
+    )
 
 
 def _qualitative(text: str, *, fallback: str) -> str:
-    """Reject ungrounded numeric prose at the final rendering boundary."""
+    """Reject unsafe model prose at the final rendering boundary."""
 
-    return fallback if _NUMERICAL_CLAIM.search(text) else text
+    sanitized = sanitize_public_text(text)
+    return (
+        fallback
+        if sanitized == REDACTED_VALUE
+        or _NUMERICAL_CLAIM.search(sanitized)
+        or not is_report_safe_qualitative(sanitized)
+        else sanitized
+    )
 
 
 def _verified_final(outcome: InvestigationOutcome) -> VerifiedFinalDecision | None:
@@ -86,6 +96,8 @@ def _report_evidence(
 ) -> ReportEvidenceData:
     return ReportEvidenceData(
         evidence_id=record.evidence_id,
+        run_id=str(record.run_id),
+        household_id=record.household_id,
         role=_evidence_role(
             record.evidence_id,
             supporting_ids=supporting_ids,
@@ -101,7 +113,7 @@ def _report_evidence(
         value=record.value,
         change=record.change,
         unit=record.unit,
-        limitations=record.limitations,
+        limitations=tuple(sanitize_public_text(item) for item in record.limitations),
         query_hash=record.query_hash,
     )
 
@@ -175,6 +187,12 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
             )
         )
         if history.final_status is not ToolStatus.OK or retry_count:
+            unavailable = history.tool_name in state.unavailable_tools
+            if unavailable:
+                limitations.append(
+                    f"{_TOOL_LABELS[history.tool_name]} is unavailable after its "
+                    "bounded retry policy was exhausted."
+                )
             warnings.append(
                 ToolWarningData(
                     tool_name=history.tool_name,
@@ -184,6 +202,7 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
                     attempt_statuses=tuple(item.status for item in attempts),
                     total_latency_ms=sum(item.elapsed_ms for item in attempts),
                     limitations=step_limitations,
+                    unavailable=unavailable,
                 )
             )
     for record in ledger:
@@ -242,14 +261,18 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
             human_review_required=True,
         )
     if outcome.failure_reason:
-        limitations.append(outcome.failure_reason)
-    limitations.extend(state.verification_issues)
+        limitations.append(sanitize_public_text(outcome.failure_reason))
+    limitations.extend(sanitize_public_text(item) for item in state.verification_issues)
 
     return ReportData(
+        provenance=outcome.provenance,
         run_id=str(state.run_id),
         household_id=state.household_id,
         run_status=state.run_status,
         decline=DeclineReportData(
+            evidence_id=f"detector_{state.run_id}",
+            run_id=str(state.run_id),
+            household_id=state.household_id,
             baseline_start_week=snapshot.baseline_start_week,
             baseline_end_week=snapshot.baseline_end_week,
             recent_start_week=snapshot.recent_start_week,
@@ -278,8 +301,14 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
         action=action,
         limitations=_deduplicate(limitations),
         tool_warnings=tuple(warnings),
-        verification_issues=state.verification_issues,
-        failure_reason=outcome.failure_reason,
+        verification_issues=tuple(
+            sanitize_public_text(item) for item in state.verification_issues
+        ),
+        failure_reason=(
+            sanitize_public_text(outcome.failure_reason)
+            if outcome.failure_reason
+            else None
+        ),
     )
 
 
@@ -288,6 +317,12 @@ def _markdown_escape(value: object) -> str:
     for character in ("\\", "`", "*", "_", "[", "]", "|"):
         text = text.replace(character, f"\\{character}")
     return text
+
+
+def _markdown_code(value: object) -> str:
+    """Escape backticks without changing the identifier shown in a code span."""
+
+    return str(value).replace("`", "&#96;")
 
 
 def _format_number(value: float | int | None) -> str:
@@ -310,17 +345,18 @@ def _humanize(value: object) -> str:
     return str(getattr(value, "value", value)).replace("_", " ").title()
 
 
-def _environment(*, autoescape: bool = False) -> Environment:
+def _environment(*, autoescape: bool = False, trim_blocks: bool = True) -> Environment:
     environment = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIRECTORY),
         autoescape=autoescape,
         undefined=StrictUndefined,
-        trim_blocks=True,
+        trim_blocks=trim_blocks,
         lstrip_blocks=True,
         keep_trailing_newline=True,
     )
     environment.filters.update(
         md=_markdown_escape,
+        code=_markdown_code,
         number=_format_number,
         money=_format_money,
         percent=_format_percent,
@@ -338,7 +374,11 @@ def render_report_json(report: ReportData) -> str:
 def render_report_markdown(report: ReportData) -> str:
     """Render a portable reviewer-facing Markdown report."""
 
-    return _environment().get_template("report.md.j2").render(report=report)
+    return (
+        _environment(trim_blocks=False)
+        .get_template("report.md.j2")
+        .render(report=report)
+    )
 
 
 def render_report_html(report: ReportData) -> str:

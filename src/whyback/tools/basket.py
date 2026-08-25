@@ -10,6 +10,7 @@ from typing import Any, cast
 import pandas as pd
 from pydantic import JsonValue
 
+from whyback.config import SOURCE_COMMIT
 from whyback.data.repository import DataRepository
 from whyback.tools.common import (
     QUANTITY_LIMITATION,
@@ -204,8 +205,12 @@ def _failed_result(
     )
 
 
-def _window_has_partial_week(start: int, end: int) -> bool:
-    return start <= 1 <= end or start <= 53 <= end
+def _window_has_partial_week(
+    context: ToolExecutionContext, start: int, end: int
+) -> bool:
+    return context.source_commit == SOURCE_COMMIT and (
+        start <= 1 <= end or start <= 53 <= end
+    )
 
 
 def _comparison(baseline: float | int | None, recent: float | int | None) -> JsonValue:
@@ -355,9 +360,9 @@ def basket_behavior(
             f"baskets; unavailable for {', '.join(sparse_periods)}."
         )
         status = ToolStatus.PARTIAL
-    if _window_has_partial_week(window.baseline_start, window.baseline_end) or (
-        _window_has_partial_week(window.recent_start, window.recent_end)
-    ):
+    if _window_has_partial_week(
+        context, window.baseline_start, window.baseline_end
+    ) or (_window_has_partial_week(context, window.recent_start, window.recent_end)):
         limitations.append(_PARTIAL_WEEK_LIMITATION)
 
     metric_values: tuple[

@@ -13,6 +13,7 @@ from whyback.observability.events import (
     SecretHandling,
     UnsafeAuditDetailError,
     sanitize_details,
+    sanitize_public_text,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "iter_audit_events",
     "read_audit_events",
     "sanitize_details",
+    "sanitize_public_text",
 ]

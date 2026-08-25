@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from whyback.tools.contracts import ToolName
+from whyback.tools.contracts import EvidenceRecord, ToolName
 
-DEFAULT_ACTION_CATALOG_PATH = Path("configs/actions.yaml")
+_PACKAGE_ACTION_CATALOG_PATH = Path(__file__).parents[1] / "resources" / "actions.yaml"
+_REPOSITORY_ACTION_CATALOG_PATH = Path(__file__).parents[3] / "configs" / "actions.yaml"
+DEFAULT_ACTION_CATALOG_PATH = (
+    _PACKAGE_ACTION_CATALOG_PATH
+    if _PACKAGE_ACTION_CATALOG_PATH.is_file()
+    else _REPOSITORY_ACTION_CATALOG_PATH
+)
 
 
 class ActionCatalogError(ValueError):
@@ -32,6 +38,54 @@ class ActionId(StrEnum):
 EXPECTED_ACTION_IDS = frozenset(ActionId)
 
 
+class DimensionPredicate(BaseModel):
+    """A machine-checkable constraint on an evidence dimension."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    key: str = Field(min_length=1)
+    operator: Literal["equals", "not_equals"]
+    value: str = Field(min_length=1)
+
+    def matches(self, record: EvidenceRecord) -> bool:
+        observed = record.dimensions.get(self.key)
+        if observed is None:
+            return False
+        if self.operator == "equals":
+            return observed == self.value
+        return observed != self.value
+
+
+class EvidencePredicate(BaseModel):
+    """Direction, materiality, and dimension policy for one evidence metric."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+
+    metric: str = Field(min_length=1)
+    field: Literal["baseline_value", "recent_value", "value", "change"]
+    operator: Literal["lt", "lte", "gt", "gte", "eq", "neq"]
+    threshold: float
+    dimensions: tuple[DimensionPredicate, ...] = ()
+
+    def matches(self, record: EvidenceRecord) -> bool:
+        if record.metric != self.metric or not all(
+            item.matches(record) for item in self.dimensions
+        ):
+            return False
+        observed = getattr(record, self.field)
+        if observed is None:
+            return False
+        comparisons = {
+            "lt": observed < self.threshold,
+            "lte": observed <= self.threshold,
+            "gt": observed > self.threshold,
+            "gte": observed >= self.threshold,
+            "eq": observed == self.threshold,
+            "neq": observed != self.threshold,
+        }
+        return comparisons[self.operator]
+
+
 class EvidencePrerequisite(BaseModel):
     """Machine-checkable evidence family required to support an action."""
 
@@ -43,6 +97,7 @@ class EvidencePrerequisite(BaseModel):
     metric_match: Literal["any", "all"]
     minimum_matching_records: int = Field(ge=1)
     minimum_distinct_tools: int = Field(ge=1)
+    predicates: tuple[EvidencePredicate, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
     def validate_evidence_rule(self) -> Self:
@@ -59,6 +114,12 @@ class EvidencePrerequisite(BaseModel):
         if self.minimum_distinct_tools > self.minimum_matching_records:
             raise ValueError(
                 "minimum_distinct_tools cannot exceed minimum_matching_records"
+            )
+        predicate_metrics = {item.metric for item in self.predicates}
+        if predicate_metrics != set(self.metrics):
+            raise ValueError(
+                "Every prerequisite metric must have a directional predicate and "
+                "predicates cannot name other metrics"
             )
         return self
 
@@ -154,6 +215,34 @@ class ActionCatalog(BaseModel):
             if action.action_id is normalized:
                 return action
         raise ActionCatalogError(f"Action is not present in the catalog: {normalized}")
+
+    def compact_model_context(self) -> tuple[dict[str, Any], ...]:
+        """Expose bounded selection policy without operational side effects."""
+
+        return tuple(
+            {
+                "action_id": action.action_id.value,
+                "description": action.description,
+                "evidence_prerequisites": [
+                    {
+                        "description": rule.description,
+                        "source_tools": [item.value for item in rule.source_tools],
+                        "metrics": list(rule.metrics),
+                        "minimum_matching_records": rule.minimum_matching_records,
+                        "minimum_distinct_tools": rule.minimum_distinct_tools,
+                        "predicates": [
+                            predicate.model_dump(mode="json")
+                            for predicate in rule.predicates
+                        ],
+                    }
+                    for rule in action.evidence_prerequisites
+                ],
+                "contraindications": list(action.contraindications),
+                "human_review_required": True,
+                "fallback_only": action.fallback_only,
+            }
+            for action in self.actions
+        )
 
 
 def load_action_catalog(

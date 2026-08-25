@@ -62,13 +62,13 @@ def _supported_finish(
     supporting = (trend_id, basket_id)
     return FinishDecision(
         investigation_question="Is the available evidence sufficient to finish?",
-        decision_summary="Submit a multifactor hypothesis for deterministic review.",
+        decision_summary="Submit a cadence hypothesis for deterministic review.",
         final=FinishProposal(
             driver_summary=(
                 DriverClaim(
                     summary=(
-                        "Multiple behavioral signals are consistent with a sustained "
-                        "engagement decline."
+                        "Reduced recorded visit cadence is a plausible engagement "
+                        "decline driver."
                     ),
                     supporting_evidence_ids=supporting,
                 ),
@@ -76,10 +76,10 @@ def _supported_finish(
             proposed_confidence=ConfidenceLevel.HIGH,
             supporting_evidence_ids=supporting,
             counterevidence_ids=counterevidence_ids,
-            next_best_action_id=ActionId.PERSONALIZED_CHECK_IN,
+            next_best_action_id=ActionId.VISIT_FREQUENCY_REACTIVATION,
             rationale=(
-                "Independent behavioral evidence supports a human-reviewed test while "
-                "the underlying reason remains unobserved."
+                "Distinct trend and basket measures support a human-reviewed cadence "
+                "test while the underlying reason remains unobserved."
             ),
             alternative_explanations=(
                 "The household may have shifted activity outside the recorded "
@@ -159,7 +159,7 @@ def build_scripted_plan(
 
     decisions.append(
         _supported_finish(
-            trend_id=_evidence_id(run_id, trend_call, ToolName.CUSTOMER_TREND, 1),
+            trend_id=_evidence_id(run_id, trend_call, ToolName.CUSTOMER_TREND, 2),
             basket_id=_evidence_id(run_id, basket_call, ToolName.BASKET_BEHAVIOR, 1),
             counterevidence_ids=counterevidence,
         )

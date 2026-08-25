@@ -3,13 +3,18 @@
 *Find the why. Choose the way back.*
 
 **Investigator:** {{ report.investigator_name | md }}
-**Household:** `{{ report.household_id | md }}`
-**Run:** `{{ report.run_id | md }}`
+**Household:** `{{ report.household_id | code }}`
+**Run:** `{{ report.run_id | code }}`
 **Status:** {{ report.run_status.value | humanize }}
+**Data:** {{ report.provenance.dataset_kind | humanize }} · `{{ report.provenance.dataset_source_repository | code }}` @ `{{ report.provenance.dataset_source_commit | code }}`
+**Execution:** {{ report.provenance.execution_mode | humanize }} · backend `{{ report.provenance.backend | code }}` · model `{{ report.provenance.model | code }}`
+**Generated:** `{{ report.provenance.generated_at.isoformat() | code }}` · timing {{ report.provenance.timing_mode | humanize }}
 
 ## Decline summary
 
 The deterministic detector compared weeks **{{ report.decline.baseline_start_week }}–{{ report.decline.baseline_end_week }}** with weeks **{{ report.decline.recent_start_week }}–{{ report.decline.recent_end_week }}**.
+
+Detector evidence: `{{ report.decline.evidence_id | code }}` (run- and household-owned).
 
 | Measure | Baseline | Recent | Recorded drop |
 |---|---:|---:|---:|
@@ -27,7 +32,7 @@ The deterministic detector compared weeks **{{ report.decline.baseline_start_wee
 {% for step in report.investigation_path %}
 {{ loop.index }}. **{{ step.tool_label | md }}** — {{ step.final_status.value | humanize }}
    {{ step.investigation_question | md }}
-   Attempts: {{ step.attempt_count }} · Retries: {{ step.retry_count }} · Recorded latency: {{ step.total_latency_ms | number }} ms{% if step.evidence_ids %} · Evidence: {% for evidence_id in step.evidence_ids %}`{{ evidence_id | md }}`{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+   Attempts: {{ step.attempt_count }} · Retries: {{ step.retry_count }} · Recorded latency: {{ step.total_latency_ms | number }} ms{% if step.evidence_ids %} · Evidence: {% for evidence_id in step.evidence_ids %}`{{ evidence_id | code }}`{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
 {% endfor %}
 {% else %}
 No analytical tool step was recorded.
@@ -38,7 +43,7 @@ No analytical tool step was recorded.
 {% if report.likely_drivers %}
 {% for driver in report.likely_drivers %}
 - {{ driver.summary | md }}
-  Grounded by {% for evidence_id in driver.supporting_evidence_ids %}`{{ evidence_id | md }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+  Grounded by {% for evidence_id in driver.supporting_evidence_ids %}`{{ evidence_id | code }}`{% if not loop.last %}, {% endif %}{% endfor %}.
 {% endfor %}
 {% else %}
 No likely driver passed deterministic verification.
@@ -48,11 +53,11 @@ No likely driver passed deterministic verification.
 
 {% if report.supporting_evidence %}
 {% for item in report.supporting_evidence %}
-### `{{ item.evidence_id | md }}` — {{ item.metric | humanize }}
+### `{{ item.evidence_id | code }}` — {{ item.metric | humanize }}
 
-- Source: `{{ item.source_tool.value | md }}` / `{{ item.source_tool_call_id | md }}`
+- Source: `{{ item.source_tool.value | code }}` / `{{ item.source_tool_call_id | code }}`
 - Source status: {{ item.source_status.value | humanize if item.source_status else "Unavailable" }}
-{% if item.dimensions %}- Dimensions: {% for key, value in item.dimensions.items() %}{{ key | humanize }} = `{{ value | md }}`{% if not loop.last %}; {% endif %}{% endfor %}
+{% if item.dimensions %}- Dimensions: {% for key, value in item.dimensions.items() %}{{ key | humanize }} = `{{ value | code }}`{% if not loop.last %}; {% endif %}{% endfor %}
 {% endif %}{% if item.baseline_value is not none %}- Baseline: {{ item.baseline_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
 {% endif %}{% if item.recent_value is not none %}- Recent: {{ item.recent_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
 {% endif %}{% if item.value is not none %}- Value: {{ item.value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}
@@ -68,7 +73,7 @@ No supporting evidence was accepted for a verified conclusion.
 
 {% if report.counterevidence %}
 {% for item in report.counterevidence %}
-- `{{ item.evidence_id | md }}` — **{{ item.metric | humanize }}**; source status {{ item.source_status.value | humanize if item.source_status else "Unavailable" }}.{% if item.baseline_value is not none %} Baseline {{ item.baseline_value | number }}.{% endif %}{% if item.recent_value is not none %} Recent {{ item.recent_value | number }}.{% endif %}{% if item.value is not none %} Value {{ item.value | number }}.{% endif %}{% if item.change is not none %} Change {{ item.change | number }}.{% endif %}{% if item.limitations %} Limitations: {{ item.limitations | map('md') | join('; ') }}.{% endif %}
+- `{{ item.evidence_id | code }}` — **{{ item.metric | humanize }}**; source status {{ item.source_status.value | humanize if item.source_status else "Unavailable" }}.{% if item.baseline_value is not none %} Baseline {{ item.baseline_value | number }}.{% endif %}{% if item.recent_value is not none %} Recent {{ item.recent_value | number }}.{% endif %}{% if item.value is not none %} Value {{ item.value | number }}.{% endif %}{% if item.change is not none %} Change {{ item.change | number }}.{% endif %}{% if item.limitations %} Limitations: {{ item.limitations | map('md') | join('; ') }}.{% endif %}
 {% endfor %}
 {% else %}
 - No evidence record was designated as counterevidence.
@@ -116,7 +121,7 @@ No measurement plan is available because no action passed verification.
 
 {% if report.tool_warnings %}
 {% for warning in report.tool_warnings %}
-- **{{ warning.tool_name.value | humanize }} — {{ warning.final_status.value | humanize }}.** Attempts: {{ warning.attempt_count }}; retries: {{ warning.retry_count }}; recorded latency: {{ warning.total_latency_ms | number }} ms.{% if warning.limitations %} {{ warning.limitations | map('md') | join('; ') }}{% endif %}
+- **{{ warning.tool_name.value | humanize }} — {{ warning.final_status.value | humanize }}.** Attempts: {{ warning.attempt_count }}; retries: {{ warning.retry_count }}; recorded latency: {{ warning.total_latency_ms | number }} ms.{% if warning.unavailable %} Retry exhausted; this analysis is unavailable.{% endif %}{% if warning.limitations %} {{ warning.limitations | map('md') | join('; ') }}{% endif %}
 {% endfor %}
 {% else %}
 - No failed, partial, or retried analytical result was recorded.
@@ -136,7 +141,7 @@ No measurement plan is available because no action passed verification.
 {% if report.evidence_ledger %}
 | Evidence ID | Role | Tool | Status | Metric | Limitations |
 |---|---|---|---|---|---|
-{% for item in report.evidence_ledger %}| `{{ item.evidence_id | md }}` | {{ item.role | humanize }} | `{{ item.source_tool.value | md }}` | {{ item.source_status.value | humanize if item.source_status else "Unavailable" }} | {{ item.metric | humanize }} | {{ item.limitations | map('md') | join('; ') if item.limitations else "None recorded" }} |
+{% for item in report.evidence_ledger %}| `{{ item.evidence_id | code }}` | {{ item.role | humanize }} | `{{ item.source_tool.value | code }}` | {{ item.source_status.value | humanize if item.source_status else "Unavailable" }} | {{ item.metric | humanize }} | {{ item.limitations | map('md') | join('; ') if item.limitations else "None recorded" }} |
 {% endfor %}
 {% else %}
 The immutable evidence ledger is empty.

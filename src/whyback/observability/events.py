@@ -7,10 +7,19 @@ import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import cast
+from typing import Self, cast
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    field_validator,
+    model_validator,
+)
+
+from whyback.immutability import frozen_mapping
 
 REDACTED_VALUE = "[REDACTED]"
 
@@ -90,10 +99,15 @@ _HIDDEN_REASONING_KEYS = frozenset(
         "chainofthought",
         "hidden_reasoning",
         "hiddenreasoning",
+        "internal_analysis",
         "internal_reasoning",
         "internalreasoning",
+        "deliberation",
+        "private_thoughts",
         "reasoning",
+        "reasoning_trace",
         "scratchpad",
+        "thought_process",
     }
 )
 _SENSITIVE_VALUE_PATTERNS = (
@@ -204,6 +218,13 @@ def sanitize_details(
     return cast(dict[str, JsonValue], sanitized)
 
 
+def sanitize_public_text(value: object) -> str:
+    """Return a report-safe external error string with credentials removed."""
+
+    sanitized = sanitize_details({"message": str(value)})["message"]
+    return sanitized if isinstance(sanitized, str) else REDACTED_VALUE
+
+
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp for event defaults."""
 
@@ -242,3 +263,8 @@ class AuditEvent(BaseModel):
         if not isinstance(value, Mapping):
             raise ValueError("Audit details must be a mapping")
         return sanitize_details(value)
+
+    @model_validator(mode="after")
+    def freeze_event_details(self) -> Self:
+        object.__setattr__(self, "details", frozen_mapping(self.details))
+        return self

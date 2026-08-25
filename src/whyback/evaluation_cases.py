@@ -129,7 +129,7 @@ def _decisions(
             _finish(action=ActionId.VISIT_FREQUENCY_REACTIVATION, supporting=support),
         )
     elif scenario_id == "category_collapse":
-        support = (_evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 5),)
+        support = (_evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),)
         steps = (
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
             _finish(action=ActionId.CATEGORY_WINBACK, supporting=support),
@@ -151,23 +151,26 @@ def _decisions(
             _finish(action=ActionId.MONITOR, supporting=support),
         )
     elif scenario_id == "type_a_coupon_exposure_gap":
-        support = (_evidence_id(run_id, 2, ToolName.CUSTOMER_TREND, 1),)
+        support = (_evidence_id(run_id, 2, ToolName.CUSTOMER_TREND, 2),)
         counter = (_evidence_id(run_id, 1, ToolName.COUPON_CAMPAIGN_HISTORY, 1),)
         steps = (
             _tool(ToolName.COUPON_CAMPAIGN_HISTORY, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _finish(
-                action=ActionId.MONITOR,
+                action=ActionId.VISIT_FREQUENCY_REACTIVATION,
                 supporting=support,
                 counterevidence=counter,
             ),
         )
     elif scenario_id == "persistent_promotion_timeout":
-        support = (_evidence_id(run_id, 3, ToolName.CUSTOMER_TREND, 1),)
+        support = (_evidence_id(run_id, 3, ToolName.CUSTOMER_TREND, 2),)
         steps = (
             _tool(ToolName.PROMOTION_RESPONSE, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
-            _finish(action=ActionId.MONITOR, supporting=support),
+            _finish(
+                action=ActionId.VISIT_FREQUENCY_REACTIVATION,
+                supporting=support,
+            ),
         )
     else:
         raise ValueError(f"Unknown synthetic evaluation scenario: {scenario_id}")
@@ -290,8 +293,18 @@ def build_normalized_synthetic_runs(output_path: Path) -> tuple[dict[str, object
                 for scenario_id in SCENARIO_IDS
             )
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    document = {
+        "schema_version": 1,
+        "provenance": {
+            "dataset_kind": "synthetic",
+            "backend": "scripted_control",
+            "execution_mode": "deterministic_evaluation_no_model",
+            "model_invoked": False,
+        },
+        "runs": summaries,
+    }
     output_path.write_text(
-        f"{json.dumps({'runs': summaries}, indent=2, sort_keys=True)}\n",
+        f"{json.dumps(document, indent=2, sort_keys=True)}\n",
         encoding="utf-8",
     )
     return summaries

@@ -20,7 +20,11 @@ from whyback.detection.decline import (
 
 def _repository(tmp_path: Path, rows: list[dict[str, object]]) -> DataRepository:
     pd.DataFrame(rows).to_parquet(tmp_path / "household_week.parquet", index=False)
-    return DataRepository(tmp_path, required_tables=("household_week",))
+    return DataRepository(
+        tmp_path,
+        required_tables=("household_week",),
+        validate_manifest=False,
+    )
 
 
 def test_window_boundaries_are_inclusive_and_nonoverlapping() -> None:

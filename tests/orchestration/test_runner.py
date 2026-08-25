@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Event, Lock
 from typing import Any, cast
 from uuid import UUID
 
+import pytest
 from pydantic import JsonValue
 
 from tests.fixtures.source_frames import minimal_source_frames
@@ -33,6 +35,7 @@ from whyback.tools.contracts import (
     ToolStatus,
 )
 from whyback.tools.registry import RegisteredTool, ToolRegistry
+from whyback.tools.trend import customer_trend
 
 RUN_ID = UUID("00000000-0000-0000-0000-000000000009")
 TREND_CALL_ID = "call-0000000000-01-customer_trend"
@@ -253,6 +256,68 @@ def test_retryable_failure_retries_once_then_marks_tool_unavailable(
     assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
 
 
+def test_real_timeout_uses_an_isolated_connection_before_retry(
+    tmp_path: Path,
+) -> None:
+    release_first_attempt = Event()
+    call_lock = Lock()
+    calls = 0
+    repository_ids: list[int] = []
+
+    def block_once_then_run(
+        parameters: CustomerTrendInput,
+        context: ToolExecutionContext,
+        repository: DataRepository,
+    ) -> ToolResult:
+        nonlocal calls
+        with call_lock:
+            calls += 1
+            call_number = calls
+            repository_ids.append(id(repository))
+        if call_number == 1:
+            release_first_attempt.wait(timeout=1.0)
+            return ToolResult(
+                tool_call_id=context.tool_call_id,
+                tool_name=ToolName.CUSTOMER_TREND,
+                status=ToolStatus.RETRYABLE_ERROR,
+                limitations=("The blocked test attempt was released.",),
+                retryable=True,
+                provenance=ToolProvenance(
+                    normalized_parameters={"household_id": context.household_id}
+                ),
+            )
+        release_first_attempt.set()
+        return customer_trend(parameters, context, repository)
+
+    registry = ToolRegistry(
+        (
+            RegisteredTool(
+                name=ToolName.CUSTOMER_TREND,
+                input_model=CustomerTrendInput,
+                handler=cast(Any, block_once_then_run),
+                description="Requires household_id; blocks the first test attempt.",
+            ),
+        )
+    )
+    retry_evidence_id = "ev_call-0000000000-02-customer_trend_002"
+    backend = ScriptedBackend([_tool(), _finish(evidence_ids=(retry_evidence_id,))])
+
+    outcome = _run(
+        tmp_path,
+        backend,
+        registry=registry,
+        config=AgentConfig(tool_timeout_seconds=0.02),
+    )
+
+    assert outcome.state.run_status is RunStatus.COMPLETED
+    assert [attempt.status for attempt in outcome.state.tool_history[0].attempts] == [
+        ToolStatus.RETRYABLE_ERROR,
+        ToolStatus.PARTIAL,
+    ]
+    assert calls == 2
+    assert len(set(repository_ids)) == 2
+
+
 def test_timeout_once_retries_then_uses_real_promotion_evidence(
     tmp_path: Path,
 ) -> None:
@@ -342,3 +407,106 @@ def test_persistent_timeout_is_traced_and_other_evidence_finishes(
     assert names.count(AuditEventName.TOOL_FAILED) == 2
     assert names[-1] is AuditEventName.RUN_COMPLETED
     assert AuditEventName.VERIFICATION_PASSED in names
+
+
+def test_tool_exception_secrets_are_redacted_before_state_storage(
+    tmp_path: Path,
+) -> None:
+    secret = "sk-1234567890abcdefghijklmnop"
+
+    def raises_secret(
+        parameters: CustomerTrendInput,
+        context: ToolExecutionContext,
+        repository: DataRepository,
+    ) -> ToolResult:
+        del parameters, context, repository
+        raise RuntimeError(f"provider rejected {secret}")
+
+    registry = ToolRegistry(
+        (
+            RegisteredTool(
+                name=ToolName.CUSTOMER_TREND,
+                input_model=CustomerTrendInput,
+                handler=cast(Any, raises_secret),
+                description="Raises a secret-bearing test exception.",
+            ),
+        )
+    )
+    backend = ScriptedBackend(
+        [_tool(), _finish(evidence_ids=(), action=ActionId.INSUFFICIENT_EVIDENCE)]
+    )
+
+    outcome = _run(tmp_path, backend, registry=registry)
+
+    serialized = outcome.state.model_dump_json()
+    assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
+    assert secret not in serialized
+    assert "[REDACTED]" in serialized
+
+
+def test_repository_fork_failure_becomes_a_typed_terminal_tool_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+
+    def fail_fork(_repository: DataRepository) -> DataRepository:
+        raise RuntimeError("connection setup failed")
+
+    monkeypatch.setattr(DataRepository, "fork", fail_fork)
+    backend = ScriptedBackend(
+        [_tool(), _finish(evidence_ids=(), action=ActionId.INSUFFICIENT_EVIDENCE)]
+    )
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(tmp_path / "prepared", backend, audit_writer=writer)
+
+    events = read_audit_events(trace_path)
+    assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
+    assert outcome.state.tool_history[0].final_status is ToolStatus.FATAL_ERROR
+    assert events[-1].event is AuditEventName.RUN_COMPLETED
+
+
+def test_invalid_tool_arguments_are_not_written_raw_to_the_trace(
+    tmp_path: Path,
+) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    backend = ScriptedBackend(
+        [
+            _tool(arguments={"household_id": "1", "thought_process": "private"}),
+            _finish(evidence_ids=(), action=ActionId.INSUFFICIENT_EVIDENCE),
+        ]
+    )
+    with AuditJsonlWriter(trace_path) as writer:
+        _run(tmp_path / "prepared", backend, audit_writer=writer)
+
+    requested = next(
+        event
+        for event in read_audit_events(trace_path)
+        if event.event is AuditEventName.TOOL_REQUESTED
+    )
+    assert requested.details["arguments_valid"] is False
+    assert requested.details["normalized_arguments"] == {}
+    assert "private" not in trace_path.read_text(encoding="utf-8")
+
+
+def test_causal_model_decision_prose_is_not_stored_or_traced(tmp_path: Path) -> None:
+    trace_path = tmp_path / "trace.jsonl"
+    unsafe_tool_decision = ToolDecision(
+        investigation_question="Promotions caused this customer to churn.",
+        selected_tool=ToolName.CUSTOMER_TREND,
+        arguments={"household_id": "1"},
+        decision_summary="The customer was exposed to the offer.",
+    )
+    backend = ScriptedBackend([unsafe_tool_decision, _finish()])
+
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(tmp_path / "prepared", backend, audit_writer=writer)
+
+    history = outcome.state.tool_history[0]
+    assert history.investigation_question == (
+        "Investigate the next permitted evidence source."
+    )
+    assert history.decision_summary == "Choose one bounded, evidence-seeking next step."
+    serialized_trace = trace_path.read_text(encoding="utf-8")
+    assert "caused" not in serialized_trace
+    assert "was exposed" not in serialized_trace

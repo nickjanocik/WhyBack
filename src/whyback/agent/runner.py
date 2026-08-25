@@ -7,11 +7,12 @@ import json
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
+from contextlib import suppress
 from datetime import datetime
 from typing import cast
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, JsonValue, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
 from whyback import __version__
 from whyback.agent.actions import ActionCatalog, ActionId
@@ -30,12 +31,22 @@ from whyback.agent.state import (
     ToolDecision,
     ToolHistoryEntry,
 )
-from whyback.agent.verifier import FinalVerifier, VerificationResult
+from whyback.agent.verifier import (
+    FinalVerifier,
+    VerificationResult,
+    is_report_safe_qualitative,
+)
 from whyback.config import SOURCE_COMMIT, AgentConfig
 from whyback.data.repository import DataRepository
 from whyback.detection.decline import DeclineSnapshot
-from whyback.observability import AuditEvent, AuditEventName, AuditJsonlWriter
+from whyback.observability import (
+    AuditEvent,
+    AuditEventName,
+    AuditJsonlWriter,
+    sanitize_public_text,
+)
 from whyback.observability.events import utc_now
+from whyback.provenance import RunProvenance
 from whyback.tools.contracts import (
     SUCCESS_STATUSES,
     ToolExecutionContext,
@@ -55,6 +66,14 @@ class InvestigationOutcome(BaseModel):
     state: InvestigationState
     verification: VerificationResult | None = None
     failure_reason: str | None = None
+    provenance: RunProvenance = Field(default_factory=RunProvenance)
+
+
+def _safe_model_prose(text: str, *, fallback: str) -> str:
+    """Keep public history and trace prose qualitative and non-causal."""
+
+    sanitized = sanitize_public_text(text)
+    return sanitized if is_report_safe_qualitative(sanitized) else fallback
 
 
 def _stable_signature(name: ToolName, arguments: dict[str, JsonValue]) -> str:
@@ -110,6 +129,9 @@ class InvestigationRunner:
         action_catalog: ActionCatalog,
         config: AgentConfig | None = None,
         source_hashes: dict[str, str] | None = None,
+        dataset_source_commit: str = SOURCE_COMMIT,
+        dataset_source_repository: str = "unspecified",
+        dataset_kind: str = "unspecified",
         fault_injector: DemoFaultInjector | None = None,
         audit_writer: AuditJsonlWriter | None = None,
         event_clock: Callable[[], datetime] | None = None,
@@ -121,6 +143,9 @@ class InvestigationRunner:
         self._verifier = FinalVerifier(action_catalog)
         self._config = config or AgentConfig()
         self._source_hashes = source_hashes or {}
+        self._dataset_source_commit = dataset_source_commit
+        self._dataset_source_repository = dataset_source_repository
+        self._dataset_kind = dataset_kind
         self._fault_injector = fault_injector
         self._audit_writer = audit_writer
         self._event_clock = event_clock or utc_now
@@ -169,8 +194,11 @@ class InvestigationRunner:
                 "model": self._backend.model_name,
                 "prompt_version": PROMPT_VERSION,
                 "prompt_hash": PROMPT_HASH,
-                "dataset_source_commit": SOURCE_COMMIT,
+                "dataset_source_commit": self._dataset_source_commit,
+                "dataset_source_repository": self._dataset_source_repository,
+                "dataset_kind": self._dataset_kind,
                 "application_version": __version__,
+                "timing_mode": "actual_utc_and_monotonic",
                 "remaining_tool_budget": state.remaining_tool_budget,
                 "remaining_turn_budget": state.remaining_turn_budget,
                 "demo_fault": (
@@ -179,6 +207,7 @@ class InvestigationRunner:
                     else None
                 ),
                 "decline_score": state.detector_snapshot.decline_score,
+                "detector_snapshot": state.detector_snapshot.model_dump(mode="json"),
             },
         )
         repair_pending = False
@@ -216,13 +245,14 @@ class InvestigationRunner:
                     repair_issues=repair_issues,
                 )
             except ModelBackendError as error:
+                public_error = sanitize_public_text(error)
                 failed_usage = state.model_usage.plus(ModelUsage(decisions=1))
                 failed_state = state.model_copy(
                     update={
                         "remaining_turn_budget": state.remaining_turn_budget - 1,
                         "model_usage": failed_usage,
                         "run_status": RunStatus.FAILED,
-                        "verification_issues": (str(error),),
+                        "verification_issues": (public_error,),
                     }
                 )
                 self._emit(
@@ -231,12 +261,12 @@ class InvestigationRunner:
                     {
                         "status": failed_state.run_status.value,
                         "failure_type": type(error).__name__,
-                        "message": str(error),
+                        "message": public_error,
                     },
                 )
                 return InvestigationOutcome(
                     state=failed_state,
-                    failure_reason=str(error),
+                    failure_reason=public_error,
                 )
 
             reported = backend_decision.usage
@@ -253,7 +283,18 @@ class InvestigationRunner:
                     "model_usage": state.model_usage.plus(usage),
                 }
             )
-            decision = backend_decision.decision
+            decision = backend_decision.decision.model_copy(
+                update={
+                    "investigation_question": _safe_model_prose(
+                        backend_decision.decision.investigation_question,
+                        fallback="Investigate the next permitted evidence source.",
+                    ),
+                    "decision_summary": _safe_model_prose(
+                        backend_decision.decision.decision_summary,
+                        fallback="Choose one bounded, evidence-seeking next step.",
+                    ),
+                }
+            )
             self._emit(
                 state,
                 AuditEventName.MODEL_DECISION_RECEIVED,
@@ -274,15 +315,6 @@ class InvestigationRunner:
                 },
             )
             if isinstance(decision, ToolDecision):
-                self._emit(
-                    state,
-                    AuditEventName.TOOL_REQUESTED,
-                    {
-                        "tool_name": decision.selected_tool.value,
-                        "arguments": decision.arguments,
-                        "investigation_question": decision.investigation_question,
-                    },
-                )
                 if repair_pending:
                     return self._fallback(
                         state,
@@ -343,6 +375,12 @@ class InvestigationRunner:
                         ),
                         "confidence_cap_applied": (
                             verification.final.confidence_cap_applied
+                        ),
+                        "supporting_evidence_ids": list(
+                            verification.final.supporting_evidence_ids
+                        ),
+                        "counterevidence_ids": list(
+                            verification.final.counterevidence_ids
                         ),
                     },
                 )
@@ -413,8 +451,20 @@ class InvestigationRunner:
             )
             normalized = cast(dict[str, JsonValue], validated.model_dump(mode="json"))
         except (KeyError, ValidationError):
-            normalized = dict(decision.arguments)
-            signature = _stable_signature(decision.selected_tool, normalized)
+            raw_arguments = dict(decision.arguments)
+            normalized = {}
+            signature = _stable_signature(decision.selected_tool, raw_arguments)
+
+        self._emit(
+            state,
+            AuditEventName.TOOL_REQUESTED,
+            {
+                "tool_name": decision.selected_tool.value,
+                "normalized_arguments": normalized,
+                "arguments_valid": validated is not None,
+                "investigation_question": decision.investigation_question,
+            },
+        )
 
         if signature in state.requested_signatures:
             history = ToolHistoryEntry(
@@ -462,6 +512,8 @@ class InvestigationRunner:
         )
         attempts: list[ToolAttemptRecord] = []
         final_result: ToolResult | None = None
+        ledger = EvidenceLedger(records=state.evidence_ledger)
+        updated_ledger = ledger
         max_attempts = 1 + self._config.max_retryable_retries
         while len(attempts) < max_attempts and state.remaining_tool_budget > 0:
             attempt_number = len(attempts) + 1
@@ -476,7 +528,7 @@ class InvestigationRunner:
                 tool_call_id=call_id,
                 household_id=state.household_id,
                 window=state.window,
-                source_commit=SOURCE_COMMIT,
+                source_commit=self._dataset_source_commit,
                 source_hashes=self._source_hashes,
                 application_version=__version__,
             )
@@ -523,6 +575,21 @@ class InvestigationRunner:
                     context,
                     normalized,
                 )
+            if result.status in SUCCESS_STATUSES:
+                try:
+                    updated_ledger = ledger.add_tool_result(
+                        result,
+                        run_id=state.run_id,
+                        household_id=state.household_id,
+                    )
+                except EvidenceLedgerError as error:
+                    result = _tool_failure(
+                        context=context,
+                        name=decision.selected_tool,
+                        status=ToolStatus.FATAL_ERROR,
+                        limitation=f"Evidence ledger rejected tool output: {error}",
+                        parameters=normalized,
+                    )
             attempts.append(
                 ToolAttemptRecord(
                     attempt=attempt_number,
@@ -584,40 +651,18 @@ class InvestigationRunner:
                 break
 
         assert final_result is not None
-        ledger = EvidenceLedger(records=state.evidence_ledger)
-        try:
-            updated_ledger = ledger.add_tool_result(
-                final_result,
-                run_id=state.run_id,
-                household_id=state.household_id,
+        for evidence in final_result.evidence:
+            self._emit(
+                state,
+                AuditEventName.EVIDENCE_ADDED,
+                {
+                    "evidence_id": evidence.evidence_id,
+                    "source_tool": evidence.source_tool.value,
+                    "source_tool_call_id": evidence.source_tool_call_id,
+                    "metric": evidence.metric,
+                    "limitations": list(evidence.limitations),
+                },
             )
-            for evidence in final_result.evidence:
-                self._emit(
-                    state,
-                    AuditEventName.EVIDENCE_ADDED,
-                    {
-                        "evidence_id": evidence.evidence_id,
-                        "source_tool": evidence.source_tool.value,
-                        "source_tool_call_id": evidence.source_tool_call_id,
-                        "metric": evidence.metric,
-                        "limitations": list(evidence.limitations),
-                    },
-                )
-        except EvidenceLedgerError as error:
-            final_result = _tool_failure(
-                context=ToolExecutionContext(
-                    run_id=state.run_id,
-                    tool_call_id=final_result.tool_call_id,
-                    household_id=state.household_id,
-                    window=state.window,
-                    source_hashes=self._source_hashes,
-                ),
-                name=decision.selected_tool,
-                status=ToolStatus.FATAL_ERROR,
-                limitation=f"Evidence ledger rejected tool output: {error}",
-                parameters=normalized,
-            )
-            updated_ledger = ledger
 
         history = ToolHistoryEntry(
             decision_number=decision_number,
@@ -657,19 +702,43 @@ class InvestigationRunner:
         context: ToolExecutionContext,
         normalized: dict[str, JsonValue],
     ) -> ToolResult:
+        # DuckDB connections are not shared across the timeout boundary. A timed-out
+        # worker may take a moment to observe cancellation; isolating each attempt
+        # prevents it from racing the immediate retry or the owner connection close.
+        try:
+            attempt_repository = self._repository.fork()
+        except Exception as error:
+            return _tool_failure(
+                context=context,
+                name=name,
+                status=ToolStatus.FATAL_ERROR,
+                limitation=(
+                    "Tool execution environment could not be initialized: "
+                    f"{sanitize_public_text(error)}"
+                ),
+                parameters=normalized,
+            )
+
+        def execute() -> ToolResult:
+            try:
+                return self._registry.execute(
+                    name,
+                    arguments,
+                    context,
+                    attempt_repository,
+                )
+            finally:
+                attempt_repository.close()
+
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="whyback-tool")
-        future = executor.submit(
-            self._registry.execute,
-            name,
-            arguments,
-            context,
-            self._repository,
-        )
+        future = executor.submit(execute)
         timed_out = False
         try:
             return future.result(timeout=self._config.tool_timeout_seconds)
         except FutureTimeoutError:
             timed_out = True
+            with suppress(Exception):
+                attempt_repository.interrupt()
             future.cancel()
             return _tool_failure(
                 context=context,
@@ -686,7 +755,9 @@ class InvestigationRunner:
                 context=context,
                 name=name,
                 status=ToolStatus.FATAL_ERROR,
-                limitation=f"Tool raised {type(error).__name__}: {error}",
+                limitation=(
+                    f"Tool raised {type(error).__name__}: {sanitize_public_text(error)}"
+                ),
                 parameters=normalized,
             )
         finally:
@@ -720,7 +791,11 @@ class InvestigationRunner:
                 "referenced_evidence_count": 0,
             },
         )
-        fallback_verification = self._verifier.verify(state, proposal)
+        fallback_verification = self._verifier.verify(
+            state,
+            proposal,
+            allow_safe_fallback=True,
+        )
         issues = tuple(
             dict.fromkeys(
                 (
@@ -754,6 +829,8 @@ class InvestigationRunner:
                     "next_best_action_id": ActionId.INSUFFICIENT_EVIDENCE.value,
                     "resolved_confidence": ResolvedConfidence.INSUFFICIENT.value,
                     "confidence_cap_applied": True,
+                    "supporting_evidence_ids": [],
+                    "counterevidence_ids": [],
                 },
             )
             self._emit(
