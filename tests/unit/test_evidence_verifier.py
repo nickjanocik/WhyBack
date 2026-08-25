@@ -914,6 +914,13 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
         ),
         ("Reduced visits are associated with the observed decline.", True),
         ("The movement coincided with lower recorded promotion availability.", True),
+        ("Promotions did not decline but caused churn.", False),
+        ("Visits did not recover and caused churn.", False),
+        ("Promotions were not available but drove churn.", False),
+        ("Promotions did not explain sales but caused churn.", False),
+        ("Fewer visits made them disengage.", False),
+        ("Promotion loss contributed to the decline.", False),
+        ("Promotions did not cause decline and did not cause churn.", True),
     ),
 )
 def test_causal_defense_distinguishes_denials_from_assertions(

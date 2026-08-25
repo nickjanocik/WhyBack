@@ -142,8 +142,11 @@ _CAUSAL_CLAIM = re.compile(
     r"owing\s+to|on\s+account\s+of|"
     r"attribut(?:e|ed|es|ing)\s+to|explains?|explained\s+by|trigger(?:ed|s)?|"
     r"produc(?:e|ed|es|ing)|result(?:ed|s)?\s+(?:from|in)|resulting\s+from|"
+    r"contribut(?:e|ed|es|ing)\s+to|"
     r"(?:led|leads?|leading)\s+to|ma(?:de|kes?)\s+(?:the\s+)?"
     r"(?:customer|household)|"
+    r"ma(?:de|kes?)\s+(?:them|him|her)\s+(?:decline|churn|leave|left|"
+    r"disengage(?:d)?|stop(?:ped)?|reduce)|"
     r"(?:prompt|forc|push)(?:ed|es?)\s+(?:the\s+)?(?:customer|household|"
     r"decline|churn|disengagement)|brought\s+(?:about|on)|gave\s+rise\s+to|"
     r"(?:creat|spark)(?:e|ed|es|ing)\s+(?:the\s+)?(?:decline|churn|"
@@ -180,6 +183,10 @@ _UNCERTAIN_CAUSAL_PREFIX = re.compile(
 )
 _NEGATED_CAUSAL_SUFFIX = re.compile(
     r"^\s+(?:no\b|none\b|neither\b|not\s+(?!only\b)any\b)",
+    re.IGNORECASE,
+)
+_CLAUSE_BOUNDARY = re.compile(
+    r"(?:[.;!?]|\b(?:and|but|however|yet|although|though|nevertheless)\b)",
     re.IGNORECASE,
 )
 _EXPOSURE_CLAIM = re.compile(
@@ -271,6 +278,7 @@ def contains_unsupported_causal_claim(text: str) -> bool:
 
     for match in _CAUSAL_CLAIM.finditer(text):
         prefix = text[max(0, match.start() - 160) : match.start()]
+        prefix = _CLAUSE_BOUNDARY.split(prefix)[-1]
         suffix = text[match.end() : match.end() + 40]
         if (
             _NEGATED_CAUSAL_PREFIX.search(prefix)
