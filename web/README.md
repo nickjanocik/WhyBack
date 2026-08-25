@@ -1,10 +1,26 @@
-# WhyBack Investigator dashboard
+# WhyBack Investigator
 
-This directory contains a thin, local review interface for WhyBack. The React
-app does not calculate evidence or author recommendations. It visualizes the
-versioned `report.json` and append-only `trace.jsonl` artifacts produced by the
-Python system, while a localhost-only Node bridge can invoke one fixed,
-credential-free CLI workflow.
+This directory contains the internal, localhost-only review interface for
+WhyBack. The React app reads the versioned `report.json` and append-only
+`trace.jsonl` artifacts produced by the Python system. It does not calculate
+evidence, author recommendations, or execute customer actions.
+
+## Useful features
+
+- Browse artifact collections and search the ranked household investigation
+  queue.
+- Compare baseline and recent retailer sales value, basket count, and active
+  weeks, with the underlying weekly series.
+- Review supported findings, counterevidence, confidence adjustments,
+  population context, analytical warnings, and interpretation limits.
+- Follow citations into a searchable evidence ledger and filter records by
+  evidence role, source tool, or investigation step.
+- Review the sanitized run timeline, provenance, and deterministic report
+  artifacts.
+- Run a bounded scripted batch through the local CLI and monitor its audited
+  activity while it is running.
+- Use the interface with a keyboard, reduced-motion preferences, or a narrow
+  viewport.
 
 ## Run in development
 
@@ -31,22 +47,42 @@ npm run server
 
 Open <http://127.0.0.1:4173>.
 
-## Interaction model
+## Scripted batch and live audited activity
 
-- Select an artifact collection and household to compare detector changes.
-- Hover the weekly trend, open cited evidence, filter the immutable ledger, and
-  replay the sanitized audit timeline.
-- Use **Run demo** to execute this fixed command through an argv array (never a
-  shell string):
+**Run scripted batch** executes this fixed command through an argument array,
+not a shell string:
 
-  ```bash
-  uv run whyback demo --customers <1-5> --backend scripted \
-    --output-dir artifacts/local/dashboard
-  ```
+```bash
+uv run whyback demo --customers <1-5> --backend scripted \
+  --output-dir artifacts/local/dashboard
+```
 
-- Fresh output stays below the Git-ignored `artifacts/local/dashboard/` tree.
+The run API is asynchronous:
+
+- `POST /api/demo` validates the requested customer count, starts the serialized
+  local job, and returns HTTP `202` with a job ID.
+- `GET /api/demo/status?job=<job-id>&after=<cursor>` returns the current job
+  state and only the audited events recorded after the supplied cursor. The
+  browser polls this endpoint while the job is running.
+- The live-activity drawer labels events by household and shows investigation
+  questions, selected tools, public decision summaries, tool status, evidence
+  writes, retries, verification, and the terminal run state.
+- The event buffer is bounded. The response reports if older events were
+  dropped, and the completed investigation remains available in the normal
+  audit view.
+
+Live activity is an external decision and execution record, not model
+chain-of-thought. Private chain-of-thought is neither requested nor stored, and
+the application rejects hidden-reasoning fields at the audit boundary. The
+interface renders only sanitized, allowlisted event details; it does not expose
+raw process output.
+
+## Operational boundaries
+
+- Generated output stays below the Git-ignored
+  `artifacts/local/dashboard/` tree.
 - The bridge binds to `127.0.0.1`, accepts no browser-supplied paths, has a
-  120-second process boundary, and serializes demo execution.
+  120-second process boundary, and permits only one scripted batch at a time.
 - There is no endpoint for data download/preparation, Gemini execution,
   outreach, CRM mutation, or action execution. Recommended actions always
   remain subject to human review.

@@ -78,7 +78,7 @@ export function compactId(value: string, length = 8): string {
   return `${value.slice(0, length)}…${value.slice(-length)}`;
 }
 
-export function meaningfulTrace(trace: TraceEvent[]): TraceEvent[] {
+export function meaningfulTrace<T extends TraceEvent>(trace: T[]): T[] {
   return trace.filter((item) => item.event !== "evidence_added");
 }
 
@@ -89,14 +89,14 @@ export function eventLabel(event: string): string {
     model_decision_received: "Analytical choice made",
     tool_started: "Tool started",
     tool_completed: "Tool completed",
+    tool_partial: "Tool returned partial evidence",
     tool_failed: "Tool failed",
-    tool_retried: "Tool retried",
+    retry_scheduled: "Retry scheduled",
     evidence_added: "Evidence recorded",
     finish_requested: "Recommendation proposed",
     verification_started: "Verification started",
-    verification_failed: "Verification requested repair",
+    verification_rejected: "Verification requested repair",
     verification_passed: "Verification passed",
-    fallback_applied: "Safe fallback applied",
     run_completed: "Investigation completed",
   };
   return labels[event] ?? humanize(event);

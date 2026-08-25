@@ -82,14 +82,10 @@ export function EvidencePanel({
   const visibleLimit = selectedIndex >= limit ? selectedIndex + 1 : limit;
 
   return (
-    <motion.div
-      className="panel-stack"
-      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <div className="panel-stack">
       <section className="surface path-surface">
         <div className="section-heading">
-          <div><span className="eyebrow">Bounded reasoning path</span><h2>One analytical choice at a time</h2></div>
+          <div><span className="eyebrow">Investigation steps</span><h2>Tool execution path</h2></div>
           <span className="context-chip">{report.investigation_path.length} of 5 tool executions</span>
         </div>
         <div className="investigation-path">
@@ -168,7 +164,7 @@ export function EvidencePanel({
           </button>
         )}
       </section>
-    </motion.div>
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, Command, LoaderCircle, Play, ShieldCheck, X } from "lucide-react";
+import { LoaderCircle, Play, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -97,11 +97,10 @@ export function RunDemoDialog({ open, running, error, onClose, onRun }: RunDemoD
             <button className="dialog-close" type="button" onClick={onClose} disabled={running} aria-label="Close">
               <X size={18} />
             </button>
-            <div className="run-dialog__icon"><Play size={21} fill="currentColor" /></div>
-            <span className="eyebrow">Credential-free workspace</span>
-            <h2 id="run-demo-title">Run the WhyBack demo</h2>
+            <span className="eyebrow">Scripted batch</span>
+            <h2 id="run-demo-title">Run investigations</h2>
             <p>
-              Generate fresh, deterministic investigations through the real CLI and open the resulting artifacts here.
+              Run the local scripted CLI over synthetic data and publish the resulting report artifacts.
             </p>
 
             <fieldset disabled={running}>
@@ -121,22 +120,16 @@ export function RunDemoDialog({ open, running, error, onClose, onRun }: RunDemoD
               </div>
             </fieldset>
 
-            <div className="command-preview">
-              <Command size={16} />
-              <code>uv run whyback demo --customers {customers} --backend scripted …</code>
-            </div>
-
-            <div className="safety-row">
-              <ShieldCheck size={18} />
-              <div><strong>Safe local control</strong><span>No model key, raw-data upload, outreach, or CRM mutation.</span></div>
-            </div>
+            <p className="run-boundary">
+              Scripted backend only. No live model call or external action is available from this control.
+            </p>
 
             {error && <div className="dialog-error" role="alert">{error}</div>}
 
             <button className="run-submit" type="button" onClick={() => void onRun(customers)} disabled={running}>
-              {running ? <><LoaderCircle className="spin" size={18} /> Investigator running…</> : <><CheckCircle2 size={18} /> Generate investigations</>}
+              {running ? <><LoaderCircle className="spin" size={18} /> Starting…</> : <><Play size={18} /> Start run</>}
             </button>
-            {running && <p className="running-note" role="status">The bounded Python pipeline is calculating and verifying evidence.</p>}
+            {running && <p className="running-note" role="status">Starting the local CLI process.</p>}
           </motion.section>
         </motion.div>
       )}

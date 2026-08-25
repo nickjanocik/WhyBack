@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { EvidenceRecord, ReportData } from "../types";
 import {
   evidenceDisplayValue,
+  eventLabel,
   formatMetricValue,
   humanize,
   meaningfulTrace,
@@ -173,5 +174,13 @@ describe("report presentation helpers", () => {
         },
       ]),
     ).toHaveLength(1);
+  });
+
+  it("labels the current retry, partial-tool, and verification events", () => {
+    expect(eventLabel("retry_scheduled")).toBe("Retry scheduled");
+    expect(eventLabel("tool_partial")).toBe("Tool returned partial evidence");
+    expect(eventLabel("verification_rejected")).toBe(
+      "Verification requested repair",
+    );
   });
 });

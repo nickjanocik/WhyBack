@@ -1,6 +1,6 @@
 import {
   Activity,
-  BookOpenText,
+  CircleCheck,
   CircleAlert,
   FileSearch,
   FlaskConical,
@@ -11,17 +11,17 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getInvestigation, getWorkspace, runDemo } from "./api";
+import { ApiError, getDemoStatus, getInvestigation, getWorkspace, runDemo } from "./api";
 import { AuditPanel } from "./components/AuditPanel";
-import { BrandMark } from "./components/BrandMark";
 import { CandidateRail } from "./components/CandidateRail";
 import { EvidencePanel } from "./components/EvidencePanel";
+import { LiveTraceDrawer } from "./components/LiveTraceDrawer";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { RunDemoDialog } from "./components/RunDemoDialog";
-import type { InvestigationResponse, Workspace } from "./types";
+import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
 
 type View = "overview" | "evidence" | "audit";
 
@@ -31,13 +31,28 @@ const views: Array<{ id: View; label: string; icon: typeof Activity }> = [
   { id: "audit", label: "Audit replay", icon: ShieldCheck },
 ];
 
+const emptyLiveStatus: DemoStatusResponse = {
+  jobId: null,
+  status: "idle",
+  customers: null,
+  command: null,
+  startedAt: null,
+  completedAt: null,
+  cursor: 0,
+  eventCount: 0,
+  droppedEventCount: 0,
+  events: [],
+  error: null,
+  traceWarning: null,
+  collectionId: null,
+};
+
 function initialView(): View {
   const candidate = new URLSearchParams(window.location.search).get("view");
   return candidate === "evidence" || candidate === "audit" ? candidate : "overview";
 }
 
 export default function App() {
-  const reduceMotion = useReducedMotion();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [collectionId, setCollectionId] = useState("");
   const [householdId, setHouseholdId] = useState("");
@@ -47,11 +62,16 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [demoRunning, setDemoRunning] = useState(false);
+  const [demoStarting, setDemoStarting] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
+  const [liveStatus, setLiveStatus] = useState<DemoStatusResponse>(emptyLiveStatus);
+  const [liveOpen, setLiveOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [railOpen, setRailOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLButtonElement>(null);
+  const activeJobRef = useRef<string | null>(null);
+  const liveCursorRef = useRef(0);
+  const refreshedJobRef = useRef<string | null>(null);
 
   const selectedCollection = useMemo(
     () => workspace?.collections.find((item) => item.id === collectionId),
@@ -70,7 +90,7 @@ export default function App() {
       nextWorkspace.collections.find((item) => item.id === "demo") ??
       nextWorkspace.collections[0];
     if (!collection) {
-      setError("No WhyBack report artifacts are available. Run the scripted demo to create them.");
+      setError("No WhyBack report artifacts are available. Run a scripted batch to create them.");
       setLoading(false);
       return;
     }
@@ -91,6 +111,104 @@ export default function App() {
       });
     return () => controller.abort();
   }, [initializeWorkspace]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getDemoStatus(null, 0, controller.signal)
+      .then((status) => {
+        if (activeJobRef.current && activeJobRef.current !== status.jobId) return;
+        activeJobRef.current = status.jobId;
+        liveCursorRef.current = status.cursor;
+        if (status.status !== "running") {
+          refreshedJobRef.current = status.jobId;
+        }
+        setLiveStatus(status);
+        if (status.status === "running") setLiveOpen(true);
+      })
+      .catch((caught: unknown) => {
+        if ((caught as { name?: string }).name !== "AbortError") {
+          setLiveStatus((current) => ({
+            ...current,
+            traceWarning:
+              caught instanceof Error ? caught.message : "Could not load live run status.",
+          }));
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (liveStatus.status !== "running" || !liveStatus.jobId) return;
+    const controller = new AbortController();
+    const jobId = liveStatus.jobId;
+    let timer: number | undefined;
+
+    async function poll() {
+      try {
+        const status = await getDemoStatus(
+          jobId,
+          liveCursorRef.current,
+          controller.signal,
+        );
+        liveCursorRef.current = status.cursor;
+        setLiveStatus((current) => mergeLiveStatus(current, status));
+        if (status.status === "running") {
+          timer = window.setTimeout(() => void poll(), 400);
+        }
+      } catch (caught) {
+        if ((caught as { name?: string }).name === "AbortError") return;
+        if (caught instanceof ApiError && caught.status === 404) {
+          activeJobRef.current = null;
+          setLiveStatus((current) => ({
+            ...current,
+            status: "failed",
+            completedAt: new Date().toISOString(),
+            error:
+              "This run is no longer available. The local dashboard bridge may have restarted.",
+            traceWarning: null,
+          }));
+          return;
+        }
+        setLiveStatus((current) => ({
+          ...current,
+          traceWarning:
+            caught instanceof Error ? caught.message : "Live trace polling failed.",
+        }));
+        timer = window.setTimeout(() => void poll(), 800);
+      }
+    }
+
+    void poll();
+    return () => {
+      controller.abort();
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [liveStatus.jobId, liveStatus.status]);
+
+  useEffect(() => {
+    if (
+      liveStatus.status !== "completed" ||
+      !liveStatus.jobId ||
+      refreshedJobRef.current === liveStatus.jobId
+    ) {
+      return;
+    }
+    refreshedJobRef.current = liveStatus.jobId;
+    const controller = new AbortController();
+    getWorkspace(controller.signal)
+      .then((nextWorkspace) => {
+        initializeWorkspace(nextWorkspace, "dashboard");
+        setToast(
+          `${liveStatus.customers ?? 0} investigation${liveStatus.customers === 1 ? "" : "s"} completed.`,
+        );
+      })
+      .catch((caught: unknown) => {
+        if ((caught as { name?: string }).name !== "AbortError") {
+          setToast("Run completed, but the workspace refresh failed.");
+        }
+      });
+    return () => controller.abort();
+  }, [initializeWorkspace, liveStatus.customers, liveStatus.jobId, liveStatus.status]);
 
   useEffect(() => {
     if (!collectionId || !householdId) return;
@@ -140,48 +258,68 @@ export default function App() {
   }
 
   async function handleRunDemo(customers: number) {
-    setDemoRunning(true);
+    setDemoStarting(true);
     setDemoError(null);
     try {
-      const response = await runDemo(customers);
-      initializeWorkspace(response.workspace, response.collectionId);
+      const status = await runDemo(customers);
+      activeJobRef.current = status.jobId;
+      liveCursorRef.current = status.cursor;
+      refreshedJobRef.current = null;
+      setLiveStatus(status);
       setDialogOpen(false);
-      changeView("overview");
-      setToast(`${customers} fresh investigation${customers === 1 ? "" : "s"} generated by the WhyBack CLI.`);
+      setLiveOpen(true);
     } catch (caught) {
-      setDemoError(caught instanceof Error ? caught.message : "The scripted demo failed.");
+      setDemoError(caught instanceof Error ? caught.message : "The scripted run could not start.");
     } finally {
-      setDemoRunning(false);
+      setDemoStarting(false);
     }
   }
+
+  const demoRunning = liveStatus.status === "running";
+  const demoBusy = demoStarting || demoRunning;
 
   return (
     <div className="app-shell">
       <div className="app-content">
-      <a className="skip-link" href="#main-investigation">Skip to investigation</a>
-      <header className="app-header">
-        <button
-          ref={mobileMenuRef}
-          className="mobile-menu"
-          type="button"
-          onClick={() => setRailOpen((value) => !value)}
-          aria-label="Toggle investigations"
-          aria-expanded={railOpen}
-          aria-controls="candidate-rail"
-        >
-          {railOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-        <BrandMark />
-        <div className="header-divider" />
-        <div className="product-title"><span>Investigator</span><small>Evidence review workspace</small></div>
-        <div className="header-actions">
-          <span className="local-status"><i /> Local artifacts</span>
-          <span className="docs-link" aria-label="Report artifact schema version 2"><BookOpenText size={17} /><span>Artifact schema v2</span></span>
-          <button className="run-button" type="button" onClick={() => { setDemoError(null); setDialogOpen(true); }}>
-            <Play size={15} fill="currentColor" /> Run demo
+        <a className="skip-link" href="#main-investigation">Skip to investigation</a>
+        <header className="app-header">
+          <button
+            ref={mobileMenuRef}
+            className="mobile-menu"
+            type="button"
+            onClick={() => setRailOpen((value) => !value)}
+            aria-label="Toggle investigations"
+            aria-expanded={railOpen}
+            aria-controls="candidate-rail"
+          >
+            {railOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-        </div>
-      </header>
+          <div className="internal-brand"><strong>WhyBack</strong><span>Investigator</span></div>
+          <div className="header-actions">
+            <button
+              className={`live-toggle ${liveOpen ? "active" : ""}`}
+              type="button"
+              onClick={() => setLiveOpen((value) => !value)}
+              aria-label={`${liveOpen ? "Close" : "Open"} live audit trace`}
+              aria-expanded={liveOpen}
+              aria-controls="live-trace-drawer"
+            >
+              <Activity size={15} />
+              <span className="live-toggle__label">Live activity</span>
+              {demoRunning ? <i aria-label="Run active" /> : liveStatus.eventCount > 0 ? <span className="live-toggle__count">{liveStatus.eventCount}</span> : null}
+            </button>
+            <button
+              className="run-button"
+              type="button"
+              disabled={demoBusy}
+              onClick={() => { setDemoError(null); setDialogOpen(true); }}
+              aria-label={demoRunning ? "Scripted batch running" : "Run scripted batch"}
+            >
+              {demoRunning ? <LoaderCircle className="spin" size={15} /> : <Play size={15} />}
+              <span className="run-button__label">{demoRunning ? "Running" : "Run scripted batch"}</span>
+            </button>
+          </div>
+        </header>
 
       <div className={`workspace-layout ${railOpen ? "workspace-layout--rail-open" : ""}`}>
         {workspace && workspace.collections.length > 0 && (
@@ -239,21 +377,33 @@ export default function App() {
             {loading && <LoadingState />}
             {!loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
             {!loading && !error && investigation && (
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={`${investigation.report.run_id}-${view}`} exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}>
-                  {view === "overview" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
-                  {view === "evidence" && <EvidencePanel report={investigation.report} selectedEvidenceId={selectedEvidenceId} onEvidenceSelect={setSelectedEvidenceId} />}
-                  {view === "audit" && <AuditPanel collectionId={collectionId} report={investigation.report} trace={investigation.trace} />}
-                </motion.div>
-              </AnimatePresence>
+              <div key={`${investigation.report.run_id}-${view}`}>
+                {view === "overview" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
+                {view === "evidence" && <EvidencePanel report={investigation.report} selectedEvidenceId={selectedEvidenceId} onEvidenceSelect={setSelectedEvidenceId} />}
+                {view === "audit" && <AuditPanel collectionId={collectionId} report={investigation.report} trace={investigation.trace} />}
+              </div>
             )}
           </div>
         </main>
       </div>
+        <LiveTraceDrawer
+          open={liveOpen}
+          status={liveStatus}
+          onClose={() => setLiveOpen(false)}
+          onOpenResults={() => {
+            setLiveOpen(false);
+            changeView("overview");
+          }}
+          onStartRun={() => {
+            setLiveOpen(false);
+            setDemoError(null);
+            setDialogOpen(true);
+          }}
+        />
       </div>
 
-      <RunDemoDialog open={dialogOpen} running={demoRunning} error={demoError} onClose={() => !demoRunning && setDialogOpen(false)} onRun={handleRunDemo} />
-      <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}><ShieldCheck size={18} /><span>{toast}</span></motion.div>}</AnimatePresence>
+      <RunDemoDialog open={dialogOpen} running={demoStarting} error={demoError} onClose={() => !demoStarting && setDialogOpen(false)} onRun={handleRunDemo} />
+      <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}><CircleCheck size={18} /><span>{toast}</span></motion.div>}</AnimatePresence>
     </div>
   );
 }
@@ -262,15 +412,26 @@ function LoadingState() {
   return (
     <div className="loading-state" role="status" aria-live="polite" aria-label="Loading investigation">
       <LoaderCircle className="spin" size={26} />
-      <strong>Opening the evidence ledger</strong>
-      <span>Loading deterministic report and sanitized audit events…</span>
-      <div className="skeleton skeleton--wide" /><div className="skeleton-grid"><div className="skeleton" /><div className="skeleton" /><div className="skeleton" /></div>
+      <strong>Loading investigation…</strong>
     </div>
   );
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="error-state" role="alert"><CircleAlert size={28} /><span className="eyebrow">Workspace unavailable</span><h1>We couldn’t open this investigation.</h1><p>{message}</p><button type="button" onClick={onRetry}><RefreshCw size={15} /> Try again</button></div>
+    <div className="error-state" role="alert"><CircleAlert size={28} /><h1>Investigation unavailable</h1><p>{message}</p><button type="button" onClick={onRetry}><RefreshCw size={15} /> Try again</button></div>
   );
+}
+
+function mergeLiveStatus(
+  current: DemoStatusResponse,
+  update: DemoStatusResponse,
+): DemoStatusResponse {
+  if (!current.jobId || current.jobId !== update.jobId) return update;
+  const ids = new Set(current.events.map((event) => event.id));
+  const events = [
+    ...current.events,
+    ...update.events.filter((event) => !ids.has(event.id)),
+  ].slice(-1_500);
+  return { ...update, events };
 }

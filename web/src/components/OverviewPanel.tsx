@@ -5,17 +5,12 @@ import {
   Beaker,
   CircleAlert,
   CircleCheck,
-  Eye,
   Fingerprint,
   Gauge,
   Info,
   LockKeyhole,
-  ShieldCheck,
-  Sparkles,
   UsersRound,
 } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
-import type { CSSProperties } from "react";
 
 import {
   actionLabel,
@@ -36,54 +31,28 @@ interface OverviewPanelProps {
 }
 
 export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) {
-  const reduceMotion = useReducedMotion();
   const decline = report.decline;
   const trend = weeklyTrend(report);
   const limitations = uniqueLimitations(report);
-  const heroStyle = {
-    "--score": `${Math.round(decline.decline_score * 360)}deg`,
-  } as CSSProperties;
+  const warningCount = report.tool_warnings.length + report.verification_issues.length;
 
   return (
-    <motion.div
-      className="panel-stack"
-      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <section className="report-hero">
-        <div className="report-hero__glow" aria-hidden="true" />
-        <div className="hero-copy">
-          <div className="hero-kicker">
+    <div className="panel-stack">
+      <section className="surface investigation-summary">
+        <div>
+          <div className="investigation-summary__meta">
             <StatusPill status={report.run_status} />
             <span>
               <Fingerprint size={13} /> Run {compactId(report.run_id, 5)}
             </span>
           </div>
-          <p className="eyebrow eyebrow--light">Investigation brief</p>
-          <h1>
-            Household <em>{report.household_id}</em>
-          </h1>
-          <p className="hero-summary">
-            {report.likely_drivers[0]?.summary ??
-              report.failure_reason ??
-              "The bounded investigation did not publish a supported driver."}
-          </p>
-          <div className="hero-provenance">
-            <span>{humanize(report.provenance.dataset_kind)}</span>
-            <i />
-            <span>{humanize(report.provenance.execution_mode)}</span>
-            <i />
-            <span>{report.provenance.model}</span>
-          </div>
+          <span className="eyebrow">Household</span>
+          <h1>{report.household_id}</h1>
         </div>
-        <div className="score-orbit" style={heroStyle}>
-          <div className="score-orbit__inner">
-            <small>Decline</small>
-            <strong>{formatPercent(decline.decline_score)}</strong>
-            <span>heuristic</span>
-          </div>
-          <span className="score-orbit__dot" aria-hidden="true" />
+        <div className="decline-summary">
+          <small>Decline score</small>
+          <strong>{formatPercent(decline.decline_score)}</strong>
+          <span>Heuristic, not churn probability</span>
         </div>
       </section>
 
@@ -127,9 +96,8 @@ export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) 
 
       <div className="overview-split">
         <section className="surface driver-card">
-          <div className="icon-chip icon-chip--warm"><Sparkles size={18} /></div>
-          <span className="eyebrow">Verified interpretation</span>
-          <h2>{report.likely_drivers.length ? "What changed" : "No supported driver"}</h2>
+          <span className="eyebrow">Supported finding</span>
+          <h2>{report.likely_drivers.length ? "Observed change" : "No supported finding"}</h2>
           {report.likely_drivers.length > 0 ? (
             report.likely_drivers.map((driver, index) => (
               <div className="driver" key={`${driver.summary}-${index}`}>
@@ -179,10 +147,6 @@ export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) 
               {report.failure_reason || "Evidence did not clear the deterministic verifier."}
             </p>
           )}
-          <div className="driver-footer">
-            <ShieldCheck size={17} />
-            <p>Every displayed quantity resolves to detector or immutable tool evidence.</p>
-          </div>
         </section>
 
         <ActionCard report={report} onEvidenceSelect={onEvidenceSelect} />
@@ -194,10 +158,9 @@ export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) 
 
       {(report.tool_warnings.length > 0 || report.verification_issues.length > 0) && (
         <section className="surface warning-surface">
-          <div className="icon-chip icon-chip--warning"><CircleAlert size={18} /></div>
           <div>
-            <span className="eyebrow">Visible reliability state</span>
-            <h2>{report.tool_warnings.length} analytical warning{report.tool_warnings.length === 1 ? "" : "s"}</h2>
+            <span className="eyebrow">Reliability</span>
+            <h2>{warningCount} warning{warningCount === 1 ? "" : "s"}</h2>
             {report.tool_warnings.map((warning) => (
               <p key={warning.tool_name}>
                 <strong>{humanize(warning.tool_name)}:</strong>{" "}
@@ -215,25 +178,21 @@ export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) 
             <span className="eyebrow">Interpretation boundary</span>
             <h2>What this evidence cannot say</h2>
           </div>
-          <Eye size={20} aria-hidden="true" />
         </div>
         <div className="limit-grid">
-          {limitations.map((limitation, index) => (
+          {limitations.map((limitation) => (
             <div key={limitation}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <small>
-                  {report.alternative_explanations.includes(limitation)
-                    ? "Alternative explanation"
-                    : "Interpretation limit"}
-                </small>
-                <p>{limitation}</p>
-              </div>
+              <small>
+                {report.alternative_explanations.includes(limitation)
+                  ? "Alternative explanation"
+                  : "Interpretation limit"}
+              </small>
+              <p>{limitation}</p>
             </div>
           ))}
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 }
 
@@ -285,19 +244,21 @@ function ActionCard({
 }) {
   if (!report.action) {
     return (
-      <section className="action-card action-card--empty">
+      <section className="surface action-card action-card--empty">
         <CircleAlert size={22} />
-        <span className="eyebrow eyebrow--light">No action published</span>
-        <h2>Verifier held the line.</h2>
+        <span className="eyebrow">Recommendation</span>
+        <h2>No action recommended</h2>
         <p>{report.failure_reason || "The run ended without a supported catalog action."}</p>
+        <div className="action-footer">
+          <span>No outreach or action executed</span>
+        </div>
       </section>
     );
   }
   return (
-    <section className="action-card">
-      <div className="action-card__orb" aria-hidden="true" />
+    <section className="surface action-card">
       <div className="action-topline">
-        <span className="eyebrow eyebrow--light">Next best action</span>
+        <span className="eyebrow">Recommended action</span>
         <span>
           <Gauge size={13} /> {humanize(report.action.resolved_confidence)} confidence
           {report.action.confidence_cap_applied ? " · capped" : ""}
@@ -341,7 +302,7 @@ function ActionCard({
       </details>
       <div className="action-footer">
         <span><UsersRound size={15} /> Human review required</span>
-        <span>No outreach executed</span>
+        <span>No outreach or action executed</span>
       </div>
     </section>
   );
@@ -370,14 +331,6 @@ function PopulationCard({
       <div className="cohort-grid">
         <CohortStat label="Eligible population" cohort={population} />
         <CohortStat label="Behavioral peers" cohort={peers} />
-        <div className="cohort-stat cohort-stat--context">
-          <Info size={18} />
-          <div>
-            <small>Classification</small>
-            <strong>{humanize(context.context_classification)}</strong>
-            <p>Context shapes confidence; it does not establish cause.</p>
-          </div>
-        </div>
       </div>
       {context.category_context.length > 0 && (
         <div className="category-context">

@@ -5,38 +5,34 @@ const COLLECTIONS = [
   {
     id: "dashboard",
     relativePath: "artifacts/local/dashboard",
-    title: "Dashboard run",
-    description: "Fresh synthetic investigations generated from this interface.",
+    title: "Generated runs",
   },
   {
     id: "demo",
     relativePath: "artifacts/demo",
-    title: "Guided demo",
-    description: "Credential-free scripted investigations over auditable fixture data.",
+    title: "Committed sample",
   },
   {
     id: "official",
     relativePath: "artifacts/official",
     title: "Official detector",
-    description: "Pinned Complete Journey detector artifacts and available reports.",
   },
   {
     id: "official-type-a",
     relativePath: "artifacts/official-type-a",
     title: "Official Type A",
-    description: "A partial-evidence control using the official prepared dataset.",
   },
   {
     id: "live-gemini-synthetic-failure",
     relativePath: "artifacts/live-gemini-synthetic-failure",
     title: "Live boundary case",
-    description: "A preserved provider-boundary failure with valid partial evidence.",
     flat: true,
   },
 ];
 
 const TRACE_DETAIL_KEYS = new Set([
   "allowed_tools",
+  "arguments_valid",
   "attempt",
   "attempt_count",
   "attempt_number",
@@ -44,6 +40,7 @@ const TRACE_DETAIL_KEYS = new Set([
   "counterevidence_ids",
   "decision_kind",
   "decision_summary",
+  "decline_score",
   "demo_fault",
   "evidence_count",
   "evidence_id",
@@ -56,9 +53,12 @@ const TRACE_DETAIL_KEYS = new Set([
   "limitations",
   "message",
   "model",
+  "metric",
   "next_best_action_id",
   "output_tokens",
   "provider_call_id",
+  "prompt_version",
+  "proposed_confidence",
   "referenced_evidence_count",
   "remaining_tool_budget",
   "remaining_turn_budget",
@@ -66,6 +66,7 @@ const TRACE_DETAIL_KEYS = new Set([
   "repair_requested",
   "resolved_confidence",
   "retryable",
+  "rows_examined",
   "selected_tool",
   "source_tool",
   "source_tool_call_id",
@@ -78,6 +79,22 @@ const TRACE_DETAIL_KEYS = new Set([
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function safeTraceDetailValue(value) {
+  if (value === null || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "string") return value.slice(0, 1_000);
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .filter(
+      (item) =>
+        typeof item === "string" ||
+        typeof item === "boolean" ||
+        (typeof item === "number" && Number.isFinite(item)),
+    )
+    .slice(0, 20)
+    .map((item) => (typeof item === "string" ? item.slice(0, 1_000) : item));
 }
 
 async function readJson(filePath) {
@@ -177,7 +194,6 @@ async function loadCollection(repositoryRoot, definition) {
   return {
     id: definition.id,
     title: definition.title,
-    description: definition.description,
     datasetKind: String(manifest.dataset_kind ?? "unknown"),
     executionMode: String(manifest.execution_mode ?? "artifact_replay"),
     backend: String(manifest.backend ?? "unknown"),
@@ -207,11 +223,6 @@ export async function loadWorkspace(repositoryRoot) {
   return {
     schemaVersion: 1,
     productName: "WhyBack",
-    tagline: "Find the why. Choose the way back.",
-    investigatorName: "WhyBack Investigator",
-    canRunDemo: true,
-    demoCommand:
-      "uv run whyback demo --customers <1-5> --backend scripted --output-dir artifacts/local/dashboard",
     collectionWarnings,
     collections,
   };
@@ -231,11 +242,44 @@ export function validateHouseholdId(householdId) {
   return /^[A-Za-z0-9_-]{1,64}$/.test(householdId);
 }
 
-function summarizeTraceDetails(details) {
+export function summarizeTraceDetails(details) {
   if (!isPlainObject(details)) return {};
-  return Object.fromEntries(
-    Object.entries(details).filter(([key]) => TRACE_DETAIL_KEYS.has(key)),
+  const summary = Object.fromEntries(
+    Object.entries(details).flatMap(([key, value]) => {
+      if (!TRACE_DETAIL_KEYS.has(key)) return [];
+      const safeValue = safeTraceDetailValue(value);
+      return safeValue === undefined ? [] : [[key, safeValue]];
+    }),
   );
+  for (const [sourceKey, countKey] of [
+    ["supporting_evidence_ids", "supporting_evidence_count"],
+    ["counterevidence_ids", "counterevidence_count"],
+  ]) {
+    if (Array.isArray(details[sourceKey])) {
+      delete summary[sourceKey];
+      summary[countKey] = details[sourceKey].filter(
+        (item) => typeof item === "string",
+      ).length;
+    }
+  }
+  if (Array.isArray(details.evidence_ids)) {
+    summary.evidence_count = details.evidence_ids.filter(
+      (item) => typeof item === "string",
+    ).length;
+  }
+  return summary;
+}
+
+export function normalizeTraceEvent(event) {
+  if (!isPlainObject(event)) return null;
+  return {
+    schemaVersion: Number(event.schema_version ?? 1),
+    timestamp: String(event.timestamp ?? ""),
+    event: String(event.event ?? "unknown"),
+    runId: String(event.run_id ?? ""),
+    householdId: String(event.household_id ?? ""),
+    details: summarizeTraceDetails(event.details),
+  };
 }
 
 async function readTrace(tracePath) {
@@ -250,15 +294,8 @@ async function readTrace(tracePath) {
     .split(/\r?\n/u)
     .filter(Boolean)
     .map((line) => JSON.parse(line))
-    .filter(isPlainObject)
-    .map((event) => ({
-      schemaVersion: Number(event.schema_version ?? 1),
-      timestamp: String(event.timestamp ?? ""),
-      event: String(event.event ?? "unknown"),
-      runId: String(event.run_id ?? ""),
-      householdId: String(event.household_id ?? ""),
-      details: summarizeTraceDetails(event.details),
-    }));
+    .map(normalizeTraceEvent)
+    .filter(Boolean);
 }
 
 export async function loadInvestigation(repositoryRoot, collectionId, householdId) {

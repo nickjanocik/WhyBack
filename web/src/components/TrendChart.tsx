@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from "motion/react";
 import { useId, useMemo, useRef, useState } from "react";
 
 import { formatCurrency } from "../lib/report";
@@ -14,7 +13,6 @@ const HEIGHT = 252;
 const PADDING = { top: 18, right: 20, bottom: 34, left: 48 };
 
 export function TrendChart({ points, recentStartWeek }: TrendChartProps) {
-  const reduceMotion = useReducedMotion();
   const gradientId = useId().replaceAll(":", "");
   const titleId = `${gradientId}-title`;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -93,20 +91,14 @@ export function TrendChart({ points, recentStartWeek }: TrendChartProps) {
         <text x={recentX + 10} y={HEIGHT - 8} className="period-label period-label--recent">
           RECENT
         </text>
-        <motion.path
+        <path
           d={geometry.areaPath}
           fill={`url(#${gradientId})`}
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7 }}
         />
-        <motion.path
+        <path
           d={geometry.linePath}
           className="trend-line"
           fill="none"
-          initial={reduceMotion ? false : { pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
         />
         {hoveredPoint && (
           <g className="chart-hover">

@@ -1,4 +1,4 @@
-import type { DemoResponse, InvestigationResponse, Workspace } from "./types";
+import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -41,11 +41,21 @@ export function getInvestigation(
   return requestJson<InvestigationResponse>(`/api/investigation?${query}`, { signal });
 }
 
-export function runDemo(customers: number): Promise<DemoResponse> {
-  return requestJson<DemoResponse>("/api/demo", {
+export function runDemo(customers: number): Promise<DemoStatusResponse> {
+  return requestJson<DemoStatusResponse>("/api/demo", {
     method: "POST",
     body: JSON.stringify({ customers }),
   });
+}
+
+export function getDemoStatus(
+  jobId?: string | null,
+  after = 0,
+  signal?: AbortSignal,
+): Promise<DemoStatusResponse> {
+  const query = new URLSearchParams({ after: String(after) });
+  if (jobId) query.set("job", jobId);
+  return requestJson<DemoStatusResponse>(`/api/demo/status?${query}`, { signal });
 }
 
 export function artifactUrl(

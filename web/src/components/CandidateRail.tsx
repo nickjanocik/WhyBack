@@ -1,7 +1,7 @@
 import { AlertTriangle, Check, ChevronDown, Database, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { formatPercent } from "../lib/report";
+import { formatPercent, humanize } from "../lib/report";
 import type { ArtifactCollection, ReportSummary } from "../types";
 
 interface CandidateRailProps {
@@ -24,12 +24,14 @@ export function CandidateRail({
   const reports = useMemo(() => {
     if (!collection) return [];
     const normalized = query.trim().toLocaleLowerCase();
-    if (!normalized) return collection.reports;
-    return collection.reports.filter(
-      (item) =>
-        item.householdId.toLocaleLowerCase().includes(normalized) ||
-        (item.actionId ?? "").toLocaleLowerCase().includes(normalized),
-    );
+    return collection.reports
+      .map((report, index) => ({ report, rank: index + 1 }))
+      .filter(
+        ({ report }) =>
+          !normalized ||
+          report.householdId.toLocaleLowerCase().includes(normalized) ||
+          (report.actionId ?? "").toLocaleLowerCase().includes(normalized),
+      );
   }, [collection, query]);
 
   return (
@@ -51,7 +53,12 @@ export function CandidateRail({
           </select>
           <ChevronDown size={14} aria-hidden="true" />
         </div>
-        <p>{collection?.description}</p>
+        {collection && (
+          <p className="collection-meta" aria-label="Collection metadata">
+            <span>Dataset: {humanize(collection.datasetKind)}</span>
+            <span>Execution: {humanize(collection.executionMode)}</span>
+          </p>
+        )}
       </div>
 
       <div className="rail-heading">
@@ -59,7 +66,6 @@ export function CandidateRail({
           <span className="eyebrow">Flagged households</span>
           <strong>{collection?.reportCount ?? 0} investigations</strong>
         </div>
-        <span className="live-dot" aria-label="Artifacts available" />
       </div>
 
       <label className="rail-search">
@@ -73,11 +79,11 @@ export function CandidateRail({
       </label>
 
       <div className="candidate-list" role="group" aria-label="Investigations">
-        {reports.map((report, index) => (
+        {reports.map(({ report, rank }) => (
           <CandidateButton
             key={report.runId || report.householdId}
             report={report}
-            rank={index + 1}
+            rank={rank}
             selected={report.householdId === householdId}
             onSelect={() => onHouseholdChange(report.householdId)}
           />
@@ -119,9 +125,6 @@ function CandidateButton({
         <span className="candidate__topline">
           <strong>Household {report.householdId}</strong>
           <span>{formatPercent(report.declineScore)}</span>
-        </span>
-        <span className="score-track" aria-hidden="true">
-          <i style={{ width: `${Math.min(100, report.declineScore * 100)}%` }} />
         </span>
         <span className="candidate__meta">
           {report.runStatus === "completed" ? <Check size={12} /> : <AlertTriangle size={12} />}

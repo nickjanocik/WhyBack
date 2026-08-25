@@ -21,7 +21,6 @@ export interface ReportSummary {
 export interface ArtifactCollection {
   id: string;
   title: string;
-  description: string;
   datasetKind: string;
   executionMode: string;
   backend: string;
@@ -35,11 +34,6 @@ export interface ArtifactCollection {
 export interface Workspace {
   schemaVersion: 1;
   productName: "WhyBack";
-  tagline: string;
-  investigatorName: string;
-  canRunDemo: boolean;
-  demoRunning: boolean;
-  demoCommand: string;
   collectionWarnings: string[];
   collections: ArtifactCollection[];
 }
@@ -234,14 +228,32 @@ export interface TraceEvent {
   details: Record<string, unknown>;
 }
 
+export interface LiveTraceEvent extends TraceEvent {
+  id: string;
+  cursor: number;
+  source: string;
+  sourceLabel: string;
+}
+
+export type DemoRunPhase = "idle" | "running" | "completed" | "failed";
+
+export interface DemoStatusResponse {
+  jobId: string | null;
+  status: DemoRunPhase;
+  customers: number | null;
+  command: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  cursor: number;
+  eventCount: number;
+  droppedEventCount: number;
+  events: LiveTraceEvent[];
+  error: string | null;
+  traceWarning: string | null;
+  collectionId: "dashboard" | null;
+}
+
 export interface InvestigationResponse {
   report: ReportData;
   trace: TraceEvent[];
-}
-
-export interface DemoResponse {
-  command: string;
-  output: string;
-  collectionId: "dashboard";
-  workspace: Workspace;
 }

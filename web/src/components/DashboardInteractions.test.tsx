@@ -1,10 +1,12 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ArtifactCollection, ReportData } from "../types";
+import type { ArtifactCollection, DemoStatusResponse, ReportData } from "../types";
 import { AuditPanel } from "./AuditPanel";
 import { CandidateRail } from "./CandidateRail";
+import { LiveTraceDrawer } from "./LiveTraceDrawer";
+import { OverviewPanel } from "./OverviewPanel";
 import { RunDemoDialog } from "./RunDemoDialog";
 import { TrendChart } from "./TrendChart";
 
@@ -12,7 +14,6 @@ const collections: ArtifactCollection[] = [
   {
     id: "demo",
     title: "Guided demo",
-    description: "Deterministic fixture investigations.",
     datasetKind: "synthetic",
     executionMode: "scripted",
     backend: "scripted",
@@ -58,7 +59,6 @@ const collections: ArtifactCollection[] = [
   {
     id: "official-type-a",
     title: "Official Type A",
-    description: "Partial-evidence official control.",
     datasetKind: "official_complete_journey",
     executionMode: "scripted",
     backend: "scripted",
@@ -69,6 +69,22 @@ const collections: ArtifactCollection[] = [
     reports: [],
   },
 ];
+
+const idleStatus: DemoStatusResponse = {
+  jobId: null,
+  status: "idle",
+  customers: null,
+  command: null,
+  startedAt: null,
+  completedAt: null,
+  cursor: 0,
+  eventCount: 0,
+  droppedEventCount: 0,
+  events: [],
+  error: null,
+  traceWarning: null,
+  collectionId: null,
+};
 
 describe("dashboard interactions", () => {
   it("switches artifact collections and household investigations", async () => {
@@ -89,11 +105,32 @@ describe("dashboard interactions", () => {
       "aria-pressed",
       "true",
     );
+    expect(screen.getByText("Dataset: Synthetic")).toBeInTheDocument();
+    expect(screen.getByText("Execution: Scripted")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /household 102/i }));
     expect(onHouseholdChange).toHaveBeenCalledWith("102");
 
     await user.selectOptions(screen.getByLabelText("Artifact collection"), "official-type-a");
     expect(onCollectionChange).toHaveBeenCalledWith("official-type-a");
+  });
+
+  it("preserves the original candidate rank when filtering households", async () => {
+    const user = userEvent.setup();
+    render(
+      <CandidateRail
+        collections={collections}
+        collectionId="demo"
+        householdId="101"
+        onCollectionChange={vi.fn()}
+        onHouseholdChange={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByPlaceholderText("Find household"), "102");
+
+    const candidate = screen.getByRole("button", { name: /household 102/i });
+    expect(within(candidate).getByText("02")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /household 101/i })).not.toBeInTheDocument();
   });
 
   it("runs the selected bounded demo size", async () => {
@@ -111,8 +148,7 @@ describe("dashboard interactions", () => {
 
     await user.click(screen.getByRole("button", { name: "3" }));
     expect(screen.getByRole("button", { name: "3" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/--customers 3/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /generate investigations/i }));
+    await user.click(screen.getByRole("button", { name: /start run/i }));
     expect(onRun).toHaveBeenCalledWith(3);
   });
 
@@ -128,8 +164,166 @@ describe("dashboard interactions", () => {
     );
 
     expect(
-      screen.getByText(/no model key, raw-data upload, outreach, or crm mutation/i),
+      screen.getByText(/scripted backend only.*no live model call or external action/i),
     ).toBeInTheDocument();
+  });
+
+  it("renders sanitized live activity while hiding evidence writes by default", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const status: DemoStatusResponse = {
+      jobId: "job-12345678",
+      status: "running",
+      customers: 2,
+      command: "uv run whyback demo --customers 2 --backend scripted",
+      startedAt: "2026-08-25T12:00:00Z",
+      completedAt: null,
+      cursor: 2,
+      eventCount: 2,
+      droppedEventCount: 4,
+      events: [
+        {
+          id: "job-12345678:1",
+          cursor: 1,
+          source: "customer_101/trace.jsonl",
+          sourceLabel: "Household 101",
+          schemaVersion: 1,
+          timestamp: "2026-08-25T12:00:01Z",
+          event: "model_decision_received",
+          runId: "run-101",
+          householdId: "101",
+          details: {
+            investigation_question: "Did visit frequency change?",
+            decision_summary: "Use the observed weekly trend to check visit frequency.",
+            selected_tool: "customer_trend",
+          },
+        },
+        {
+          id: "job-12345678:2",
+          cursor: 2,
+          source: "customer_101/trace.jsonl",
+          sourceLabel: "Household 101",
+          schemaVersion: 1,
+          timestamp: "2026-08-25T12:00:02Z",
+          event: "evidence_added",
+          runId: "run-101",
+          householdId: "101",
+          details: { evidence_id: "ev-1" },
+        },
+      ],
+      error: null,
+      traceWarning: null,
+      collectionId: null,
+    };
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    render(
+      <LiveTraceDrawer
+        open
+        status={status}
+        onClose={onClose}
+        onOpenResults={vi.fn()}
+        onStartRun={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Live audit trace" })).toBeInTheDocument();
+    expect(screen.getByText(/private model reasoning is not collected/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 earlier audit events were omitted/i)).toBeInTheDocument();
+    expect(screen.getByText("Did visit frequency change?")).toBeInTheDocument();
+    expect(
+      screen.getByText("Did visit frequency change?").closest(".trace-detail"),
+    ).toHaveClass("trace-detail--narrative");
+    expect(
+      screen
+        .getByText("Use the observed weekly trend to check visit frequency.")
+        .closest(".trace-detail"),
+    ).toHaveClass("trace-detail--narrative");
+    expect(screen.getByText("Household 101")).toBeInTheDocument();
+    expect(screen.queryByText("Evidence recorded")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "Evidence writes" }));
+    expect(screen.getByText("Evidence recorded")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close live audit trace" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("contains live trace focus, closes with Escape, and restores its trigger", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const drawerProps = {
+      status: idleStatus,
+      onClose,
+      onOpenResults: vi.fn(),
+      onStartRun: vi.fn(),
+    };
+    const { rerender } = render(
+      <>
+        <a className="skip-link" href="#investigation">Skip to investigation</a>
+        <header className="app-header">
+          <button type="button" aria-controls="live-trace-drawer">Open activity</button>
+        </header>
+        <div className="workspace-layout" id="investigation">
+          <button type="button">Background action</button>
+        </div>
+        <LiveTraceDrawer {...drawerProps} open={false} />
+      </>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open activity" });
+    trigger.focus();
+
+    rerender(
+      <>
+        <a className="skip-link" href="#investigation">Skip to investigation</a>
+        <header className="app-header">
+          <button type="button" aria-controls="live-trace-drawer">Open activity</button>
+        </header>
+        <div className="workspace-layout" id="investigation">
+          <button type="button">Background action</button>
+        </div>
+        <LiveTraceDrawer {...drawerProps} open />
+      </>,
+    );
+
+    const drawer = await screen.findByRole("dialog", { name: "Live audit trace" });
+    const close = within(drawer).getByRole("button", { name: "Close live audit trace" });
+    await waitFor(() => expect(close).toHaveFocus());
+    expect(document.querySelector(".skip-link")).toHaveAttribute("inert");
+    expect(document.querySelector(".app-header")).toHaveAttribute("inert");
+    expect(document.querySelector(".workspace-layout")).toHaveAttribute("inert");
+    expect(within(drawer).getByRole("log", { name: "Live audit event log" })).toHaveAttribute(
+      "tabindex",
+      "0",
+    );
+
+    within(drawer).getByRole("button", { name: "Start run" }).focus();
+    await user.tab();
+    expect(close).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+
+    rerender(
+      <>
+        <a className="skip-link" href="#investigation">Skip to investigation</a>
+        <header className="app-header">
+          <button type="button" aria-controls="live-trace-drawer">Open activity</button>
+        </header>
+        <div className="workspace-layout" id="investigation">
+          <button type="button">Background action</button>
+        </div>
+        <LiveTraceDrawer {...drawerProps} open={false} />
+      </>,
+    );
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Open activity" })).toHaveFocus());
+    expect(document.querySelector(".skip-link")).not.toHaveAttribute("inert");
+    expect(document.querySelector(".app-header")).not.toHaveAttribute("inert");
+    expect(document.querySelector(".workspace-layout")).not.toHaveAttribute("inert");
   });
 
   it("contains modal focus, makes the workspace inert, and restores focus", async () => {
@@ -182,6 +376,72 @@ describe("dashboard interactions", () => {
     expect(
       screen.getByRole("img", { name: /week 1: \$20\.00; week 2: \$6\.00/i }),
     ).toBeInTheDocument();
+  });
+
+  it("states the execution boundary on every recommendation state", () => {
+    const report = {
+      schema_version: 2,
+      product_name: "WhyBack",
+      tagline: "",
+      investigator_name: "WhyBack Investigator",
+      run_id: "run-101",
+      household_id: "101",
+      run_status: "completed",
+      decline: {
+        baseline_start_week: 1,
+        baseline_end_week: 4,
+        recent_start_week: 5,
+        recent_end_week: 8,
+        baseline_retailer_sales_value: 160,
+        recent_retailer_sales_value: 12,
+        baseline_distinct_baskets: 8,
+        recent_distinct_baskets: 1,
+        baseline_active_weeks: 4,
+        recent_active_weeks: 1,
+        sales_drop: 0.925,
+        trip_drop: 0.875,
+        active_week_drop: 0.75,
+        decline_score: 0.875,
+      },
+      investigation_path: [],
+      likely_drivers: [],
+      supporting_evidence: [],
+      counterevidence: [],
+      evidence_ledger: [],
+      alternative_explanations: [],
+      uncertainties: [],
+      limitations: [],
+      tool_warnings: [],
+      verification_issues: [],
+      failure_reason: null,
+      action: {
+        action_id: "VISIT_FREQUENCY_REACTIVATION",
+        description: "Review a bounded visit-frequency experiment.",
+        rationale: "Observed visits declined.",
+        resolved_confidence: "medium",
+        confidence_cap_applied: false,
+        recommended_success_metric: "Distinct baskets",
+        suggested_experiment: "Holdout-tested reminder",
+        human_review_required: true,
+      },
+      human_review_required: true,
+    } as unknown as ReportData;
+
+    const { rerender } = render(
+      <OverviewPanel report={report} onEvidenceSelect={vi.fn()} />,
+    );
+
+    expect(screen.getByText("Human review required")).toBeInTheDocument();
+    expect(screen.getByText("No outreach or action executed")).toBeInTheDocument();
+
+    rerender(
+      <OverviewPanel
+        report={{ ...report, action: null }}
+        onEvidenceSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("No action recommended")).toBeInTheDocument();
+    expect(screen.getByText("No outreach or action executed")).toBeInTheDocument();
   });
 
   it("describes a failed run as a terminal outcome with separate backend and model", () => {

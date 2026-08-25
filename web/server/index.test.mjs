@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  createExclusiveGate,
   hostHeaderAllowed,
   mutationHeaderError,
 } from "./index.mjs";
@@ -38,13 +37,4 @@ test("allows only localhost Host headers", () => {
   assert.equal(hostHeaderAllowed("localhost:5163"), true);
   assert.equal(hostHeaderAllowed("malicious.example"), false);
   assert.equal(hostHeaderAllowed(undefined), false);
-});
-
-test("acquires the demo gate atomically", () => {
-  const gate = createExclusiveGate();
-  assert.equal(gate.tryAcquire(), true);
-  assert.equal(gate.running, true);
-  assert.equal(gate.tryAcquire(), false);
-  gate.release();
-  assert.equal(gate.tryAcquire(), true);
 });

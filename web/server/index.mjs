@@ -13,6 +13,7 @@ import {
   loadWorkspace,
   resolveArtifactFile,
 } from "./artifacts.mjs";
+import { createDemoRunManager, DemoRunError } from "./live-trace.mjs";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = path.resolve(webRoot, "..");
@@ -21,7 +22,6 @@ const host = "127.0.0.1";
 const parsedPort = Number(process.env.WHYBACK_DASHBOARD_PORT || 4173);
 const port = Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : 4173;
 const MAX_BODY_BYTES = 4_096;
-const MAX_OUTPUT_BYTES = 32_768;
 const DEMO_TIMEOUT_MS = 120_000;
 
 const contentTypes = {
@@ -33,25 +33,6 @@ const contentTypes = {
   ".md": "text/markdown; charset=utf-8",
   ".svg": "image/svg+xml",
 };
-
-export function createExclusiveGate() {
-  let running = false;
-  return {
-    get running() {
-      return running;
-    },
-    tryAcquire() {
-      if (running) return false;
-      running = true;
-      return true;
-    },
-    release() {
-      running = false;
-    },
-  };
-}
-
-const demoGate = createExclusiveGate();
 
 function securityHeaders(response, api = false) {
   response.setHeader("X-Content-Type-Options", "nosniff");
@@ -131,13 +112,6 @@ async function readJsonBody(request) {
   }
 }
 
-function appendOutput(current, chunk) {
-  const combined = current + chunk.toString("utf8");
-  return combined.length > MAX_OUTPUT_BYTES
-    ? combined.slice(combined.length - MAX_OUTPUT_BYTES)
-    : combined;
-}
-
 export function runScriptedDemo(customers) {
   return new Promise((resolve, reject) => {
     const args = [
@@ -155,10 +129,8 @@ export function runScriptedDemo(customers) {
       cwd: repositoryRoot,
       env: process.env,
       shell: false,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: "ignore",
     });
-    let stdout = "";
-    let stderr = "";
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -166,35 +138,29 @@ export function runScriptedDemo(customers) {
       setTimeout(() => child.kill("SIGKILL"), 5_000).unref();
     }, DEMO_TIMEOUT_MS);
     timer.unref();
-    child.stdout.on("data", (chunk) => {
-      stdout = appendOutput(stdout, chunk);
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr = appendOutput(stderr, chunk);
-    });
-    child.once("error", (error) => {
+    child.once("error", () => {
       clearTimeout(timer);
-      reject(error);
+      reject(new DemoRunError("The scripted WhyBack process could not be started."));
     });
     child.once("close", (code) => {
       clearTimeout(timer);
       if (timedOut) {
-        reject(new Error("The scripted demo exceeded its 120-second boundary."));
+        reject(new DemoRunError("The scripted run exceeded its 120-second boundary."));
       } else if (code !== 0) {
-        reject(
-          new Error(
-            stderr.trim() || stdout.trim() || `WhyBack exited with status ${code}.`,
-          ),
-        );
+        reject(new DemoRunError(`The scripted WhyBack run exited with status ${code}.`));
       } else {
         resolve({
           command: `uv ${args.join(" ")}`,
-          output: stdout.trim(),
         });
       }
     });
   });
 }
+
+const demoManager = createDemoRunManager({
+  repositoryRoot,
+  execute: runScriptedDemo,
+});
 
 async function serveFile(response, filePath, contentType) {
   const details = await stat(filePath);
@@ -210,10 +176,28 @@ async function serveFile(response, filePath, contentType) {
 
 async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/workspace") {
-    sendJson(response, 200, {
-      ...(await loadWorkspace(repositoryRoot)),
-      demoRunning: demoGate.running,
-    });
+    sendJson(response, 200, await loadWorkspace(repositoryRoot));
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/demo/status") {
+    const requestedJob = url.searchParams.get("job");
+    const afterValue = url.searchParams.get("after") ?? "0";
+    const after = Number(afterValue);
+    if (!Number.isInteger(after) || after < 0) {
+      sendError(response, 400, "after must be a non-negative integer.");
+      return;
+    }
+    let status = demoManager.status(requestedJob, after);
+    if (!status) {
+      sendError(response, 404, "Live run status not found.");
+      return;
+    }
+    if (status.status === "running" && status.jobId) {
+      await demoManager.refresh(status.jobId);
+      status = demoManager.status(requestedJob, after);
+    }
+    sendJson(response, 200, status);
     return;
   }
 
@@ -257,29 +241,13 @@ async function handleApi(request, response, url) {
       sendError(response, headerError.startsWith("Content-Type") ? 415 : 403, headerError);
       return;
     }
-    if (!demoGate.tryAcquire()) {
-      sendError(response, 409, "A scripted demo is already running.");
+    const body = await readJsonBody(request);
+    const customers = body?.customers;
+    if (!Number.isInteger(customers) || customers < 1 || customers > 5) {
+      sendError(response, 400, "customers must be an integer from 1 through 5.");
       return;
     }
-    try {
-      const body = await readJsonBody(request);
-      const customers = body?.customers;
-      if (!Number.isInteger(customers) || customers < 1 || customers > 5) {
-        sendError(response, 400, "customers must be an integer from 1 through 5.");
-        return;
-      }
-      const result = await runScriptedDemo(customers);
-      sendJson(response, 201, {
-        ...result,
-        collectionId: "dashboard",
-        workspace: {
-          ...(await loadWorkspace(repositoryRoot)),
-          demoRunning: false,
-        },
-      });
-    } finally {
-      demoGate.release();
-    }
+    sendJson(response, 202, demoManager.start(customers));
     return;
   }
 
