@@ -8,6 +8,12 @@
   "runs": [
     {
       "actual_tool_executions": 2,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": false,
+      "context_classifications": [],
       "duplicate_call_count": 0,
       "failed_tools": [],
       "ledger_evidence_ids": [
@@ -55,12 +61,17 @@
         "ev_call-6fb0aadd11-02-basket_behavior_016"
       ],
       "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
       "normalization_source": "outcome",
       "partial_tools": [],
-      "propagated_limitations": [],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
+      ],
       "referenced_evidence_ids": [
         "ev_call-6fb0aadd11-01-customer_trend_002"
       ],
+      "resolved_confidence": "medium",
       "run_id": "6fb0aadd-11c3-55e3-abba-8b880fe5baf8",
       "run_status": "completed",
       "scenario_id": "frequency_decline",
@@ -69,10 +80,23 @@
         "basket_behavior"
       ],
       "source_limitations": [],
-      "verification_passed": true
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
     },
     {
       "actual_tool_executions": 1,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context",
+        "mixed"
+      ],
+      "confidence_cap_applied": false,
+      "context_classifications": [
+        "mixed"
+      ],
       "duplicate_call_count": 0,
       "failed_tools": [],
       "ledger_evidence_ids": [
@@ -91,24 +115,63 @@
         "ev_call-f73874c3fc-01-category_decomposition_013",
         "ev_call-f73874c3fc-01-category_decomposition_014",
         "ev_call-f73874c3fc-01-category_decomposition_015",
-        "ev_call-f73874c3fc-01-category_decomposition_016"
+        "ev_call-f73874c3fc-01-category_decomposition_016",
+        "ev_call-f73874c3fc-01-category_decomposition_017",
+        "ev_call-f73874c3fc-01-category_decomposition_018",
+        "ev_call-f73874c3fc-01-category_decomposition_019",
+        "ev_call-f73874c3fc-01-category_decomposition_020",
+        "ev_call-f73874c3fc-01-category_decomposition_021",
+        "ev_call-f73874c3fc-01-category_decomposition_022",
+        "ev_call-f73874c3fc-01-category_decomposition_023",
+        "ev_call-f73874c3fc-01-category_decomposition_024",
+        "ev_call-f73874c3fc-01-category_decomposition_025",
+        "ev_call-f73874c3fc-01-category_decomposition_026",
+        "ev_call-f73874c3fc-01-category_decomposition_027",
+        "ev_call-f73874c3fc-01-category_decomposition_028",
+        "ev_call-f73874c3fc-01-category_decomposition_029",
+        "ev_call-f73874c3fc-01-category_decomposition_030",
+        "ev_call-f73874c3fc-01-category_decomposition_031"
       ],
-      "model_decisions": 3,
+      "model_decisions": 2,
+      "next_best_action_id": "CATEGORY_WINBACK",
       "normalization_source": "outcome",
       "partial_tools": [],
-      "propagated_limitations": [],
-      "referenced_evidence_ids": [],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-f73874c3fc-01-category_decomposition_009",
+        "ev_call-f73874c3fc-01-category_decomposition_013",
+        "ev_call-f73874c3fc-01-category_decomposition_026",
+        "ev_call-f73874c3fc-01-category_decomposition_031",
+        "ev_call-f73874c3fc-01-category_decomposition_021"
+      ],
+      "resolved_confidence": "medium",
       "run_id": "f73874c3-fcdc-510e-b270-a6f38d670e39",
-      "run_status": "insufficient_evidence",
+      "run_status": "completed",
       "scenario_id": "category_collapse",
       "selected_tools": [
         "category_decomposition"
       ],
-      "source_limitations": [],
-      "verification_passed": true
+      "source_limitations": [
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
     },
     {
       "actual_tool_executions": 1,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": false,
+      "context_classifications": [],
       "duplicate_call_count": 0,
       "failed_tools": [],
       "ledger_evidence_ids": [
@@ -121,15 +184,19 @@
         "ev_call-009237e72e-01-promotion_response_007"
       ],
       "model_decisions": 2,
+      "next_best_action_id": "PROMOTION_VALUE_REENGAGEMENT",
       "normalization_source": "outcome",
       "partial_tools": [],
+      "population_percentile_available": false,
       "propagated_limitations": [
         "Promotion records indicate availability for a product at a store during a week; they do not establish that this household saw a display or mailer.",
-        "Observed promotion-associated purchasing is descriptive and does not establish that promotion availability caused the behavioral change."
+        "Observed promotion-associated purchasing is descriptive and does not establish that promotion availability caused the behavioral change.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
       ],
       "referenced_evidence_ids": [
         "ev_call-009237e72e-01-promotion_response_001"
       ],
+      "resolved_confidence": "medium",
       "run_id": "009237e7-2e22-56d7-b9d4-9c4517383fb0",
       "run_status": "completed",
       "scenario_id": "promotion_associated_decline",
@@ -140,10 +207,22 @@
         "Promotion records indicate availability for a product at a store during a week; they do not establish that this household saw a display or mailer.",
         "Observed promotion-associated purchasing is descriptive and does not establish that promotion availability caused the behavioral change."
       ],
-      "verification_passed": true
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
     },
     {
       "actual_tool_executions": 1,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "mixed"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "mixed"
+      ],
       "duplicate_call_count": 0,
       "failed_tools": [],
       "ledger_evidence_ids": [
@@ -151,30 +230,59 @@
         "ev_call-952d628089-01-peer_comparison_002",
         "ev_call-952d628089-01-peer_comparison_003",
         "ev_call-952d628089-01-peer_comparison_004",
-        "ev_call-952d628089-01-peer_comparison_005"
+        "ev_call-952d628089-01-peer_comparison_005",
+        "ev_call-952d628089-01-peer_comparison_006",
+        "ev_call-952d628089-01-peer_comparison_007",
+        "ev_call-952d628089-01-peer_comparison_008",
+        "ev_call-952d628089-01-peer_comparison_009",
+        "ev_call-952d628089-01-peer_comparison_010",
+        "ev_call-952d628089-01-peer_comparison_011",
+        "ev_call-952d628089-01-peer_comparison_012",
+        "ev_call-952d628089-01-peer_comparison_013",
+        "ev_call-952d628089-01-peer_comparison_014",
+        "ev_call-952d628089-01-peer_comparison_015",
+        "ev_call-952d628089-01-peer_comparison_016",
+        "ev_call-952d628089-01-peer_comparison_017"
       ],
-      "model_decisions": 2,
+      "model_decisions": 3,
+      "next_best_action_id": "INSUFFICIENT_EVIDENCE",
       "normalization_source": "outcome",
       "partial_tools": [],
+      "population_percentile_available": true,
       "propagated_limitations": [
-        "Peer similarity is descriptive, depends on the selected baseline features, and does not establish a causal benchmark."
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
       ],
       "referenced_evidence_ids": [
-        "ev_call-952d628089-01-peer_comparison_001"
+        "ev_call-952d628089-01-peer_comparison_017"
       ],
+      "resolved_confidence": "insufficient",
       "run_id": "952d6280-895c-58f5-9c75-795bac78b0af",
-      "run_status": "completed",
+      "run_status": "insufficient_evidence",
       "scenario_id": "ambiguous_peer_comparison",
       "selected_tools": [
         "peer_comparison"
       ],
       "source_limitations": [
-        "Peer similarity is descriptive, depends on the selected baseline features, and does not establish a causal benchmark."
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
       ],
-      "verification_passed": true
+      "verification_passed": true,
+      "verification_rejection_codes": [
+        "claim_strength_exceeded",
+        "material_counterevidence_omitted",
+        "action_contraindication"
+      ],
+      "verified_claim_types": []
     },
     {
       "actual_tool_executions": 2,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": false,
+      "context_classifications": [],
       "duplicate_call_count": 0,
       "failed_tools": [],
       "ledger_evidence_ids": [
@@ -211,17 +319,20 @@
         "ev_call-1d7736e9d9-02-customer_trend_026"
       ],
       "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
       "normalization_source": "outcome",
       "partial_tools": [
         "coupon_campaign_history"
       ],
+      "population_percentile_available": false,
       "propagated_limitations": [
-        "Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable."
+        "Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
       ],
       "referenced_evidence_ids": [
-        "ev_call-1d7736e9d9-02-customer_trend_002",
-        "ev_call-1d7736e9d9-01-coupon_campaign_history_001"
+        "ev_call-1d7736e9d9-02-customer_trend_002"
       ],
+      "resolved_confidence": "medium",
       "run_id": "1d7736e9-d9d0-5694-a8ba-eb2042103b49",
       "run_status": "completed",
       "scenario_id": "type_a_coupon_exposure_gap",
@@ -232,10 +343,20 @@
       "source_limitations": [
         "Type A participants received 16 coupons selected from a larger pool, but the household-specific delivered coupon identities are unavailable."
       ],
-      "verification_passed": true
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
     },
     {
       "actual_tool_executions": 3,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": false,
+      "context_classifications": [],
       "duplicate_call_count": 0,
       "failed_tools": [
         "promotion_response"
@@ -269,15 +390,19 @@
         "ev_call-48cfac8d39-03-customer_trend_026"
       ],
       "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
       "normalization_source": "outcome",
       "partial_tools": [],
+      "population_percentile_available": false,
       "propagated_limitations": [
         "promotion_response is unavailable after its bounded retry policy was exhausted.",
-        "Demo-only injected promotion_response timeout; no analytical query was executed for this attempt."
+        "Demo-only injected promotion_response timeout; no analytical query was executed for this attempt.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
       ],
       "referenced_evidence_ids": [
         "ev_call-48cfac8d39-03-customer_trend_002"
       ],
+      "resolved_confidence": "medium",
       "run_id": "48cfac8d-391a-553c-a662-da6976803989",
       "run_status": "completed",
       "scenario_id": "persistent_promotion_timeout",
@@ -286,8 +411,490 @@
         "customer_trend"
       ],
       "source_limitations": [],
-      "verification_passed": true
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 2,
+      "broad_context_warning_present": true,
+      "confidence_adjustment_classifications": [
+        "broad_context"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "broad_context"
+      ],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-3106559065-01-peer_comparison_001",
+        "ev_call-3106559065-01-peer_comparison_002",
+        "ev_call-3106559065-01-peer_comparison_003",
+        "ev_call-3106559065-01-peer_comparison_004",
+        "ev_call-3106559065-01-peer_comparison_005",
+        "ev_call-3106559065-01-peer_comparison_006",
+        "ev_call-3106559065-01-peer_comparison_007",
+        "ev_call-3106559065-01-peer_comparison_008",
+        "ev_call-3106559065-01-peer_comparison_009",
+        "ev_call-3106559065-01-peer_comparison_010",
+        "ev_call-3106559065-01-peer_comparison_011",
+        "ev_call-3106559065-01-peer_comparison_012",
+        "ev_call-3106559065-01-peer_comparison_013",
+        "ev_call-3106559065-01-peer_comparison_014",
+        "ev_call-3106559065-01-peer_comparison_015",
+        "ev_call-3106559065-01-peer_comparison_016",
+        "ev_call-3106559065-01-peer_comparison_017",
+        "ev_call-3106559065-02-customer_trend_001",
+        "ev_call-3106559065-02-customer_trend_002",
+        "ev_call-3106559065-02-customer_trend_003",
+        "ev_call-3106559065-02-customer_trend_004",
+        "ev_call-3106559065-02-customer_trend_005",
+        "ev_call-3106559065-02-customer_trend_006",
+        "ev_call-3106559065-02-customer_trend_007",
+        "ev_call-3106559065-02-customer_trend_008",
+        "ev_call-3106559065-02-customer_trend_009",
+        "ev_call-3106559065-02-customer_trend_010",
+        "ev_call-3106559065-02-customer_trend_011",
+        "ev_call-3106559065-02-customer_trend_012",
+        "ev_call-3106559065-02-customer_trend_013",
+        "ev_call-3106559065-02-customer_trend_014",
+        "ev_call-3106559065-02-customer_trend_015",
+        "ev_call-3106559065-02-customer_trend_016",
+        "ev_call-3106559065-02-customer_trend_017",
+        "ev_call-3106559065-02-customer_trend_018",
+        "ev_call-3106559065-02-customer_trend_019",
+        "ev_call-3106559065-02-customer_trend_020",
+        "ev_call-3106559065-02-customer_trend_021",
+        "ev_call-3106559065-02-customer_trend_022",
+        "ev_call-3106559065-02-customer_trend_023",
+        "ev_call-3106559065-02-customer_trend_024",
+        "ev_call-3106559065-02-customer_trend_025",
+        "ev_call-3106559065-02-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "population_percentile_available": true,
+      "propagated_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-3106559065-02-customer_trend_002",
+        "ev_call-3106559065-01-peer_comparison_017"
+      ],
+      "resolved_confidence": "low",
+      "run_id": "31065590-6589-5070-90ef-c324259d3e67",
+      "run_status": "completed",
+      "scenario_id": "broad_decline",
+      "selected_tools": [
+        "peer_comparison",
+        "customer_trend"
+      ],
+      "source_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 2,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "customer_specific"
+      ],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-42cdc3b550-01-peer_comparison_001",
+        "ev_call-42cdc3b550-01-peer_comparison_002",
+        "ev_call-42cdc3b550-01-peer_comparison_003",
+        "ev_call-42cdc3b550-01-peer_comparison_004",
+        "ev_call-42cdc3b550-01-peer_comparison_005",
+        "ev_call-42cdc3b550-01-peer_comparison_006",
+        "ev_call-42cdc3b550-01-peer_comparison_007",
+        "ev_call-42cdc3b550-01-peer_comparison_008",
+        "ev_call-42cdc3b550-01-peer_comparison_009",
+        "ev_call-42cdc3b550-01-peer_comparison_010",
+        "ev_call-42cdc3b550-01-peer_comparison_011",
+        "ev_call-42cdc3b550-01-peer_comparison_012",
+        "ev_call-42cdc3b550-01-peer_comparison_013",
+        "ev_call-42cdc3b550-01-peer_comparison_014",
+        "ev_call-42cdc3b550-01-peer_comparison_015",
+        "ev_call-42cdc3b550-01-peer_comparison_016",
+        "ev_call-42cdc3b550-01-peer_comparison_017",
+        "ev_call-42cdc3b550-02-customer_trend_001",
+        "ev_call-42cdc3b550-02-customer_trend_002",
+        "ev_call-42cdc3b550-02-customer_trend_003",
+        "ev_call-42cdc3b550-02-customer_trend_004",
+        "ev_call-42cdc3b550-02-customer_trend_005",
+        "ev_call-42cdc3b550-02-customer_trend_006",
+        "ev_call-42cdc3b550-02-customer_trend_007",
+        "ev_call-42cdc3b550-02-customer_trend_008",
+        "ev_call-42cdc3b550-02-customer_trend_009",
+        "ev_call-42cdc3b550-02-customer_trend_010",
+        "ev_call-42cdc3b550-02-customer_trend_011",
+        "ev_call-42cdc3b550-02-customer_trend_012",
+        "ev_call-42cdc3b550-02-customer_trend_013",
+        "ev_call-42cdc3b550-02-customer_trend_014",
+        "ev_call-42cdc3b550-02-customer_trend_015",
+        "ev_call-42cdc3b550-02-customer_trend_016",
+        "ev_call-42cdc3b550-02-customer_trend_017",
+        "ev_call-42cdc3b550-02-customer_trend_018",
+        "ev_call-42cdc3b550-02-customer_trend_019",
+        "ev_call-42cdc3b550-02-customer_trend_020",
+        "ev_call-42cdc3b550-02-customer_trend_021",
+        "ev_call-42cdc3b550-02-customer_trend_022",
+        "ev_call-42cdc3b550-02-customer_trend_023",
+        "ev_call-42cdc3b550-02-customer_trend_024",
+        "ev_call-42cdc3b550-02-customer_trend_025",
+        "ev_call-42cdc3b550-02-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "population_percentile_available": true,
+      "propagated_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-42cdc3b550-02-customer_trend_002",
+        "ev_call-42cdc3b550-01-peer_comparison_017"
+      ],
+      "resolved_confidence": "medium",
+      "run_id": "42cdc3b5-50b3-5c1b-b7bd-236f7d373ca2",
+      "run_status": "completed",
+      "scenario_id": "customer_specific_decline",
+      "selected_tools": [
+        "peer_comparison",
+        "customer_trend"
+      ],
+      "source_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 1,
+      "broad_context_warning_present": true,
+      "confidence_adjustment_classifications": [
+        "insufficient_context",
+        "broad_context"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "broad_context"
+      ],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-851ad195c1-01-category_decomposition_001",
+        "ev_call-851ad195c1-01-category_decomposition_002",
+        "ev_call-851ad195c1-01-category_decomposition_003",
+        "ev_call-851ad195c1-01-category_decomposition_004",
+        "ev_call-851ad195c1-01-category_decomposition_005",
+        "ev_call-851ad195c1-01-category_decomposition_006",
+        "ev_call-851ad195c1-01-category_decomposition_007",
+        "ev_call-851ad195c1-01-category_decomposition_008",
+        "ev_call-851ad195c1-01-category_decomposition_009",
+        "ev_call-851ad195c1-01-category_decomposition_010",
+        "ev_call-851ad195c1-01-category_decomposition_011",
+        "ev_call-851ad195c1-01-category_decomposition_012",
+        "ev_call-851ad195c1-01-category_decomposition_013",
+        "ev_call-851ad195c1-01-category_decomposition_014",
+        "ev_call-851ad195c1-01-category_decomposition_015",
+        "ev_call-851ad195c1-01-category_decomposition_016",
+        "ev_call-851ad195c1-01-category_decomposition_017",
+        "ev_call-851ad195c1-01-category_decomposition_018",
+        "ev_call-851ad195c1-01-category_decomposition_019",
+        "ev_call-851ad195c1-01-category_decomposition_020",
+        "ev_call-851ad195c1-01-category_decomposition_021",
+        "ev_call-851ad195c1-01-category_decomposition_022",
+        "ev_call-851ad195c1-01-category_decomposition_023",
+        "ev_call-851ad195c1-01-category_decomposition_024",
+        "ev_call-851ad195c1-01-category_decomposition_025",
+        "ev_call-851ad195c1-01-category_decomposition_026",
+        "ev_call-851ad195c1-01-category_decomposition_027",
+        "ev_call-851ad195c1-01-category_decomposition_028",
+        "ev_call-851ad195c1-01-category_decomposition_029",
+        "ev_call-851ad195c1-01-category_decomposition_030",
+        "ev_call-851ad195c1-01-category_decomposition_031"
+      ],
+      "model_decisions": 2,
+      "next_best_action_id": "CATEGORY_WINBACK",
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-851ad195c1-01-category_decomposition_009",
+        "ev_call-851ad195c1-01-category_decomposition_013",
+        "ev_call-851ad195c1-01-category_decomposition_026",
+        "ev_call-851ad195c1-01-category_decomposition_031",
+        "ev_call-851ad195c1-01-category_decomposition_021"
+      ],
+      "resolved_confidence": "low",
+      "run_id": "851ad195-c1c5-5897-8045-2f1e4dd15e14",
+      "run_status": "completed",
+      "scenario_id": "broad_category_decline",
+      "selected_tools": [
+        "category_decomposition"
+      ],
+      "source_limitations": [
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 1,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "customer_specific"
+      ],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-67b0fe931f-01-category_decomposition_001",
+        "ev_call-67b0fe931f-01-category_decomposition_002",
+        "ev_call-67b0fe931f-01-category_decomposition_003",
+        "ev_call-67b0fe931f-01-category_decomposition_004",
+        "ev_call-67b0fe931f-01-category_decomposition_005",
+        "ev_call-67b0fe931f-01-category_decomposition_006",
+        "ev_call-67b0fe931f-01-category_decomposition_007",
+        "ev_call-67b0fe931f-01-category_decomposition_008",
+        "ev_call-67b0fe931f-01-category_decomposition_009",
+        "ev_call-67b0fe931f-01-category_decomposition_010",
+        "ev_call-67b0fe931f-01-category_decomposition_011",
+        "ev_call-67b0fe931f-01-category_decomposition_012",
+        "ev_call-67b0fe931f-01-category_decomposition_013",
+        "ev_call-67b0fe931f-01-category_decomposition_014",
+        "ev_call-67b0fe931f-01-category_decomposition_015",
+        "ev_call-67b0fe931f-01-category_decomposition_016",
+        "ev_call-67b0fe931f-01-category_decomposition_017",
+        "ev_call-67b0fe931f-01-category_decomposition_018",
+        "ev_call-67b0fe931f-01-category_decomposition_019",
+        "ev_call-67b0fe931f-01-category_decomposition_020",
+        "ev_call-67b0fe931f-01-category_decomposition_021",
+        "ev_call-67b0fe931f-01-category_decomposition_022",
+        "ev_call-67b0fe931f-01-category_decomposition_023",
+        "ev_call-67b0fe931f-01-category_decomposition_024",
+        "ev_call-67b0fe931f-01-category_decomposition_025",
+        "ev_call-67b0fe931f-01-category_decomposition_026",
+        "ev_call-67b0fe931f-01-category_decomposition_027",
+        "ev_call-67b0fe931f-01-category_decomposition_028",
+        "ev_call-67b0fe931f-01-category_decomposition_029",
+        "ev_call-67b0fe931f-01-category_decomposition_030",
+        "ev_call-67b0fe931f-01-category_decomposition_031"
+      ],
+      "model_decisions": 2,
+      "next_best_action_id": "CATEGORY_WINBACK",
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-67b0fe931f-01-category_decomposition_009",
+        "ev_call-67b0fe931f-01-category_decomposition_013",
+        "ev_call-67b0fe931f-01-category_decomposition_021",
+        "ev_call-67b0fe931f-01-category_decomposition_026",
+        "ev_call-67b0fe931f-01-category_decomposition_031"
+      ],
+      "resolved_confidence": "medium",
+      "run_id": "67b0fe93-1f6d-5a0e-91a1-8c452252a637",
+      "run_status": "completed",
+      "scenario_id": "target_specific_category_decline",
+      "selected_tools": [
+        "category_decomposition"
+      ],
+      "source_limitations": [
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 2,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [
+        "insufficient_context"
+      ],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-334202063b-01-peer_comparison_001",
+        "ev_call-334202063b-01-peer_comparison_002",
+        "ev_call-334202063b-01-peer_comparison_003",
+        "ev_call-334202063b-01-peer_comparison_004",
+        "ev_call-334202063b-01-peer_comparison_005",
+        "ev_call-334202063b-01-peer_comparison_006",
+        "ev_call-334202063b-01-peer_comparison_007",
+        "ev_call-334202063b-01-peer_comparison_008",
+        "ev_call-334202063b-01-peer_comparison_009",
+        "ev_call-334202063b-01-peer_comparison_010",
+        "ev_call-334202063b-01-peer_comparison_011",
+        "ev_call-334202063b-02-customer_trend_001",
+        "ev_call-334202063b-02-customer_trend_002",
+        "ev_call-334202063b-02-customer_trend_003",
+        "ev_call-334202063b-02-customer_trend_004",
+        "ev_call-334202063b-02-customer_trend_005",
+        "ev_call-334202063b-02-customer_trend_006",
+        "ev_call-334202063b-02-customer_trend_007",
+        "ev_call-334202063b-02-customer_trend_008",
+        "ev_call-334202063b-02-customer_trend_009",
+        "ev_call-334202063b-02-customer_trend_010",
+        "ev_call-334202063b-02-customer_trend_011",
+        "ev_call-334202063b-02-customer_trend_012",
+        "ev_call-334202063b-02-customer_trend_013",
+        "ev_call-334202063b-02-customer_trend_014",
+        "ev_call-334202063b-02-customer_trend_015",
+        "ev_call-334202063b-02-customer_trend_016",
+        "ev_call-334202063b-02-customer_trend_017",
+        "ev_call-334202063b-02-customer_trend_018",
+        "ev_call-334202063b-02-customer_trend_019",
+        "ev_call-334202063b-02-customer_trend_020",
+        "ev_call-334202063b-02-customer_trend_021",
+        "ev_call-334202063b-02-customer_trend_022",
+        "ev_call-334202063b-02-customer_trend_023",
+        "ev_call-334202063b-02-customer_trend_024",
+        "ev_call-334202063b-02-customer_trend_025",
+        "ev_call-334202063b-02-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "next_best_action_id": "VISIT_FREQUENCY_REACTIVATION",
+      "normalization_source": "outcome",
+      "partial_tools": [
+        "peer_comparison"
+      ],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Eligible comparison population has 5 target-excluded households; policy requires at least 20, so population distribution statistics are unavailable."
+      ],
+      "referenced_evidence_ids": [
+        "ev_call-334202063b-02-customer_trend_002",
+        "ev_call-334202063b-01-peer_comparison_011"
+      ],
+      "resolved_confidence": "medium",
+      "run_id": "33420206-3b7b-5c57-9a0b-5a9f638394e6",
+      "run_status": "completed",
+      "scenario_id": "insufficient_comparison_population",
+      "selected_tools": [
+        "peer_comparison",
+        "customer_trend"
+      ],
+      "source_limitations": [
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Eligible comparison population has 5 target-excluded households; policy requires at least 20, so population distribution statistics are unavailable."
+      ],
+      "verification_passed": true,
+      "verification_rejection_codes": [],
+      "verified_claim_types": [
+        "associational"
+      ]
+    },
+    {
+      "actual_tool_executions": 1,
+      "broad_context_warning_present": false,
+      "confidence_adjustment_classifications": [
+        "insufficient_context"
+      ],
+      "confidence_cap_applied": true,
+      "context_classifications": [],
+      "duplicate_call_count": 0,
+      "failed_tools": [],
+      "ledger_evidence_ids": [
+        "ev_call-824b53bf62-01-customer_trend_001",
+        "ev_call-824b53bf62-01-customer_trend_002",
+        "ev_call-824b53bf62-01-customer_trend_003",
+        "ev_call-824b53bf62-01-customer_trend_004",
+        "ev_call-824b53bf62-01-customer_trend_005",
+        "ev_call-824b53bf62-01-customer_trend_006",
+        "ev_call-824b53bf62-01-customer_trend_007",
+        "ev_call-824b53bf62-01-customer_trend_008",
+        "ev_call-824b53bf62-01-customer_trend_009",
+        "ev_call-824b53bf62-01-customer_trend_010",
+        "ev_call-824b53bf62-01-customer_trend_011",
+        "ev_call-824b53bf62-01-customer_trend_012",
+        "ev_call-824b53bf62-01-customer_trend_013",
+        "ev_call-824b53bf62-01-customer_trend_014",
+        "ev_call-824b53bf62-01-customer_trend_015",
+        "ev_call-824b53bf62-01-customer_trend_016",
+        "ev_call-824b53bf62-01-customer_trend_017",
+        "ev_call-824b53bf62-01-customer_trend_018",
+        "ev_call-824b53bf62-01-customer_trend_019",
+        "ev_call-824b53bf62-01-customer_trend_020",
+        "ev_call-824b53bf62-01-customer_trend_021",
+        "ev_call-824b53bf62-01-customer_trend_022",
+        "ev_call-824b53bf62-01-customer_trend_023",
+        "ev_call-824b53bf62-01-customer_trend_024",
+        "ev_call-824b53bf62-01-customer_trend_025",
+        "ev_call-824b53bf62-01-customer_trend_026"
+      ],
+      "model_decisions": 3,
+      "next_best_action_id": "INSUFFICIENT_EVIDENCE",
+      "normalization_source": "outcome",
+      "partial_tools": [],
+      "population_percentile_available": false,
+      "propagated_limitations": [
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement."
+      ],
+      "referenced_evidence_ids": [],
+      "resolved_confidence": "insufficient",
+      "run_id": "824b53bf-62f6-5c79-bfd5-701116fc819d",
+      "run_status": "insufficient_evidence",
+      "scenario_id": "causal_language_attack",
+      "selected_tools": [
+        "customer_trend"
+      ],
+      "source_limitations": [],
+      "verification_passed": true,
+      "verification_rejection_codes": [
+        "unsupported_causal_claim",
+        "claim_strength_exceeded",
+        "action_contraindication"
+      ],
+      "verified_claim_types": []
     }
   ],
-  "schema_version": 1
+  "schema_version": 3
 }
