@@ -14,6 +14,7 @@ from whyback.agent.actions import (
     ActionCatalogError,
     ActionDefinition,
     ActionId,
+    EvidencePredicate,
     EvidencePrerequisite,
 )
 from whyback.agent.state import (
@@ -51,6 +52,7 @@ class VerificationIssueCode(StrEnum):
     CLAIM_STRENGTH_EXCEEDED = "claim_strength_exceeded"
     INVALID_CONTEXT_EVIDENCE = "invalid_context_evidence"
     COUNTEREVIDENCE_CONFLICT = "counterevidence_conflict"
+    IRRELEVANT_COUNTEREVIDENCE = "irrelevant_counterevidence"
     PEER_SELF_COMPARISON = "peer_self_comparison"
     CATEGORY_RECONCILIATION = "category_reconciliation"
     PROMOTION_MULTIPLICATION = "promotion_multiplication"
@@ -124,7 +126,12 @@ _QUANTITATIVE_WORD_CLAIM = re.compile(
 _CAUSAL_CLAIM = re.compile(
     r"\b(?:caus(?:e|ed|es|ing)|drove|driven\s+by|because\s+of|due\s+to|"
     r"attribut(?:e|ed|es|ing)\s+to|explains?|explained\s+by|trigger(?:ed|s)?|"
-    r"produc(?:e|ed|es|ing)|result(?:ed|s)?\s+from|resulting\s+from|led\s+to|"
+    r"produc(?:e|ed|es|ing)|result(?:ed|s)?\s+(?:from|in)|resulting\s+from|"
+    r"led\s+to|ma(?:de|kes?)\s+(?:the\s+)?(?:customer|household)|"
+    r"(?:prompt|forc|push)(?:ed|es?)\s+(?:the\s+)?(?:customer|household|"
+    r"decline|churn|disengagement)|brought\s+about|induc(?:e|ed|es|ing)|"
+    r"as\s+(?:a\s+)?consequence\s+of|(?:is|are|was|were)\s+(?:the\s+)?"
+    r"reason(?:\s+(?:for|that|why))?|(?:is|are|was|were)\s+why|"
     r"responsible\s+for|stems?\s+from|guarantee(?:d|s)?|ensures?|"
     r"(?:will|expected\s+to)\s+(?:boost|raise|grow|increase|improve|restore|retain|"
     r"reduce|prevent|decrease))\b",
@@ -132,6 +139,13 @@ _CAUSAL_CLAIM = re.compile(
 )
 _NEGATED_CAUSAL_PREFIX = re.compile(
     r"(?:\bcannot|\bcan\s+not|\bnot(?!\s+only\b))(?:\s+\w+){0,4}\s*$",
+    re.IGNORECASE,
+)
+_UNCERTAIN_CAUSAL_PREFIX = re.compile(
+    r"(?:\bno\s+(?:credible\s+)?evidence\s+(?:that|to\s+show\s+that|"
+    r"(?:indicates?|shows?|supports?)(?:\s+that)?)|"
+    r"\b(?:it\s+is\s+)?(?:unknown|unclear)\s+(?:whether|if))"
+    r"(?:\s+[\w'-]+){0,12}\s*$",
     re.IGNORECASE,
 )
 _EXPOSURE_CLAIM = re.compile(
@@ -222,8 +236,10 @@ def contains_unsupported_causal_claim(text: str) -> bool:
     """Return whether text contains a causal assertion rather than a denial."""
 
     for match in _CAUSAL_CLAIM.finditer(text):
-        prefix = text[max(0, match.start() - 80) : match.start()]
-        if _NEGATED_CAUSAL_PREFIX.search(prefix):
+        prefix = text[max(0, match.start() - 160) : match.start()]
+        if _NEGATED_CAUSAL_PREFIX.search(prefix) or _UNCERTAIN_CAUSAL_PREFIX.search(
+            prefix
+        ):
             continue
         return True
     return False
@@ -300,6 +316,115 @@ def _action_supported(
     return any(_rule_satisfied(rule, records) for rule in action.evidence_prerequisites)
 
 
+def _action_matching_records(
+    action: ActionDefinition,
+    records: tuple[EvidenceRecord, ...],
+) -> tuple[EvidenceRecord, ...]:
+    """Return records that satisfy an individual predicate for an action."""
+
+    return tuple(
+        record
+        for record in records
+        if any(
+            record.source_tool in rule.source_tools
+            and record.metric in rule.metrics
+            and any(predicate.matches(record) for predicate in rule.predicates)
+            for rule in action.evidence_prerequisites
+        )
+    )
+
+
+def is_relevant_counterevidence(
+    action: ActionDefinition,
+    record: EvidenceRecord,
+    supporting_records: tuple[EvidenceRecord, ...],
+) -> bool:
+    """Return whether a record deterministically qualifies the selected driver.
+
+    A broad contemporaneous classification can qualify a customer-specific
+    interpretation. Otherwise a counter must be an action-relevant measure that
+    does not satisfy the action's adverse-direction predicate. Category counters
+    must refer to a category present in the driver's support.
+    """
+
+    if record.metric == _CONTEXT_CLASSIFICATION_METRIC and record.text_value in {
+        ContextClassification.BROAD_CONTEXT.value,
+        ContextClassification.MIXED.value,
+    }:
+        return True
+    if record.metric == _CATEGORY_CONTEXT_CLASSIFICATION_METRIC:
+        if (
+            action.action_id is not ActionId.CATEGORY_WINBACK
+            or record.text_value
+            not in {
+                ContextClassification.BROAD_CONTEXT.value,
+                ContextClassification.MIXED.value,
+            }
+        ):
+            return False
+        supported_categories = {
+            (
+                item.dimensions.get("department"),
+                item.dimensions.get("product_category"),
+            )
+            for item in supporting_records
+        }
+        return (
+            record.dimensions.get("department"),
+            record.dimensions.get("product_category"),
+        ) in supported_categories
+
+    relevant_predicates = tuple(
+        predicate
+        for rule in action.evidence_prerequisites
+        if record.source_tool in rule.source_tools and record.metric in rule.metrics
+        for predicate in rule.predicates
+        if predicate.metric == record.metric
+    )
+    if not any(
+        _opposes_evidence_predicate(predicate, record)
+        for predicate in relevant_predicates
+    ):
+        return False
+    if action.action_id is not ActionId.CATEGORY_WINBACK:
+        return True
+    supported_categories = {
+        (
+            item.dimensions.get("department"),
+            item.dimensions.get("product_category"),
+        )
+        for item in supporting_records
+    }
+    return (
+        record.dimensions.get("department"),
+        record.dimensions.get("product_category"),
+    ) in supported_categories
+
+
+def _opposes_evidence_predicate(
+    predicate: EvidencePredicate,
+    record: EvidenceRecord,
+) -> bool:
+    """Require the same scope and the non-adverse side of an action threshold."""
+
+    if record.metric != predicate.metric or not all(
+        item.matches(record) for item in predicate.dimensions
+    ):
+        return False
+    observed = getattr(record, predicate.field)
+    if observed is None:
+        return False
+    opposites = {
+        "lt": observed >= predicate.threshold,
+        "lte": observed > predicate.threshold,
+        "gt": observed <= predicate.threshold,
+        "gte": observed < predicate.threshold,
+        "eq": observed != predicate.threshold,
+        "neq": observed == predicate.threshold,
+    }
+    return opposites[predicate.operator]
+
+
 def _confidence_cap(
     records: tuple[EvidenceRecord, ...], limitations: tuple[str, ...]
 ) -> ResolvedConfidence:
@@ -336,6 +461,16 @@ def _context_assessment(
 
     classifications: list[ContextClassification] = []
     for record in context_records:
+        if (
+            record.source_tool is not ToolName.PEER_COMPARISON
+            or record.dimensions.get("target_excluded") != "true"
+        ):
+            _append_issue(
+                issues,
+                VerificationIssueCode.INVALID_CONTEXT_EVIDENCE,
+                "Population context classification lacks its required peer-tool "
+                f"source or target-exclusion proof: {record.evidence_id}",
+            )
         try:
             classifications.append(ContextClassification(record.text_value))
         except (TypeError, ValueError):
@@ -429,25 +564,24 @@ def _category_context_adjustments(
         and tuple(record.dimensions.get(key) for key in dimension_keys)
         in cited_categories
     )
-    if not context_records:
-        return (
-            (
-                ConfidenceAdjustment(
-                    context_classification=(ContextClassification.INSUFFICIENT_CONTEXT),
-                    maximum_confidence=ResolvedConfidence.MEDIUM,
-                    reason=(
-                        "A cited category loss lacks reliable category-population "
-                        "context, so it cannot receive high confidence as uniquely "
-                        "customer-specific."
-                    ),
-                    evidence_ids=(),
-                ),
-            ),
-            (_MISSING_CATEGORY_CONTEXT_LIMITATION,),
-        )
+    covered_categories = {
+        tuple(record.dimensions.get(key) for key in dimension_keys)
+        for record in context_records
+    }
+    missing_categories = cited_categories.difference(covered_categories)
 
     classifications: list[ContextClassification] = []
     for record in context_records:
+        if (
+            record.source_tool is not ToolName.CATEGORY_DECOMPOSITION
+            or record.dimensions.get("target_excluded") != "true"
+        ):
+            _append_issue(
+                issues,
+                VerificationIssueCode.INVALID_CONTEXT_EVIDENCE,
+                "Category context classification lacks its required category-tool "
+                f"source or target-exclusion proof: {record.evidence_id}",
+            )
         try:
             classifications.append(ContextClassification(record.text_value))
         except (TypeError, ValueError):
@@ -461,25 +595,11 @@ def _category_context_adjustments(
     limitations = _deduplicate(
         [item for record in context_records for item in record.limitations]
     )
-    if (
-        not classifications
-        or ContextClassification.INSUFFICIENT_CONTEXT in classifications
-    ):
-        return (
-            (
-                ConfidenceAdjustment(
-                    context_classification=(ContextClassification.INSUFFICIENT_CONTEXT),
-                    maximum_confidence=ResolvedConfidence.MEDIUM,
-                    reason=(
-                        "The category comparison cohort is insufficient, so the cited "
-                        "loss cannot receive high customer-specific confidence."
-                    ),
-                    evidence_ids=evidence_ids,
-                ),
-            ),
-            (*limitations, _MISSING_CATEGORY_CONTEXT_LIMITATION),
-        )
-    if ContextClassification.BROAD_CONTEXT in classifications:
+    if missing_categories:
+        classifications.append(ContextClassification.INSUFFICIENT_CONTEXT)
+        limitations = _deduplicate([*limitations, _MISSING_CATEGORY_CONTEXT_LIMITATION])
+    resolved = resolve_context_classifications(tuple(classifications))
+    if resolved is ContextClassification.BROAD_CONTEXT:
         return (
             (
                 ConfidenceAdjustment(
@@ -494,7 +614,22 @@ def _category_context_adjustments(
             ),
             limitations,
         )
-    if ContextClassification.MIXED in classifications:
+    if resolved is ContextClassification.INSUFFICIENT_CONTEXT:
+        return (
+            (
+                ConfidenceAdjustment(
+                    context_classification=(ContextClassification.INSUFFICIENT_CONTEXT),
+                    maximum_confidence=ResolvedConfidence.MEDIUM,
+                    reason=(
+                        "The category comparison cohort is insufficient, so the cited "
+                        "loss cannot receive high customer-specific confidence."
+                    ),
+                    evidence_ids=(() if missing_categories else evidence_ids),
+                ),
+            ),
+            _deduplicate([*limitations, _MISSING_CATEGORY_CONTEXT_LIMITATION]),
+        )
+    if resolved is ContextClassification.MIXED:
         return (
             (
                 ConfidenceAdjustment(
@@ -526,22 +661,22 @@ def _resolved_drivers(
     supporting_records: tuple[EvidenceRecord, ...],
     proposal: FinishProposal,
 ) -> tuple[DriverClaim, ...]:
-    matching_records = tuple(
-        record
-        for record in supporting_records
-        if any(
-            record.source_tool in rule.source_tools
-            and record.metric in rule.metrics
-            and any(predicate.matches(record) for predicate in rule.predicates)
-            for rule in action.evidence_prerequisites
-        )
-    )
+    matching_records = _action_matching_records(action, supporting_records)
     if not matching_records:
+        return ()
+    matching_ids = tuple(record.evidence_id for record in matching_records)
+    matching_id_set = set(matching_ids)
+    contributing_drivers = tuple(
+        driver
+        for driver in proposal.driver_summary
+        if matching_id_set.intersection(driver.supporting_evidence_ids)
+    )
+    if not contributing_drivers:
         return ()
     claim_type = min(
         (
             *(record.maximum_claim_type for record in matching_records),
-            *(driver.claim_type for driver in proposal.driver_summary),
+            *(driver.claim_type for driver in contributing_drivers),
         ),
         key=_CLAIM_ORDER.__getitem__,
     )
@@ -553,14 +688,19 @@ def _resolved_drivers(
     template = templates.get(action.action_id)
     if template is None:
         return ()
-    matching_ids = tuple(record.evidence_id for record in matching_records)
     limitations = _deduplicate(
         [
             _OBSERVATIONAL_DRIVER_LIMITATION,
             *(item for record in matching_records for item in record.limitations),
         ]
     )
-    counterevidence_ids = tuple(proposal.counterevidence_ids)
+    counterevidence_ids = _deduplicate(
+        [
+            evidence_id
+            for driver in contributing_drivers
+            for evidence_id in driver.counterevidence_ids
+        ]
+    )
     return (
         DriverClaim(
             summary=template,
@@ -766,6 +906,31 @@ class FinalVerifier:
             if item in referenced
         )
         if action is not None:
+            action_matching_ids = {
+                record.evidence_id
+                for record in _action_matching_records(action, supporting_records)
+            }
+            for driver in proposal.driver_summary:
+                if not action_matching_ids.intersection(driver.supporting_evidence_ids):
+                    continue
+                driver_support = tuple(
+                    ledger[evidence_id]
+                    for evidence_id in driver.supporting_evidence_ids
+                    if evidence_id in ledger
+                )
+                for evidence_id in driver.counterevidence_ids:
+                    counter = ledger.get(evidence_id)
+                    if counter is not None and not is_relevant_counterevidence(
+                        action,
+                        counter,
+                        driver_support,
+                    ):
+                        _append_issue(
+                            issues,
+                            VerificationIssueCode.IRRELEVANT_COUNTEREVIDENCE,
+                            "Driver counterevidence is not a deterministic qualifier "
+                            f"for {action.action_id.value}: {evidence_id}",
+                        )
             if action.action_id is ActionId.INSUFFICIENT_EVIDENCE:
                 if proposal.supporting_evidence_ids or proposal.driver_summary:
                     _append_issue(
@@ -918,9 +1083,28 @@ class FinalVerifier:
             )
             used_limitations.extend(history.limitations)
         support_limitations = _deduplicate(used_limitations)
+        partial_result_limitations = _deduplicate(
+            [
+                *(
+                    limitation
+                    for history in state.tool_history
+                    if history.final_status is ToolStatus.PARTIAL
+                    for limitation in history.limitations
+                ),
+                *(
+                    limitation
+                    for record in full_ledger_records
+                    if call_histories.get(record.source_tool_call_id) is not None
+                    and call_histories[record.source_tool_call_id].final_status
+                    is ToolStatus.PARTIAL
+                    for limitation in record.limitations
+                ),
+            ]
+        )
         propagated_limitations = _deduplicate(
             [
                 *support_limitations,
+                *partial_result_limitations,
                 *context_limitations,
                 *category_context_limitations,
             ]
@@ -931,6 +1115,22 @@ class FinalVerifier:
             return VerificationResult(passed=False, issues=tuple(issues))
 
         resolved_drivers = _resolved_drivers(action, supporting_records, proposal)
+        if (
+            action.action_id is not ActionId.INSUFFICIENT_EVIDENCE
+            and not resolved_drivers
+        ):
+            return VerificationResult(
+                passed=False,
+                issues=(
+                    VerificationIssue(
+                        code=VerificationIssueCode.UNSUPPORTED_DRIVER,
+                        message=(
+                            "No proposed driver maps the evidence that supports the "
+                            "selected action."
+                        ),
+                    ),
+                ),
+            )
         resolved_supporting_ids = tuple(
             evidence_id
             for driver in resolved_drivers
@@ -940,6 +1140,13 @@ class FinalVerifier:
             referenced[evidence_id]
             for evidence_id in resolved_supporting_ids
             if evidence_id in referenced
+        )
+        resolved_counterevidence_ids = _deduplicate(
+            [
+                evidence_id
+                for driver in resolved_drivers
+                for evidence_id in driver.counterevidence_ids
+            ]
         )
         cap = _confidence_cap(resolved_supporting_records, support_limitations)
         for adjustment in confidence_adjustments:
@@ -956,7 +1163,7 @@ class FinalVerifier:
             confidence_cap_applied=cap_applied,
             confidence_adjustments=confidence_adjustments,
             supporting_evidence_ids=resolved_supporting_ids,
-            counterevidence_ids=proposal.counterevidence_ids,
+            counterevidence_ids=resolved_counterevidence_ids,
             next_best_action_id=action.action_id,
             action_description=action.description,
             rationale=_resolved_rationale(action.action_id),

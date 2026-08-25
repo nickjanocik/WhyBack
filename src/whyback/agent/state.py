@@ -121,8 +121,12 @@ class DriverClaim(BaseModel):
 
     summary: str = Field(min_length=1, max_length=400)
     claim_type: ClaimType
-    supporting_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=6)
-    counterevidence_ids: tuple[str, ...] = Field(default=(), max_length=6)
+    # These bounds align with the proposal-level ledger-reference bounds. The
+    # verifier may collapse multiple proposed drivers into one code-owned safe
+    # driver, so a narrower per-driver bound would make a schema-valid proposal
+    # fail during deterministic resolution.
+    supporting_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=12)
+    counterevidence_ids: tuple[str, ...] = Field(default=(), max_length=8)
     no_material_counterevidence_reason: str | None = Field(
         default=None,
         min_length=1,
@@ -177,15 +181,24 @@ class FinishProposal(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def require_driver_counterevidence_subset(self) -> Self:
+    def require_driver_evidence_accounting(self) -> Self:
+        proposal_support = set(self.supporting_evidence_ids)
         proposal_counterevidence = set(self.counterevidence_ids)
+        assigned_support: set[str] = set()
         assigned_counterevidence: set[str] = set()
         for driver in self.driver_summary:
+            if not set(driver.supporting_evidence_ids).issubset(proposal_support):
+                raise ValueError(
+                    "Driver support must be present in the proposal-level set"
+                )
             if not set(driver.counterevidence_ids).issubset(proposal_counterevidence):
                 raise ValueError(
                     "Driver counterevidence must be present in the proposal-level set"
                 )
+            assigned_support.update(driver.supporting_evidence_ids)
             assigned_counterevidence.update(driver.counterevidence_ids)
+        if assigned_support != proposal_support:
+            raise ValueError("Proposal support must be assigned to at least one driver")
         if assigned_counterevidence != proposal_counterevidence:
             raise ValueError(
                 "Proposal counterevidence must be assigned to at least one driver"

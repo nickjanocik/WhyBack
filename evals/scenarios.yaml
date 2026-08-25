@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 3
 scenarios:
   - scenario_id: frequency_decline
     archetype: frequency
@@ -9,6 +9,7 @@ scenarios:
       - basket_behavior
     irrelevant_mandatory_tools:
       - coupon_campaign_history
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
     max_tool_executions: 5
     max_model_decisions: 6
 
@@ -20,6 +21,7 @@ scenarios:
       - category_decomposition
     irrelevant_mandatory_tools:
       - peer_comparison
+    expected_next_best_action_id: CATEGORY_WINBACK
     max_tool_executions: 5
     max_model_decisions: 6
 
@@ -31,6 +33,7 @@ scenarios:
       - promotion_response
     irrelevant_mandatory_tools:
       - peer_comparison
+    expected_next_best_action_id: PROMOTION_VALUE_REENGAGEMENT
     max_tool_executions: 5
     max_model_decisions: 6
 
@@ -42,6 +45,7 @@ scenarios:
       - peer_comparison
     irrelevant_mandatory_tools:
       - coupon_campaign_history
+    expected_next_best_action_id: INSUFFICIENT_EVIDENCE
     max_tool_executions: 5
     max_model_decisions: 6
 
@@ -56,6 +60,7 @@ scenarios:
     required_partial_tools:
       - coupon_campaign_history
     requires_limitation_propagation: true
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
     max_tool_executions: 5
     max_model_decisions: 6
 
@@ -69,5 +74,102 @@ scenarios:
     required_failed_tools:
       - promotion_response
     requires_graceful_degradation: true
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: broad_decline
+    archetype: broad_decline
+    title: Target decline resembles widespread contemporaneous movement
+    description: Verify broad population and peer context, a deterministic confidence reduction, and an associational conclusion only.
+    relevant_tools:
+      - peer_comparison
+    irrelevant_mandatory_tools: []
+    expected_context_classification: broad_context
+    expected_resolved_confidence: low
+    expected_claim_types:
+      - associational
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
+    requires_confidence_adjustment: true
+    requires_broad_context_warning: true
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: customer_specific_decline
+    archetype: customer_specific_decline
+    title: Target decline is materially worse than population and peers
+    description: Verify customer-specific context can support a stronger targeted investigation without creating a causal claim.
+    relevant_tools:
+      - peer_comparison
+      - customer_trend
+    irrelevant_mandatory_tools: []
+    expected_context_classification: customer_specific
+    expected_resolved_confidence: medium
+    expected_claim_types:
+      - associational
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: broad_category_decline
+    archetype: broad_category_decline
+    title: A target category loss is widespread among active category households
+    description: Verify the category remains descriptively relevant while broad category context reduces customer-specific confidence.
+    relevant_tools:
+      - category_decomposition
+    irrelevant_mandatory_tools: []
+    expected_context_classification: broad_context
+    expected_resolved_confidence: low
+    expected_claim_types:
+      - associational
+    expected_next_best_action_id: CATEGORY_WINBACK
+    requires_confidence_adjustment: true
+    requires_broad_context_warning: true
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: target_specific_category_decline
+    archetype: target_specific_category_decline
+    title: A target category loss is unusual among active category households
+    description: Verify a customer-specific category interpretation remains associational and is grounded in deterministic cohort evidence.
+    relevant_tools:
+      - category_decomposition
+    irrelevant_mandatory_tools: []
+    expected_context_classification: customer_specific
+    expected_resolved_confidence: medium
+    expected_claim_types:
+      - associational
+    expected_next_best_action_id: CATEGORY_WINBACK
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: insufficient_comparison_population
+    archetype: insufficient_comparison_population
+    title: Population and peer cohorts are too small for stable context
+    description: Verify insufficient context is explicit, lowers confidence, and propagates a comparison limitation without fabricating a percentile.
+    relevant_tools:
+      - peer_comparison
+    irrelevant_mandatory_tools: []
+    requires_limitation_propagation: true
+    expected_context_classification: insufficient_context
+    expected_resolved_confidence: medium
+    expected_claim_types:
+      - associational
+    expected_next_best_action_id: VISIT_FREQUENCY_REACTIVATION
+    expected_population_percentile_available: false
+    requires_confidence_adjustment: true
+    max_tool_executions: 5
+    max_model_decisions: 6
+
+  - scenario_id: causal_language_attack
+    archetype: causal_language_attack
+    title: A substantive observational finish asserts unsupported causality
+    description: Verify the causal finish is rejected and the bounded repair or deterministic fallback completes without a causal driver.
+    relevant_tools:
+      - customer_trend
+    irrelevant_mandatory_tools: []
+    expected_claim_types: []
+    expected_next_best_action_id: INSUFFICIENT_EVIDENCE
+    requires_causal_rejection: true
     max_tool_executions: 5
     max_model_decisions: 6

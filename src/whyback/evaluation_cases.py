@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import NAMESPACE_URL, UUID, uuid5
 
+import pandas as pd
 from pydantic import JsonValue
 
 from whyback.agent.actions import ActionId, load_action_catalog
@@ -25,10 +26,12 @@ from whyback.agent.state import (
     ModelDecision,
     ToolDecision,
 )
+from whyback.agent.verifier import VerificationIssueCode
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
 from whyback.demo import synthetic_demo_frames
 from whyback.detection.decline import DeclineSnapshot, detect_declines
+from whyback.methodology import ClaimType, ContextClassification
 from whyback.tools.contracts import ToolName, ToolStatus
 from whyback.tools.registry import build_tool_registry
 
@@ -39,6 +42,12 @@ SCENARIO_IDS = (
     "ambiguous_peer_comparison",
     "type_a_coupon_exposure_gap",
     "persistent_promotion_timeout",
+    "broad_decline",
+    "customer_specific_decline",
+    "broad_category_decline",
+    "target_specific_category_decline",
+    "insufficient_comparison_population",
+    "causal_language_attack",
 )
 _EVAL_NAMESPACE = uuid5(NAMESPACE_URL, "https://github.com/whyback/evaluations")
 
@@ -67,6 +76,12 @@ def _finish(
     action: ActionId,
     supporting: tuple[str, ...],
     counterevidence: tuple[str, ...] = (),
+    claim_type: ClaimType = ClaimType.ASSOCIATIONAL,
+    proposed_confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM,
+    summary: str = (
+        "Recorded behavioral evidence is consistent with an engagement decline "
+        "that warrants a reviewed test."
+    ),
 ) -> FinishDecision:
     return FinishDecision(
         investigation_question="Is the bounded evidence sufficient to finish?",
@@ -74,14 +89,23 @@ def _finish(
         final=FinishProposal(
             driver_summary=(
                 DriverClaim(
-                    summary=(
-                        "Recorded behavioral evidence is consistent with an "
-                        "engagement decline that warrants a reviewed test."
-                    ),
+                    summary=summary,
+                    claim_type=claim_type,
                     supporting_evidence_ids=supporting,
+                    counterevidence_ids=counterevidence,
+                    no_material_counterevidence_reason=(
+                        None
+                        if counterevidence
+                        else "No material counterevidence was identified in this "
+                        "controlled case."
+                    ),
+                    limitations=(
+                        "The controlled evidence is observational and does not "
+                        "establish causality.",
+                    ),
                 ),
             ),
-            proposed_confidence=ConfidenceLevel.MEDIUM,
+            proposed_confidence=proposed_confidence,
             supporting_evidence_ids=supporting,
             counterevidence_ids=counterevidence,
             next_best_action_id=action,
@@ -129,7 +153,10 @@ def _decisions(
             _finish(action=ActionId.VISIT_FREQUENCY_REACTIVATION, supporting=support),
         )
     elif scenario_id == "category_collapse":
-        support = (_evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),)
+        support = (
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 13),
+        )
         steps = (
             _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
             _finish(action=ActionId.CATEGORY_WINBACK, supporting=support),
@@ -152,14 +179,12 @@ def _decisions(
         )
     elif scenario_id == "type_a_coupon_exposure_gap":
         support = (_evidence_id(run_id, 2, ToolName.CUSTOMER_TREND, 2),)
-        counter = (_evidence_id(run_id, 1, ToolName.COUPON_CAMPAIGN_HISTORY, 1),)
         steps = (
             _tool(ToolName.COUPON_CAMPAIGN_HISTORY, household_id),
             _tool(ToolName.CUSTOMER_TREND, household_id),
             _finish(
                 action=ActionId.VISIT_FREQUENCY_REACTIVATION,
                 supporting=support,
-                counterevidence=counter,
             ),
         )
     elif scenario_id == "persistent_promotion_timeout":
@@ -170,6 +195,55 @@ def _decisions(
             _finish(
                 action=ActionId.VISIT_FREQUENCY_REACTIVATION,
                 supporting=support,
+            ),
+        )
+    elif scenario_id in {
+        "broad_decline",
+        "customer_specific_decline",
+        "insufficient_comparison_population",
+    }:
+        support = (_evidence_id(run_id, 2, ToolName.CUSTOMER_TREND, 2),)
+        steps = (
+            _tool(
+                ToolName.PEER_COMPARISON,
+                household_id,
+                arguments={"household_id": household_id, "peer_count": 5},
+            ),
+            _tool(ToolName.CUSTOMER_TREND, household_id),
+            _finish(
+                action=ActionId.VISIT_FREQUENCY_REACTIVATION,
+                supporting=support,
+                proposed_confidence=ConfidenceLevel.HIGH,
+            ),
+        )
+    elif scenario_id in {
+        "broad_category_decline",
+        "target_specific_category_decline",
+    }:
+        support = (
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 9),
+            _evidence_id(run_id, 1, ToolName.CATEGORY_DECOMPOSITION, 13),
+        )
+        steps = (
+            _tool(ToolName.CATEGORY_DECOMPOSITION, household_id),
+            _finish(
+                action=ActionId.CATEGORY_WINBACK,
+                supporting=support,
+                proposed_confidence=ConfidenceLevel.HIGH,
+            ),
+        )
+    elif scenario_id == "causal_language_attack":
+        support = (_evidence_id(run_id, 1, ToolName.CUSTOMER_TREND, 2),)
+        steps = (
+            _tool(ToolName.CUSTOMER_TREND, household_id),
+            _finish(
+                action=ActionId.VISIT_FREQUENCY_REACTIVATION,
+                supporting=support,
+                claim_type=ClaimType.CAUSAL,
+                proposed_confidence=ConfidenceLevel.HIGH,
+                summary=(
+                    "Reduced recorded visit cadence caused the customer to disengage."
+                ),
             ),
         )
     else:
@@ -205,7 +279,78 @@ def _unique(values: list[str]) -> list[str]:
     return list(dict.fromkeys(values))
 
 
-def _normalize(outcome: InvestigationOutcome, scenario_id: str) -> dict[str, object]:
+def _scenario_frames(scenario_id: str) -> dict[str, pd.DataFrame]:
+    """Build a scenario-local population while preserving source-shaped frames."""
+
+    frames = {name: frame.copy() for name, frame in synthetic_demo_frames().items()}
+    transactions = frames["transactions"]
+    comparison_ids = tuple(
+        sorted(
+            set(transactions["household_id"].astype(str)).difference({"101"}),
+            key=int,
+        )
+    )
+
+    if scenario_id in {
+        "customer_specific_decline",
+        "target_specific_category_decline",
+    }:
+        baseline = transactions.loc[
+            transactions["household_id"].isin(comparison_ids)
+            & transactions["week"].between(1, 8)
+        ].copy()
+        baseline["week"] = baseline["week"] + 8
+        baseline["basket_id"] = baseline.apply(
+            lambda row: f"{row['household_id']}{int(row['week']):02d}{row.name}",
+            axis=1,
+        )
+        baseline["transaction_timestamp"] = pd.to_datetime(
+            baseline["transaction_timestamp"]
+        ) + pd.Timedelta(days=56)
+        target_rows = transactions.loc[
+            (transactions["household_id"] == "101") | transactions["week"].between(1, 8)
+        ]
+        frames["transactions"] = pd.concat([target_rows, baseline], ignore_index=True)
+    elif scenario_id in {"broad_decline", "broad_category_decline"}:
+        target_recent = transactions.loc[
+            (transactions["household_id"] == "101")
+            & transactions["week"].between(9, 16)
+        ]
+        broad_recent: list[pd.DataFrame] = []
+        for household_id in comparison_ids:
+            household_rows = target_recent.copy()
+            household_rows["household_id"] = household_id
+            if household_id == comparison_ids[-1]:
+                household_rows.loc[household_rows.index[-1], "week"] = 16
+            household_rows["basket_id"] = [
+                f"{household_id}{int(week):02d}0" for week in household_rows["week"]
+            ]
+            broad_recent.append(household_rows)
+        baseline_and_target = transactions.loc[
+            (transactions["household_id"] == "101") | transactions["week"].between(1, 8)
+        ]
+        frames["transactions"] = pd.concat(
+            [baseline_and_target, *broad_recent], ignore_index=True
+        )
+    elif scenario_id == "insufficient_comparison_population":
+        retained = ("101", "102", "103", "104", "105", "106")
+        frames["transactions"] = transactions.loc[
+            transactions["household_id"].isin(retained)
+        ].copy()
+        frames["demographics"] = (
+            frames["demographics"]
+            .loc[frames["demographics"]["household_id"].isin(retained)]
+            .copy()
+        )
+
+    return frames
+
+
+def normalize_synthetic_outcome(
+    outcome: InvestigationOutcome, scenario_id: str
+) -> dict[str, object]:
+    """Materialize the public evaluator's exact typed outcome facts."""
+
     state = outcome.state
     selected = [item.tool_name.value for item in state.tool_history]
     partial = _unique(
@@ -237,6 +382,17 @@ def _normalize(outcome: InvestigationOutcome, scenario_id: str) -> dict[str, obj
         if state.final_proposal is not None
         else []
     )
+    referenced = _unique(
+        [
+            *referenced,
+            *(
+                record.evidence_id
+                for record in state.evidence_ledger
+                if record.metric
+                in {"context_classification", "category_context_classification"}
+            ),
+        ]
+    )
     histories = {
         attempt.tool_call_id: history
         for history in state.tool_history
@@ -251,8 +407,54 @@ def _normalize(outcome: InvestigationOutcome, scenario_id: str) -> dict[str, obj
         history = histories.get(record.source_tool_call_id)
         if history is not None and history.final_status is ToolStatus.PARTIAL:
             source_limitations.extend(history.limitations)
+    for history in state.tool_history:
+        if history.final_status is ToolStatus.PARTIAL:
+            source_limitations.extend(history.limitations)
+    for record in state.evidence_ledger:
+        history = histories.get(record.source_tool_call_id)
+        if history is not None and history.final_status is ToolStatus.PARTIAL:
+            source_limitations.extend(record.limitations)
     verified = outcome.verification is not None and outcome.verification.passed
     final = outcome.verification.final if outcome.verification is not None else None
+    contexts = _unique(
+        [
+            record.text_value
+            for record in state.evidence_ledger
+            if record.metric
+            in {"context_classification", "category_context_classification"}
+            and record.text_value in {item.value for item in ContextClassification}
+        ]
+    )
+    rejection_codes = _unique(
+        [
+            issue.partition(":")[0]
+            for issue in state.verification_issues
+            if issue.partition(":")[0] in {item.value for item in VerificationIssueCode}
+        ]
+    )
+    duplicate_call_count = sum(
+        1
+        for item in state.tool_history
+        if not item.attempts
+        and item.final_status is ToolStatus.INVALID_REQUEST
+        and any("duplicate" in limitation.lower() for limitation in item.limitations)
+    )
+    population_percentile_available = any(
+        record.source_tool is ToolName.PEER_COMPARISON
+        and record.metric == "target_population_retailer_sales_change_percentile"
+        and record.dimensions.get("comparison_scope") == "eligible_population"
+        and record.dimensions.get("target_excluded") == "true"
+        and record.unit == "percentile"
+        and record.value is not None
+        for record in state.evidence_ledger
+    )
+    adjustment_classifications = (
+        _unique(
+            [item.context_classification.value for item in final.confidence_adjustments]
+        )
+        if final is not None
+        else []
+    )
     return {
         "scenario_id": scenario_id,
         "run_id": str(state.run_id),
@@ -272,29 +474,54 @@ def _normalize(outcome: InvestigationOutcome, scenario_id: str) -> dict[str, obj
         "propagated_limitations": (
             list(final.propagated_limitations) if final is not None else []
         ),
-        "duplicate_call_count": 0,
+        "duplicate_call_count": duplicate_call_count,
+        "context_classifications": contexts,
+        "resolved_confidence": (
+            final.resolved_confidence.value if final is not None else None
+        ),
+        "confidence_cap_applied": bool(
+            final is not None and final.confidence_cap_applied
+        ),
+        "confidence_adjustment_classifications": adjustment_classifications,
+        "broad_context_warning_present": (
+            ContextClassification.BROAD_CONTEXT.value in adjustment_classifications
+        ),
+        "population_percentile_available": population_percentile_available,
+        "verified_claim_types": (
+            _unique([item.claim_type.value for item in final.drivers])
+            if final is not None
+            else []
+        ),
+        "verification_rejection_codes": rejection_codes,
+        "next_best_action_id": (
+            final.next_best_action_id.value if final is not None else None
+        ),
     }
 
 
 def build_normalized_synthetic_runs(output_path: Path) -> tuple[dict[str, object], ...]:
-    """Execute all six real scripted control paths and write normalized outcomes."""
+    """Execute all twelve real scripted control paths and write normalized outcomes."""
 
     with TemporaryDirectory(prefix="whyback-evals-") as temporary:
-        prepared_dir = Path(temporary) / "prepared"
-        prepare_frames_for_tests(synthetic_demo_frames(), prepared_dir)
-        with DataRepository(prepared_dir) as repository:
-            snapshots = detect_declines(repository)
-            snapshot = next(item for item in snapshots if item.household_id == "101")
-            summaries = tuple(
-                _normalize(
-                    _run_case(repository, snapshot, scenario_id),
-                    scenario_id,
+        summaries_list: list[dict[str, object]] = []
+        for scenario_id in SCENARIO_IDS:
+            prepared_dir = Path(temporary) / scenario_id / "prepared"
+            prepare_frames_for_tests(_scenario_frames(scenario_id), prepared_dir)
+            with DataRepository(prepared_dir) as repository:
+                snapshots = detect_declines(repository)
+                snapshot = next(
+                    item for item in snapshots if item.household_id == "101"
                 )
-                for scenario_id in SCENARIO_IDS
-            )
+                summaries_list.append(
+                    normalize_synthetic_outcome(
+                        _run_case(repository, snapshot, scenario_id),
+                        scenario_id,
+                    )
+                )
+        summaries = tuple(summaries_list)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     document = {
-        "schema_version": 1,
+        "schema_version": 3,
         "provenance": {
             "dataset_kind": "synthetic",
             "backend": "scripted_control",

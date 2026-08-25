@@ -26,11 +26,31 @@ from whyback.agent.state import (
     ConfidenceLevel,
     FinishProposal,
     InvestigationState,
+    ModelUsage,
     ResolvedConfidence,
     RunStatus,
+    ToolHistoryEntry,
 )
+from whyback.agent.verifier import VerificationIssueCode
 from whyback.detection.decline import DeclineSnapshot
-from whyback.tools.contracts import ToolName
+from whyback.evaluation_cases import normalize_synthetic_outcome
+from whyback.methodology import ClaimType, ContextClassification
+from whyback.tools.contracts import ToolName, ToolStatus
+
+_EXPECTED_ACTIONS = {
+    "frequency_decline": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "category_collapse": ActionId.CATEGORY_WINBACK,
+    "promotion_associated_decline": ActionId.PROMOTION_VALUE_REENGAGEMENT,
+    "ambiguous_peer_comparison": ActionId.INSUFFICIENT_EVIDENCE,
+    "type_a_coupon_exposure_gap": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "persistent_promotion_timeout": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "broad_decline": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "customer_specific_decline": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "broad_category_decline": ActionId.CATEGORY_WINBACK,
+    "target_specific_category_decline": ActionId.CATEGORY_WINBACK,
+    "insufficient_comparison_population": ActionId.VISIT_FREQUENCY_REACTIVATION,
+    "causal_language_attack": ActionId.INSUFFICIENT_EVIDENCE,
+}
 
 
 def _good_summary(
@@ -41,6 +61,14 @@ def _good_summary(
     failed: tuple[ToolName, ...] = (),
     limitation: str | None = None,
     status: RunStatus = RunStatus.COMPLETED,
+    context: tuple[ContextClassification, ...] = (),
+    resolved_confidence: ResolvedConfidence | None = None,
+    confidence_cap_applied: bool = False,
+    confidence_adjustments: tuple[ContextClassification, ...] = (),
+    claim_types: tuple[ClaimType, ...] = (),
+    rejection_codes: tuple[VerificationIssueCode, ...] = (),
+    action: ActionId | None = None,
+    population_percentile_available: bool = False,
 ) -> NormalizedRunSummary:
     evidence_id = f"ev_{scenario_id}"
     return NormalizedRunSummary(
@@ -57,6 +85,17 @@ def _good_summary(
         referenced_evidence_ids=(evidence_id,),
         source_limitations=(limitation,) if limitation else (),
         propagated_limitations=(limitation,) if limitation else (),
+        context_classifications=context,
+        resolved_confidence=resolved_confidence,
+        confidence_cap_applied=confidence_cap_applied,
+        confidence_adjustment_classifications=confidence_adjustments,
+        broad_context_warning_present=(
+            ContextClassification.BROAD_CONTEXT in confidence_adjustments
+        ),
+        population_percentile_available=population_percentile_available,
+        verified_claim_types=claim_types,
+        verification_rejection_codes=rejection_codes,
+        next_best_action_id=action or _EXPECTED_ACTIONS[scenario_id],
     )
 
 
@@ -86,6 +125,65 @@ def _baseline_summaries() -> tuple[NormalizedRunSummary, ...]:
             selected=(ToolName.PROMOTION_RESPONSE, ToolName.CUSTOMER_TREND),
             failed=(ToolName.PROMOTION_RESPONSE,),
             status=RunStatus.INSUFFICIENT_EVIDENCE,
+        ),
+        _good_summary(
+            "broad_decline",
+            selected=(ToolName.PEER_COMPARISON,),
+            context=(ContextClassification.BROAD_CONTEXT,),
+            resolved_confidence=ResolvedConfidence.LOW,
+            confidence_cap_applied=True,
+            confidence_adjustments=(ContextClassification.BROAD_CONTEXT,),
+            claim_types=(ClaimType.ASSOCIATIONAL,),
+        ),
+        _good_summary(
+            "customer_specific_decline",
+            selected=(ToolName.PEER_COMPARISON, ToolName.CUSTOMER_TREND),
+            context=(ContextClassification.CUSTOMER_SPECIFIC,),
+            resolved_confidence=ResolvedConfidence.MEDIUM,
+            confidence_cap_applied=True,
+            claim_types=(ClaimType.ASSOCIATIONAL,),
+        ),
+        _good_summary(
+            "broad_category_decline",
+            selected=(ToolName.CATEGORY_DECOMPOSITION,),
+            context=(ContextClassification.BROAD_CONTEXT,),
+            resolved_confidence=ResolvedConfidence.LOW,
+            confidence_cap_applied=True,
+            confidence_adjustments=(
+                ContextClassification.INSUFFICIENT_CONTEXT,
+                ContextClassification.BROAD_CONTEXT,
+            ),
+            claim_types=(ClaimType.ASSOCIATIONAL,),
+        ),
+        _good_summary(
+            "target_specific_category_decline",
+            selected=(ToolName.CATEGORY_DECOMPOSITION,),
+            context=(ContextClassification.CUSTOMER_SPECIFIC,),
+            resolved_confidence=ResolvedConfidence.MEDIUM,
+            confidence_cap_applied=True,
+            confidence_adjustments=(ContextClassification.INSUFFICIENT_CONTEXT,),
+            claim_types=(ClaimType.ASSOCIATIONAL,),
+        ),
+        _good_summary(
+            "insufficient_comparison_population",
+            selected=(ToolName.PEER_COMPARISON,),
+            partial=(ToolName.PEER_COMPARISON,),
+            limitation=(
+                "Comparison population is below the declared minimum cohort size."
+            ),
+            context=(ContextClassification.INSUFFICIENT_CONTEXT,),
+            resolved_confidence=ResolvedConfidence.MEDIUM,
+            confidence_cap_applied=True,
+            confidence_adjustments=(ContextClassification.INSUFFICIENT_CONTEXT,),
+            claim_types=(ClaimType.ASSOCIATIONAL,),
+        ),
+        _good_summary(
+            "causal_language_attack",
+            selected=(ToolName.CUSTOMER_TREND,),
+            status=RunStatus.INSUFFICIENT_EVIDENCE,
+            resolved_confidence=ResolvedConfidence.INSUFFICIENT,
+            confidence_cap_applied=True,
+            rejection_codes=(VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM,),
         ),
     )
 
@@ -128,13 +226,34 @@ def test_catalog_has_exact_ids_archetypes_and_special_contracts() -> None:
         ToolName.PROMOTION_RESPONSE,
     )
     assert scenarios["persistent_promotion_timeout"].requires_graceful_degradation
+    assert (
+        scenarios["broad_decline"].expected_context_classification
+        is ContextClassification.BROAD_CONTEXT
+    )
+    assert scenarios["broad_decline"].requires_confidence_adjustment
+    assert (
+        scenarios["customer_specific_decline"].expected_resolved_confidence
+        is ResolvedConfidence.MEDIUM
+    )
+    assert (
+        scenarios["broad_category_decline"].expected_next_best_action_id
+        is ActionId.CATEGORY_WINBACK
+    )
+    assert scenarios["broad_category_decline"].requires_broad_context_warning
+    assert (
+        scenarios[
+            "insufficient_comparison_population"
+        ].expected_population_percentile_available
+        is False
+    )
+    assert scenarios["causal_language_attack"].requires_causal_rejection
 
 
 def test_all_baseline_archetypes_produce_perfect_behavior_metrics() -> None:
     report = evaluate_runs(_baseline_summaries())
 
     assert report.missing_scenario_ids == ()
-    assert report.aggregate.run_count == 6
+    assert report.aggregate.run_count == 12
     for metric in (
         report.aggregate.scenario_contract_pass_rate,
         report.aggregate.relevant_tool_selection_rate,
@@ -144,10 +263,26 @@ def test_all_baseline_archetypes_produce_perfect_behavior_metrics() -> None:
         report.aggregate.evidence_grounding_rate,
         report.aggregate.limitation_propagation_rate,
         report.aggregate.graceful_degradation_success_rate,
+        report.aggregate.context_classification_rate,
+        report.aggregate.resolved_confidence_rate,
+        report.aggregate.confidence_adjustment_rate,
+        report.aggregate.claim_type_rate,
+        report.aggregate.next_best_action_rate,
+        report.aggregate.population_percentile_contract_rate,
+        report.aggregate.broad_context_warning_rate,
+        report.aggregate.causal_rejection_rate,
     ):
         assert metric.rate == 1.0
-    assert report.aggregate.limitation_propagation_rate.denominator == 1
+    assert report.aggregate.limitation_propagation_rate.denominator == 2
     assert report.aggregate.graceful_degradation_success_rate.denominator == 1
+    assert report.aggregate.context_classification_rate.denominator == 5
+    assert report.aggregate.resolved_confidence_rate.denominator == 5
+    assert report.aggregate.confidence_adjustment_rate.denominator == 3
+    assert report.aggregate.claim_type_rate.denominator == 6
+    assert report.aggregate.next_best_action_rate.denominator == 12
+    assert report.aggregate.population_percentile_contract_rate.denominator == 1
+    assert report.aggregate.broad_context_warning_rate.denominator == 2
+    assert report.aggregate.causal_rejection_rate.denominator == 1
     assert report.aggregate.duplicate_call_rate.numerator == 0
     assert report.aggregate.unsupported_evidence_rate.numerator == 0
 
@@ -196,6 +331,71 @@ def test_required_partial_limitation_must_be_observed_and_propagated() -> None:
     assert report.aggregate.limitation_propagation_rate.rate == 0.0
 
 
+@pytest.mark.parametrize(
+    ("scenario_id", "update", "failed_check"),
+    (
+        (
+            "broad_decline",
+            {"context_classifications": (ContextClassification.MIXED,)},
+            "context_classification_satisfied",
+        ),
+        (
+            "customer_specific_decline",
+            {"resolved_confidence": ResolvedConfidence.LOW},
+            "resolved_confidence_satisfied",
+        ),
+        (
+            "broad_category_decline",
+            {"confidence_adjustment_classifications": ()},
+            "confidence_adjustment_satisfied",
+        ),
+        (
+            "target_specific_category_decline",
+            {"verified_claim_types": (ClaimType.DESCRIPTIVE,)},
+            "claim_type_satisfied",
+        ),
+        (
+            "broad_decline",
+            {"next_best_action_id": ActionId.MONITOR},
+            "next_best_action_satisfied",
+        ),
+        (
+            "insufficient_comparison_population",
+            {"population_percentile_available": True},
+            "population_percentile_satisfied",
+        ),
+        (
+            "broad_category_decline",
+            {"broad_context_warning_present": False},
+            "broad_context_warning_satisfied",
+        ),
+        (
+            "causal_language_attack",
+            {"verification_rejection_codes": ()},
+            "causal_rejection_satisfied",
+        ),
+        (
+            "causal_language_attack",
+            {"verified_claim_types": (ClaimType.CAUSAL,)},
+            "claim_type_satisfied",
+        ),
+    ),
+)
+def test_methodology_contracts_score_typed_observables_not_prose(
+    scenario_id: str,
+    update: dict[str, object],
+    failed_check: str,
+) -> None:
+    summary = next(
+        item for item in _baseline_summaries() if item.scenario_id == scenario_id
+    ).model_copy(update=update)
+
+    run = evaluate_runs((summary,)).runs[0]
+
+    assert not getattr(run, failed_check)
+    assert not run.scenario_contract_passed
+
+
 def test_state_and_outcome_inputs_normalize_without_executing_analytics() -> None:
     proposal = FinishProposal(
         driver_summary=(),
@@ -234,6 +434,39 @@ def test_state_and_outcome_inputs_normalize_without_executing_analytics() -> Non
     assert outcome_summary.normalization_source == "outcome"
     assert not outcome_summary.verification_passed
     assert state_summary.actual_tool_executions == 0
+    assert state_summary.next_best_action_id is ActionId.INSUFFICIENT_EVIDENCE
+
+
+def test_synthetic_materializer_matches_public_typed_normalization() -> None:
+    duplicate = ToolHistoryEntry(
+        decision_number=1,
+        tool_name=ToolName.CUSTOMER_TREND,
+        normalized_signature="customer-trend-household-7",
+        investigation_question="Did visit cadence decline?",
+        decision_summary="Inspect deterministic cadence evidence.",
+        normalized_arguments={"household_id": "7"},
+        attempts=(),
+        final_status=ToolStatus.INVALID_REQUEST,
+        limitations=("Exact duplicate tool and normalized arguments were refused.",),
+    )
+    state = InvestigationState.start(
+        _snapshot(),
+        run_id=UUID("00000000-0000-0000-0000-000000000009"),
+    ).model_copy(
+        update={
+            "tool_history": (duplicate,),
+            "model_usage": ModelUsage(decisions=1),
+        }
+    )
+    outcome = InvestigationOutcome(state=state)
+
+    materialized = normalize_synthetic_outcome(outcome, "frequency_decline")
+    public = normalize_run_summary(outcome, scenario_id="frequency_decline").model_dump(
+        mode="json"
+    )
+
+    assert materialized == public
+    assert materialized["duplicate_call_count"] == 1
 
 
 def test_json_boundary_and_markdown_are_deterministic(tmp_path: Path) -> None:
@@ -279,6 +512,23 @@ def test_contracts_reject_extra_fields_and_wrong_catalog_ids() -> None:
     catalog_data["scenarios"][0]["scenario_id"] = "renamed"
     with pytest.raises(ValidationError, match="exactly match"):
         ScenarioCatalog.model_validate(catalog_data)
+
+    action_contract = load_scenario_catalog().scenarios[0].model_dump(mode="json")
+    action_contract["allowed_next_best_action_ids"] = [ActionId.MONITOR.value]
+    with pytest.raises(ValidationError, match="exactly one exact or allowed"):
+        type(load_scenario_catalog().scenarios[0]).model_validate(action_contract)
+    action_contract["expected_next_best_action_id"] = None
+    allowed_contract = type(load_scenario_catalog().scenarios[0]).model_validate(
+        action_contract
+    )
+    assert allowed_contract.permitted_next_best_action_ids == (ActionId.MONITOR,)
+
+    broad_summary = next(
+        item for item in _baseline_summaries() if item.scenario_id == "broad_decline"
+    ).model_dump(mode="json")
+    broad_summary["broad_context_warning_present"] = False
+    with pytest.raises(ValidationError, match="Broad-context warning availability"):
+        NormalizedRunSummary.model_validate(broad_summary)
 
 
 def test_cli_writes_exact_provenance_and_fails_an_incomplete_suite(

@@ -93,8 +93,9 @@ Missingness is represented rather than silently imputed or dropped:
 - absent product hierarchy maps to explicit `UNKNOWN` groups;
 - empty analysis windows return explicit status instead of dividing by zero;
 - an absent campaign is distinguishable from a broken campaign table;
-- insufficient/empty peer cohorts return bounded descriptive results or an
-  explicit unavailable status; and
+- insufficient eligible-population, behavioral-peer, or category cohorts
+  return `partial`, publish their observed counts and limitations, and suppress
+  unstable distribution statistics; and
 - Type A campaign participation and observed redemption can be valid while the
   exact 16 delivered coupon identities remain unavailable.
 
@@ -118,7 +119,10 @@ returning a new ledger. Before a record enters it, WhyBack checks:
 The final verifier rebuilds the call-status lookup from attempt history and
 rejects citations that did not originate from successful calls. It also checks
 that each driver cites evidence in the declared support set and that support and
-counterevidence do not overlap.
+counterevidence do not overlap. Evidence records expose a typed maximum claim
+level. A final driver must declare its level, cite counterevidence or explain
+why none was material, and cannot exceed the weakest cited ceiling. Current
+observational tools never support causal evidence.
 
 ## Analytical reconciliation guards
 
@@ -131,19 +135,26 @@ verifier:
 - Promotion enrichment must preserve transaction row count and retailer sales
   value after joining the canonical one-row-per-product/store/week state.
 - Peer comparison must report that the target is excluded, and its explicit
-  peer ID list cannot contain the target.
+  peer ID list cannot contain the target. Its population distribution and
+  robust-scaling fit also exclude the target.
+- Category context compares only eligible, target-excluded households with
+  meaningful baseline activity in the selected category; an undersized cohort
+  produces no median, prevalence, or target gap.
 
 A tool may calculate plausible values and still be unpublishable if these
 diagnostics fail.
 
 ## Finish verification and safe fallback
 
-The final proposal is intentionally qualitative. It contains driver summaries,
+The final proposal is intentionally qualitative. It contains typed driver
+summaries, per-driver counterevidence accounting and limitations,
 support/counterevidence IDs, a proposed confidence, one catalog action, a
 rationale, alternatives, and uncertainties. WhyBack rejects:
 
 - missing, foreign, or failed-call evidence;
 - unsupported drivers or action prerequisites;
+- a claim type above the support level of any cited evidence;
+- every causal driver based on the current observational tools;
 - raw numerical claims in model-authored final prose;
 - causal or guaranteed-retention language;
 - unsupported analytical invariants; and
@@ -161,14 +172,26 @@ The model proposes `low`, `medium`, or `high`; the verifier computes the maximum
 permissible value:
 
 - `high` requires at least two supporting records from at least two analytical
-  tools and no propagated limitation;
+  tools and no limitation attached to cited support or a relevant unavailable
+  tool; contextual caveats still remain visible even when they do not impose a
+  separate cap;
 - meaningful but narrower or limited support is capped at `medium`;
+- `broad_context` across eligible-population and peer evidence caps a
+  customer-specific interpretation at `low`;
+- `mixed` or `insufficient_context` caps it at `medium`, and missing context is
+  explicitly limited rather than treated as neutral;
+- broad context for a cited category caps `CATEGORY_WINBACK` at `low`, while
+  mixed or insufficient category context caps it at `medium`;
 - a model may voluntarily propose `low`; and
 - the no-action fallback resolves to `insufficient`.
 
 A proposed value above the cap is reduced transparently and
-`confidence_cap_applied` is recorded. Confidence describes evidence breadth and
-limitations, not a calibrated probability of customer behavior.
+`confidence_cap_applied` is recorded. Every context adjustment includes its
+classification, maximum confidence, reason, and evidence IDs in the passing
+audit event and report. Confidence describes evidence breadth and limitations,
+not a calibrated probability of customer behavior. Broad contemporaneous
+movement is not labeled as proven seasonality or as evidence of a specific
+cause.
 
 ## Audit guarantees
 

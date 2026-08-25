@@ -18,8 +18,11 @@ from typing import Literal, Self, cast
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from whyback.agent.actions import ActionId
 from whyback.agent.runner import InvestigationOutcome
-from whyback.agent.state import InvestigationState, RunStatus
+from whyback.agent.state import InvestigationState, ResolvedConfidence, RunStatus
+from whyback.agent.verifier import VerificationIssueCode
+from whyback.methodology import ClaimType, ContextClassification
 from whyback.tools.contracts import ToolName, ToolStatus
 
 EXPECTED_SCENARIO_IDS = (
@@ -29,6 +32,12 @@ EXPECTED_SCENARIO_IDS = (
     "ambiguous_peer_comparison",
     "type_a_coupon_exposure_gap",
     "persistent_promotion_timeout",
+    "broad_decline",
+    "customer_specific_decline",
+    "broad_category_decline",
+    "target_specific_category_decline",
+    "insufficient_comparison_population",
+    "causal_language_attack",
 )
 
 
@@ -41,6 +50,12 @@ class ScenarioArchetype(StrEnum):
     AMBIGUOUS_PEER = "ambiguous_peer"
     TYPE_A = "type_a"
     FAILURE = "failure"
+    BROAD_DECLINE = "broad_decline"
+    CUSTOMER_SPECIFIC_DECLINE = "customer_specific_decline"
+    BROAD_CATEGORY_DECLINE = "broad_category_decline"
+    TARGET_SPECIFIC_CATEGORY_DECLINE = "target_specific_category_decline"
+    INSUFFICIENT_COMPARISON_POPULATION = "insufficient_comparison_population"
+    CAUSAL_LANGUAGE_ATTACK = "causal_language_attack"
 
 
 class ScenarioDefinition(BaseModel):
@@ -58,6 +73,15 @@ class ScenarioDefinition(BaseModel):
     required_failed_tools: tuple[ToolName, ...] = ()
     requires_limitation_propagation: bool = False
     requires_graceful_degradation: bool = False
+    expected_context_classification: ContextClassification | None = None
+    expected_resolved_confidence: ResolvedConfidence | None = None
+    expected_claim_types: tuple[ClaimType, ...] | None = None
+    expected_next_best_action_id: ActionId | None = None
+    allowed_next_best_action_ids: tuple[ActionId, ...] = ()
+    expected_population_percentile_available: bool | None = None
+    requires_confidence_adjustment: bool = False
+    requires_broad_context_warning: bool = False
+    requires_causal_rejection: bool = False
     max_tool_executions: int = Field(default=5, ge=1)
     max_model_decisions: int = Field(default=6, ge=1)
 
@@ -82,7 +106,44 @@ class ScenarioDefinition(BaseModel):
             )
         if self.required_failed_tools and not self.requires_graceful_degradation:
             raise ValueError("A required failure must require graceful degradation")
+        if self.expected_claim_types is not None and len(
+            self.expected_claim_types
+        ) != len(set(self.expected_claim_types)):
+            raise ValueError("Expected claim types must not contain duplicates")
+        if len(self.allowed_next_best_action_ids) != len(
+            set(self.allowed_next_best_action_ids)
+        ):
+            raise ValueError("Allowed Next Best Action IDs must not contain duplicates")
+        has_expected_action = self.expected_next_best_action_id is not None
+        has_allowed_actions = bool(self.allowed_next_best_action_ids)
+        if has_expected_action == has_allowed_actions:
+            raise ValueError(
+                "A scenario must declare exactly one exact or allowed Next Best "
+                "Action contract"
+            )
+        if (
+            self.requires_confidence_adjustment
+            and self.expected_context_classification is None
+        ):
+            raise ValueError(
+                "A confidence-adjustment expectation requires a context classification"
+            )
+        if self.requires_broad_context_warning and (
+            self.expected_context_classification
+            is not ContextClassification.BROAD_CONTEXT
+        ):
+            raise ValueError(
+                "A broad-context warning expectation requires broad context"
+            )
         return self
+
+    @property
+    def permitted_next_best_action_ids(self) -> tuple[ActionId, ...]:
+        """Return the exact fail-closed action allowlist for this scenario."""
+
+        if self.expected_next_best_action_id is not None:
+            return (self.expected_next_best_action_id,)
+        return self.allowed_next_best_action_ids
 
 
 class ScenarioCatalog(BaseModel):
@@ -90,7 +151,7 @@ class ScenarioCatalog(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal[1]
+    schema_version: Literal[3]
     scenarios: tuple[ScenarioDefinition, ...]
 
     @model_validator(mode="after")
@@ -134,6 +195,15 @@ class NormalizedRunSummary(BaseModel):
     source_limitations: tuple[str, ...] = ()
     propagated_limitations: tuple[str, ...] = ()
     duplicate_call_count: int = Field(default=0, ge=0)
+    context_classifications: tuple[ContextClassification, ...] = ()
+    resolved_confidence: ResolvedConfidence | None = None
+    confidence_cap_applied: bool = False
+    confidence_adjustment_classifications: tuple[ContextClassification, ...] = ()
+    broad_context_warning_present: bool = False
+    population_percentile_available: bool = False
+    verified_claim_types: tuple[ClaimType, ...] = ()
+    verification_rejection_codes: tuple[VerificationIssueCode, ...] = ()
+    next_best_action_id: ActionId | None = None
 
     @model_validator(mode="after")
     def validate_summary(self) -> Self:
@@ -144,6 +214,10 @@ class NormalizedRunSummary(BaseModel):
             self.referenced_evidence_ids,
             self.source_limitations,
             self.propagated_limitations,
+            self.context_classifications,
+            self.confidence_adjustment_classifications,
+            self.verified_claim_types,
+            self.verification_rejection_codes,
         )
         if any(len(group) != len(set(group)) for group in unique_groups):
             raise ValueError("Normalized set-like fields must contain unique values")
@@ -163,6 +237,20 @@ class NormalizedRunSummary(BaseModel):
         if self.verification_passed != verified_status:
             raise ValueError(
                 "Verification pass must agree with the terminal run status"
+            )
+        if self.verification_passed != (self.next_best_action_id is not None):
+            raise ValueError(
+                "A verified terminal run must expose exactly one verified Next Best "
+                "Action ID"
+            )
+        expected_broad_warning = (
+            ContextClassification.BROAD_CONTEXT
+            in self.confidence_adjustment_classifications
+        )
+        if self.broad_context_warning_present != expected_broad_warning:
+            raise ValueError(
+                "Broad-context warning availability must agree with typed confidence "
+                "adjustments"
             )
         return self
 
@@ -185,6 +273,22 @@ class RunEvaluation(BaseModel):
     graceful_degradation_succeeded: bool
     partial_contract_satisfied: bool
     failure_contract_satisfied: bool
+    context_classification_applicable: bool
+    context_classification_satisfied: bool
+    resolved_confidence_applicable: bool
+    resolved_confidence_satisfied: bool
+    confidence_adjustment_applicable: bool
+    confidence_adjustment_satisfied: bool
+    claim_type_applicable: bool
+    claim_type_satisfied: bool
+    next_best_action_applicable: bool
+    next_best_action_satisfied: bool
+    population_percentile_applicable: bool
+    population_percentile_satisfied: bool
+    broad_context_warning_applicable: bool
+    broad_context_warning_satisfied: bool
+    causal_rejection_applicable: bool
+    causal_rejection_satisfied: bool
     scenario_contract_passed: bool
     selected_tool_decisions: int = Field(ge=0)
     actual_tool_executions: int = Field(ge=0)
@@ -234,6 +338,14 @@ class AggregateMetrics(BaseModel):
     evidence_grounding_rate: RateMetric
     limitation_propagation_rate: RateMetric
     graceful_degradation_success_rate: RateMetric
+    context_classification_rate: RateMetric
+    resolved_confidence_rate: RateMetric
+    confidence_adjustment_rate: RateMetric
+    claim_type_rate: RateMetric
+    next_best_action_rate: RateMetric
+    population_percentile_contract_rate: RateMetric
+    broad_context_warning_rate: RateMetric
+    causal_rejection_rate: RateMetric
     duplicate_call_rate: RateMetric
     unsupported_evidence_rate: RateMetric
 
@@ -257,7 +369,7 @@ class EvaluationReport(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[4] = 4
     passed: bool
     provenance: EvaluationProvenance
     scenario_catalog_ids: tuple[str, ...]
@@ -289,6 +401,58 @@ def load_scenario_catalog(path: Path | str | None = None) -> ScenarioCatalog:
 
 def _unique(values: Sequence[str]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(values))
+
+
+def _context_classifications(
+    state: InvestigationState,
+) -> tuple[ContextClassification, ...]:
+    classifications: list[ContextClassification] = []
+    for record in state.evidence_ledger:
+        if (
+            record.metric
+            not in {
+                "context_classification",
+                "category_context_classification",
+            }
+            or record.text_value is None
+        ):
+            continue
+        try:
+            classification = ContextClassification(record.text_value)
+        except ValueError:
+            continue
+        if classification not in classifications:
+            classifications.append(classification)
+    return tuple(classifications)
+
+
+def _verification_rejection_codes(
+    state: InvestigationState,
+) -> tuple[VerificationIssueCode, ...]:
+    codes: list[VerificationIssueCode] = []
+    for issue in state.verification_issues:
+        raw_code = issue.partition(":")[0]
+        try:
+            code = VerificationIssueCode(raw_code)
+        except ValueError:
+            continue
+        if code not in codes:
+            codes.append(code)
+    return tuple(codes)
+
+
+def _population_percentile_available(state: InvestigationState) -> bool:
+    """Return whether typed population-percentile evidence exists in the ledger."""
+
+    return any(
+        record.source_tool is ToolName.PEER_COMPARISON
+        and record.metric == "target_population_retailer_sales_change_percentile"
+        and record.dimensions.get("comparison_scope") == "eligible_population"
+        and record.dimensions.get("target_excluded") == "true"
+        and record.unit == "percentile"
+        and record.value is not None
+        for record in state.evidence_ledger
+    )
 
 
 def _state_facts(
@@ -341,6 +505,17 @@ def _state_facts(
                 *state.final_proposal.counterevidence_ids,
             )
         )
+    referenced = _unique(
+        (
+            *referenced,
+            *(
+                record.evidence_id
+                for record in state.evidence_ledger
+                if record.metric
+                in {"context_classification", "category_context_classification"}
+            ),
+        )
+    )
 
     referenced_set = set(referenced)
     histories_by_call = {
@@ -356,6 +531,13 @@ def _state_facts(
         history = histories_by_call.get(record.source_tool_call_id)
         if history is not None and history.final_status is ToolStatus.PARTIAL:
             limitations.extend(history.limitations)
+    for history in state.tool_history:
+        if history.final_status is ToolStatus.PARTIAL:
+            limitations.extend(history.limitations)
+    for record in state.evidence_ledger:
+        history = histories_by_call.get(record.source_tool_call_id)
+        if history is not None and history.final_status is ToolStatus.PARTIAL:
+            limitations.extend(record.limitations)
     return (
         selected,
         partial,
@@ -403,6 +585,9 @@ def normalize_run_summary(
             source_limitations,
             duplicate_count,
         ) = _state_facts(state)
+        context_classifications = _context_classifications(state)
+        rejection_codes = _verification_rejection_codes(state)
+        population_percentile_available = _population_percentile_available(state)
 
         if outcome is not None:
             verification_passed = bool(
@@ -418,6 +603,38 @@ def normalize_run_summary(
                 if verified_final is not None
                 else ()
             )
+            resolved_confidence = (
+                verified_final.resolved_confidence
+                if verified_final is not None
+                else None
+            )
+            confidence_cap_applied = bool(
+                verified_final is not None and verified_final.confidence_cap_applied
+            )
+            confidence_adjustments = (
+                tuple(
+                    dict.fromkeys(
+                        item.context_classification
+                        for item in verified_final.confidence_adjustments
+                    )
+                )
+                if verified_final is not None
+                else ()
+            )
+            claim_types = (
+                tuple(
+                    dict.fromkeys(
+                        driver.claim_type for driver in verified_final.drivers
+                    )
+                )
+                if verified_final is not None
+                else ()
+            )
+            next_best_action_id = (
+                verified_final.next_best_action_id
+                if verified_final is not None
+                else None
+            )
             source: Literal["outcome", "state"] = "outcome"
         else:
             verification_passed = bool(
@@ -430,6 +647,15 @@ def normalize_run_summary(
             # verifier derives propagation solely from referenced ledger/history
             # records, reconstruct the same deterministic value for state-only input.
             propagated = source_limitations if verification_passed else ()
+            resolved_confidence = state.resolved_confidence
+            confidence_cap_applied = False
+            confidence_adjustments = ()
+            claim_types = ()
+            next_best_action_id = (
+                state.final_proposal.next_best_action_id
+                if verification_passed and state.final_proposal is not None
+                else None
+            )
             source = "state"
 
         summary = NormalizedRunSummary(
@@ -448,6 +674,17 @@ def normalize_run_summary(
             source_limitations=source_limitations,
             propagated_limitations=propagated,
             duplicate_call_count=duplicate_count,
+            context_classifications=context_classifications,
+            resolved_confidence=resolved_confidence,
+            confidence_cap_applied=confidence_cap_applied,
+            confidence_adjustment_classifications=confidence_adjustments,
+            broad_context_warning_present=(
+                ContextClassification.BROAD_CONTEXT in confidence_adjustments
+            ),
+            population_percentile_available=population_percentile_available,
+            verified_claim_types=claim_types,
+            verification_rejection_codes=rejection_codes,
+            next_best_action_id=next_best_action_id,
         )
 
     if scenario_id is not None and summary.scenario_id != scenario_id:
@@ -500,6 +737,44 @@ def evaluate_run(
     )
     limitation_satisfied = not limitation_applicable or limitation_propagated
     graceful_satisfied = not graceful_applicable or graceful_succeeded
+    context_applicable = scenario.expected_context_classification is not None
+    context_satisfied = not context_applicable or (
+        summary.context_classifications == (scenario.expected_context_classification,)
+    )
+    confidence_applicable = scenario.expected_resolved_confidence is not None
+    confidence_satisfied = not confidence_applicable or (
+        summary.resolved_confidence == scenario.expected_resolved_confidence
+    )
+    adjustment_applicable = scenario.requires_confidence_adjustment
+    adjustment_satisfied = not adjustment_applicable or (
+        summary.confidence_cap_applied
+        and scenario.expected_context_classification
+        in summary.confidence_adjustment_classifications
+    )
+    claim_type_applicable = scenario.expected_claim_types is not None
+    claim_type_satisfied = not claim_type_applicable or (
+        set(summary.verified_claim_types) == set(scenario.expected_claim_types or ())
+    )
+    action_applicable = bool(scenario.permitted_next_best_action_ids)
+    action_satisfied = not action_applicable or (
+        summary.next_best_action_id in scenario.permitted_next_best_action_ids
+    )
+    percentile_applicable = (
+        scenario.expected_population_percentile_available is not None
+    )
+    percentile_satisfied = not percentile_applicable or (
+        summary.population_percentile_available
+        == scenario.expected_population_percentile_available
+    )
+    broad_warning_applicable = scenario.requires_broad_context_warning
+    broad_warning_satisfied = (
+        not broad_warning_applicable or summary.broad_context_warning_present
+    )
+    causal_applicable = scenario.requires_causal_rejection
+    causal_satisfied = not causal_applicable or (
+        VerificationIssueCode.UNSUPPORTED_CAUSAL_CLAIM
+        in summary.verification_rejection_codes
+    )
     scenario_contract = (
         relevant_selected
         and irrelevant_avoided
@@ -510,6 +785,14 @@ def evaluate_run(
         and evidence_grounded
         and limitation_satisfied
         and graceful_satisfied
+        and context_satisfied
+        and confidence_satisfied
+        and adjustment_satisfied
+        and claim_type_satisfied
+        and action_satisfied
+        and percentile_satisfied
+        and broad_warning_satisfied
+        and causal_satisfied
         and summary.duplicate_call_count == 0
     )
     return RunEvaluation(
@@ -526,6 +809,22 @@ def evaluate_run(
         graceful_degradation_succeeded=graceful_succeeded,
         partial_contract_satisfied=partial_satisfied,
         failure_contract_satisfied=failure_satisfied,
+        context_classification_applicable=context_applicable,
+        context_classification_satisfied=context_satisfied,
+        resolved_confidence_applicable=confidence_applicable,
+        resolved_confidence_satisfied=confidence_satisfied,
+        confidence_adjustment_applicable=adjustment_applicable,
+        confidence_adjustment_satisfied=adjustment_satisfied,
+        claim_type_applicable=claim_type_applicable,
+        claim_type_satisfied=claim_type_satisfied,
+        next_best_action_applicable=action_applicable,
+        next_best_action_satisfied=action_satisfied,
+        population_percentile_applicable=percentile_applicable,
+        population_percentile_satisfied=percentile_satisfied,
+        broad_context_warning_applicable=broad_warning_applicable,
+        broad_context_warning_satisfied=broad_warning_satisfied,
+        causal_rejection_applicable=causal_applicable,
+        causal_rejection_satisfied=causal_satisfied,
         scenario_contract_passed=scenario_contract,
         selected_tool_decisions=len(summary.selected_tools),
         actual_tool_executions=summary.actual_tool_executions,
@@ -610,6 +909,46 @@ def evaluate_runs(
             "graceful_degradation_applicable",
             "graceful_degradation_succeeded",
         ),
+        context_classification_rate=_applicable_rate(
+            evaluated,
+            "context_classification_applicable",
+            "context_classification_satisfied",
+        ),
+        resolved_confidence_rate=_applicable_rate(
+            evaluated,
+            "resolved_confidence_applicable",
+            "resolved_confidence_satisfied",
+        ),
+        confidence_adjustment_rate=_applicable_rate(
+            evaluated,
+            "confidence_adjustment_applicable",
+            "confidence_adjustment_satisfied",
+        ),
+        claim_type_rate=_applicable_rate(
+            evaluated,
+            "claim_type_applicable",
+            "claim_type_satisfied",
+        ),
+        next_best_action_rate=_applicable_rate(
+            evaluated,
+            "next_best_action_applicable",
+            "next_best_action_satisfied",
+        ),
+        population_percentile_contract_rate=_applicable_rate(
+            evaluated,
+            "population_percentile_applicable",
+            "population_percentile_satisfied",
+        ),
+        broad_context_warning_rate=_applicable_rate(
+            evaluated,
+            "broad_context_warning_applicable",
+            "broad_context_warning_satisfied",
+        ),
+        causal_rejection_rate=_applicable_rate(
+            evaluated,
+            "causal_rejection_applicable",
+            "causal_rejection_satisfied",
+        ),
         duplicate_call_rate=RateMetric.from_counts(duplicate_count, selected_count),
         unsupported_evidence_rate=RateMetric.from_counts(
             unsupported_count, referenced_count
@@ -670,6 +1009,17 @@ def render_markdown(report: EvaluationReport) -> str:
             "Graceful-degradation success rate",
             metrics.graceful_degradation_success_rate,
         ),
+        ("Context-classification rate", metrics.context_classification_rate),
+        ("Resolved-confidence rate", metrics.resolved_confidence_rate),
+        ("Confidence-adjustment rate", metrics.confidence_adjustment_rate),
+        ("Claim-type rate", metrics.claim_type_rate),
+        ("Next Best Action contract rate", metrics.next_best_action_rate),
+        (
+            "Population-percentile contract rate",
+            metrics.population_percentile_contract_rate,
+        ),
+        ("Broad-context warning rate", metrics.broad_context_warning_rate),
+        ("Causal-rejection rate", metrics.causal_rejection_rate),
         ("Duplicate-call rate", metrics.duplicate_call_rate),
         ("Unsupported-evidence rate", metrics.unsupported_evidence_rate),
     )

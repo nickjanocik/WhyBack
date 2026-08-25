@@ -15,7 +15,7 @@ def test_all_synthetic_cases_execute_and_pass_behavior_contracts(
 
     assert tuple(item["scenario_id"] for item in summaries) == SCENARIO_IDS
     assert report.missing_scenario_ids == ()
-    assert report.aggregate.run_count == 6
+    assert report.aggregate.run_count == 12
     for metric in (
         report.aggregate.scenario_contract_pass_rate,
         report.aggregate.relevant_tool_selection_rate,
@@ -25,7 +25,17 @@ def test_all_synthetic_cases_execute_and_pass_behavior_contracts(
         report.aggregate.evidence_grounding_rate,
         report.aggregate.limitation_propagation_rate,
         report.aggregate.graceful_degradation_success_rate,
+        report.aggregate.next_best_action_rate,
+        report.aggregate.population_percentile_contract_rate,
+        report.aggregate.broad_context_warning_rate,
     ):
         assert metric.rate == 1.0
+    by_id = {str(item["scenario_id"]): item for item in summaries}
+    assert (
+        by_id["insufficient_comparison_population"]["population_percentile_available"]
+        is False
+    )
+    assert by_id["broad_category_decline"]["broad_context_warning_present"] is True
+    assert by_id["broad_category_decline"]["next_best_action_id"] == "CATEGORY_WINBACK"
     assert report.aggregate.duplicate_call_rate.numerator == 0
     assert report.aggregate.unsupported_evidence_rate.numerator == 0

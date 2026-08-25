@@ -95,6 +95,23 @@
     <div class="details"><span>Eligible: <strong>{{ "yes" if report.decline.eligible else "no" }}</strong></span><span>Flagged: <strong>{{ "yes" if report.decline.flagged else "no" }}</strong></span></div>
   </section>
 
+  <section id="population-comparison-context">
+    <span class="eyebrow">Broad contemporaneous context</span><h2>Population and comparison context</h2>
+    <p><strong>Classification: {{ report.population_context.context_classification.value | humanize }}.</strong> Signed change is <code>(recent - baseline) / baseline</code>; more negative means a more severe decline.{% if report.population_context.classification_evidence_id %} Evidence <code>{{ report.population_context.classification_evidence_id }}</code>.{% endif %}</p>
+    {% if report.population_context.target_retailer_sales_change is not none %}<p>Target retailer-sales change: <strong>{{ report.population_context.target_retailer_sales_change | percent }}</strong>.</p>{% else %}<p class="empty">Target comparison evidence was not computed.</p>{% endif %}
+    <div class="grid two">
+      {% for comparison in (report.population_context.eligible_population, report.population_context.behavioral_peers) %}
+      <article class="evidence"><h3>{{ comparison.cohort | humanize }}</h3>
+        <p>{{ comparison.construction_method }}</p>
+        <dl><dt>Comparison households</dt><dd>{{ comparison.cohort_count }}</dd><dt>Target excluded</dt><dd>{{ "yes" if comparison.target_excluded else "no" }}</dd>{% if comparison.available %}<dt>Median change</dt><dd>{{ comparison.median_change | percent }}</dd><dt>Interquartile range</dt><dd>{{ comparison.q25_change | percent }} to {{ comparison.q75_change | percent }}</dd><dt>Target percentile</dt><dd>{{ comparison.target_percentile | number }}</dd><dt>Share declining</dt><dd>{{ comparison.declining_household_share | percent }}</dd><dt>Target minus median</dt><dd>{{ comparison.target_minus_median_change | percent }}</dd>{% else %}<dt>Statistics</dt><dd>Unavailable or below the declared cohort minimum</dd>{% endif %}</dl>
+        {% if comparison.limitations %}<ul>{% for item in comparison.limitations %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% if report.population_context.category_context %}<h3 style="margin-top:18px">Major-category contemporaneous context</h3><table><thead><tr><th>Department / category</th><th>Target change</th><th>Comparison median</th><th>Share declining</th><th>Target minus median</th><th>Households</th><th>Classification</th></tr></thead><tbody>{% for item in report.population_context.category_context %}<tr><td>{{ item.department }} / {{ item.product_category }}</td><td>{{ item.target_change | percent if item.target_change is not none else "Unavailable" }}</td><td>{{ item.population_median_change | percent if item.available else "Unavailable" }}</td><td>{{ item.declining_household_share | percent if item.available else "Unavailable" }}</td><td>{{ item.target_minus_population_median_change | percent if item.available else "Unavailable" }}</td><td>{{ item.comparison_household_count }}</td><td>{{ item.context_classification.value | humanize }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">No reliable major-category comparison was computed in this bounded investigation.</p>{% endif %}
+    {% if report.population_context.limitations %}<ul>{% for item in report.population_context.limitations %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+
   <section id="investigation-path">
     <span class="eyebrow">Bounded analysis</span><h2>Investigation path</h2>
     {% if report.investigation_path %}{% for step in report.investigation_path %}
@@ -108,7 +125,7 @@
   <section id="likely-drivers">
     <span class="eyebrow">Verified interpretation</span><h2>Likely drivers</h2>
     {% if report.likely_drivers %}{% for driver in report.likely_drivers %}
-    <article class="driver"><p>{{ driver.summary }}</p><div class="details"><span>Grounded by {% for evidence_id in driver.supporting_evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</span></div></article>
+    <article class="driver"><span class="badge">{{ driver.claim_type.value | humanize }}</span><p>{{ driver.summary }}</p><div class="details"><span>Grounded by {% for evidence_id in driver.supporting_evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</span>{% if driver.counterevidence_ids %}<span>Counterevidence {% for evidence_id in driver.counterevidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}</span>{% elif driver.no_material_counterevidence_reason %}<span>{{ driver.no_material_counterevidence_reason }}</span>{% endif %}</div>{% if driver.limitations %}<ul>{% for limitation in driver.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul>{% endif %}</article>
     {% endfor %}{% else %}<p class="empty">No likely driver passed deterministic verification.</p>{% endif %}
   </section>
 
@@ -117,27 +134,41 @@
     {% if report.supporting_evidence %}<div class="grid two">{% for item in report.supporting_evidence %}
     <article class="evidence">
       <div class="evidence-head"><div><code>{{ item.evidence_id }}</code><h3>{{ item.metric | humanize }}</h3></div><span class="badge {{ item.source_status.value if item.source_status else 'context' }}">{{ item.source_status.value | humanize if item.source_status else "Source status unavailable" }}</span></div>
-      <dl>{% if item.baseline_value is not none %}<dt>Baseline</dt><dd>{{ item.baseline_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.recent_value is not none %}<dt>Recent</dt><dd>{{ item.recent_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.value is not none %}<dt>Value</dt><dd>{{ item.value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.change is not none %}<dt>Change</dt><dd>{{ item.change | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}</dl>
+      <dl>{% if item.baseline_value is not none %}<dt>Baseline</dt><dd>{{ item.baseline_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.recent_value is not none %}<dt>Recent</dt><dd>{{ item.recent_value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.value is not none %}<dt>Value</dt><dd>{{ item.value | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}{% if item.text_value %}<dt>Text value</dt><dd>{{ item.text_value }}</dd>{% endif %}{% if item.change is not none %}<dt>Change</dt><dd>{{ item.change | number }}{% if item.unit %} {{ item.unit | humanize }}{% endif %}</dd>{% endif %}<dt>Maximum claim</dt><dd>{{ item.maximum_claim_type.value | humanize }}</dd></dl>
       <div class="details"><span>Tool <code>{{ item.source_tool.value }}</code></span><span>Call <code>{{ item.source_tool_call_id }}</code></span>{% for key,value in item.dimensions.items() %}<span>{{ key | humanize }} <code>{{ value }}</code></span>{% endfor %}</div>
       {% if item.limitations %}<ul>{% for limitation in item.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul>{% endif %}
     </article>
     {% endfor %}</div>{% else %}<p class="empty">No supporting evidence was accepted for a verified conclusion.</p>{% endif %}
   </section>
 
+  <section id="what-analysis-can-establish">
+    <span class="eyebrow">Observed scope</span><h2>What this analysis can establish</h2>
+    <ul>{% for item in report.interpretation_limits.observed_scope %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+
+  <section id="what-analysis-cannot-establish">
+    <span class="eyebrow">Claim boundary</span><h2>What this analysis cannot establish</h2>
+    <ul>{% for item in report.interpretation_limits.causal_limitations %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+
+  <section id="unobserved-factors">
+    <span class="eyebrow">Alternative possibilities</span><h2>Unobserved factors and alternative explanations</h2>
+    <ul>{% for item in report.interpretation_limits.unobserved_factors %}<li>{{ item }}</li>{% endfor %}{% for item in report.alternative_explanations %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+
   <section id="counterevidence-alternatives">
-    <span class="eyebrow">Challenge the hypothesis</span><h2>Counterevidence and alternative explanations</h2>
+    <span class="eyebrow">Challenge the hypothesis</span><h2>Counterevidence review</h2>
     {% if report.counterevidence %}<ul>{% for item in report.counterevidence %}<li><code>{{ item.evidence_id }}</code> — {{ item.metric | humanize }}; source status {{ item.source_status.value | humanize if item.source_status else "unavailable" }}.{% if item.baseline_value is not none %} Baseline {{ item.baseline_value | number }}.{% endif %}{% if item.recent_value is not none %} Recent {{ item.recent_value | number }}.{% endif %}{% if item.value is not none %} Value {{ item.value | number }}.{% endif %}{% if item.change is not none %} Change {{ item.change | number }}.{% endif %}{% if item.limitations %} Limitations: {{ item.limitations | join('; ') }}.{% endif %}</li>{% endfor %}</ul>{% else %}<p class="empty">No evidence record was designated as counterevidence.</p>{% endif %}
-    {% if report.alternative_explanations %}<ul>{% for item in report.alternative_explanations %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="empty">No verified alternative explanation was recorded.</p>{% endif %}
   </section>
 
   <section id="next-best-action">
     <span class="eyebrow">Catalog governed</span><h2>Next Best Action</h2>
-    {% if report.action %}<div class="action callout"><h3>{{ report.action.action_id.value }}</h3><p>{{ report.action.description }}</p><p>{{ report.action.rationale }}</p><div class="details"><span>Resolved confidence <strong>{{ report.action.resolved_confidence.value | humanize }}</strong></span>{% if report.action.confidence_cap_applied %}<span>Deterministic confidence cap applied</span>{% endif %}</div></div>{% else %}<p class="empty">No Next Best Action passed deterministic verification. No customer action should be taken from this report.</p>{% endif %}
+    {% if report.action %}<div class="action callout"><h3>{{ report.action.action_id.value }}</h3><p>{{ report.action.description }}</p><p>{{ report.action.rationale }}</p><div class="details"><span>Resolved confidence <strong>{{ report.action.resolved_confidence.value | humanize }}</strong></span>{% if report.action.confidence_cap_applied %}<span>Deterministic confidence cap applied</span>{% endif %}</div>{% if report.action.confidence_adjustments %}<ul>{% for adjustment in report.action.confidence_adjustments %}<li>{{ adjustment.reason }} Maximum confidence: {{ adjustment.maximum_confidence.value | humanize }}; context: {{ adjustment.context_classification.value | humanize }}.{% if adjustment.evidence_ids %} Evidence {% for evidence_id in adjustment.evidence_ids %}<code>{{ evidence_id }}</code> {% endfor %}{% endif %}</li>{% endfor %}</ul>{% endif %}</div>{% else %}<p class="empty">No Next Best Action passed deterministic verification. No customer action should be taken from this report.</p>{% endif %}
   </section>
 
   <section id="measurement-plan">
     <span class="eyebrow">Learn safely</span><h2>Measurement plan</h2>
-    {% if report.action %}<div class="grid two"><div class="evidence"><h3>Success metric</h3><p>{{ report.action.recommended_success_metric }}</p></div><div class="evidence"><h3>Suggested experiment</h3><p>{{ report.action.suggested_experiment }}</p></div></div>{% else %}<p class="empty">No measurement plan is available because no action passed verification.</p>{% endif %}
+    {% if report.action %}<p><strong>This is a hypothesis to test, not a promised retention effect.</strong></p><div class="grid two"><div class="evidence"><h3>Success metric</h3><p>{{ report.action.recommended_success_metric }}</p></div><div class="evidence"><h3>Suggested experiment</h3><p>{{ report.action.suggested_experiment }}</p></div></div>{% else %}<p class="empty">No measurement plan is available because no action passed verification.</p>{% endif %}
   </section>
 
   <section id="limitations">
@@ -158,7 +189,7 @@
 
   <section id="evidence-ledger">
     <span class="eyebrow">Audit index</span><h2>Evidence ledger</h2>
-    {% if report.evidence_ledger %}<table><thead><tr><th>Evidence ID</th><th>Role</th><th>Tool</th><th>Status</th><th>Metric</th><th>Limitations</th></tr></thead><tbody>{% for item in report.evidence_ledger %}<tr><td><code>{{ item.evidence_id }}</code></td><td>{{ item.role | humanize }}</td><td><code>{{ item.source_tool.value }}</code></td><td>{{ item.source_status.value | humanize if item.source_status else "Unavailable" }}</td><td>{{ item.metric | humanize }}</td><td>{{ item.limitations | join('; ') if item.limitations else "None recorded" }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">The immutable evidence ledger is empty.</p>{% endif %}
+    {% if report.evidence_ledger %}<table><thead><tr><th>Evidence ID</th><th>Role</th><th>Tool</th><th>Status</th><th>Metric</th><th>Maximum claim</th><th>Limitations</th></tr></thead><tbody>{% for item in report.evidence_ledger %}<tr><td><code>{{ item.evidence_id }}</code></td><td>{{ item.role | humanize }}</td><td><code>{{ item.source_tool.value }}</code></td><td>{{ item.source_status.value | humanize if item.source_status else "Unavailable" }}</td><td>{{ item.metric | humanize }}{% if item.text_value %}: {{ item.text_value }}{% endif %}</td><td>{{ item.maximum_claim_type.value | humanize }}</td><td>{{ item.limitations | join('; ') if item.limitations else "None recorded" }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty">The immutable evidence ledger is empty.</p>{% endif %}
   </section>
 
   <footer>WhyBack · Find the why. Choose the way back. · Deterministic evidence report</footer>

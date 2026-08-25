@@ -26,6 +26,42 @@ Detector evidence: `{{ report.decline.evidence_id | code }}` (run- and household
 - **Eligible:** {{ "yes" if report.decline.eligible else "no" }}
 - **Flagged:** {{ "yes" if report.decline.flagged else "no" }}
 
+## Population and comparison context
+
+**Classification:** {{ report.population_context.context_classification.value | humanize }}. Signed change is `(recent - baseline) / baseline`; more negative means a more severe decline.{% if report.population_context.classification_evidence_id %} Classification evidence: `{{ report.population_context.classification_evidence_id | code }}`.{% endif %}
+
+{% if report.population_context.target_retailer_sales_change is not none %}
+- **Target retailer-sales change:** {{ report.population_context.target_retailer_sales_change | percent }}
+{% else %}
+- **Target retailer-sales change:** comparison evidence was not computed.
+{% endif %}
+
+| Comparison | Households | Median change | Interquartile range | Target percentile | Share declining | Target minus median |
+|---|---:|---:|---:|---:|---:|---:|
+{% for comparison in (report.population_context.eligible_population, report.population_context.behavioral_peers) %}| {{ comparison.cohort | humanize }} | {{ comparison.cohort_count }} | {{ comparison.median_change | percent if comparison.available else "Unavailable" }} | {% if comparison.available %}{{ comparison.q25_change | percent }} to {{ comparison.q75_change | percent }}{% else %}Unavailable{% endif %} | {{ comparison.target_percentile | number if comparison.available else "Unavailable" }} | {{ comparison.declining_household_share | percent if comparison.available else "Unavailable" }} | {{ comparison.target_minus_median_change | percent if comparison.available else "Unavailable" }} |
+{% endfor %}
+
+- **Eligible-population construction:** {{ report.population_context.eligible_population.construction_method | md }}
+- **Behavioral-peer construction:** {{ report.population_context.behavioral_peers.construction_method | md }}
+- The target household is excluded from both comparison distributions: {{ "yes" if report.population_context.eligible_population.target_excluded and report.population_context.behavioral_peers.target_excluded else "no" }}.
+{% if report.population_context.category_context %}
+
+### Major-category contemporaneous context
+
+| Department / category | Target change | Comparison median | Share declining | Target minus median | Households | Classification |
+|---|---:|---:|---:|---:|---:|---|
+{% for item in report.population_context.category_context %}| {{ item.department | md }} / {{ item.product_category | md }} | {{ item.target_change | percent if item.target_change is not none else "Unavailable" }} | {{ item.population_median_change | percent if item.available else "Unavailable" }} | {{ item.declining_household_share | percent if item.available else "Unavailable" }} | {{ item.target_minus_population_median_change | percent if item.available else "Unavailable" }} | {{ item.comparison_household_count }} | {{ item.context_classification.value | humanize }} |
+{% endfor %}
+{% else %}
+
+No reliable major-category comparison was computed in this bounded investigation.
+{% endif %}
+{% if report.population_context.limitations %}
+{% for item in report.population_context.limitations %}
+- Context limitation: {{ item | md }}
+{% endfor %}
+{% endif %}
+
 ## Investigation path
 
 {% if report.investigation_path %}
@@ -42,8 +78,12 @@ No analytical tool step was recorded.
 
 {% if report.likely_drivers %}
 {% for driver in report.likely_drivers %}
-- {{ driver.summary | md }}
+- **{{ driver.claim_type.value | humanize }} claim:** {{ driver.summary | md }}
   Grounded by {% for evidence_id in driver.supporting_evidence_ids %}`{{ evidence_id | code }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{% if driver.counterevidence_ids %}  Counterevidence: {% for evidence_id in driver.counterevidence_ids %}`{{ evidence_id | code }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{% elif driver.no_material_counterevidence_reason %}  Counterevidence review: {{ driver.no_material_counterevidence_reason | md }}
+{% endif %}{% if driver.limitations %}  Claim limitations: {{ driver.limitations | map('md') | join('; ') }}
+{% endif %}
 {% endfor %}
 {% else %}
 No likely driver passed deterministic verification.
@@ -69,7 +109,30 @@ No likely driver passed deterministic verification.
 No supporting evidence was accepted for a verified conclusion.
 {% endif %}
 
-## Counterevidence and alternative explanations
+## What this analysis can establish
+
+{% for item in report.interpretation_limits.observed_scope %}
+- {{ item | md }}
+{% endfor %}
+
+## What this analysis cannot establish
+
+{% for item in report.interpretation_limits.causal_limitations %}
+- {{ item | md }}
+{% endfor %}
+
+## Unobserved factors and alternative explanations
+
+{% for item in report.interpretation_limits.unobserved_factors %}
+- Unobserved: {{ item | md }}
+{% endfor %}
+{% if report.alternative_explanations %}
+{% for item in report.alternative_explanations %}
+- Alternative: {{ item | md }}
+{% endfor %}
+{% endif %}
+
+## Counterevidence review
 
 {% if report.counterevidence %}
 {% for item in report.counterevidence %}
@@ -77,13 +140,6 @@ No supporting evidence was accepted for a verified conclusion.
 {% endfor %}
 {% else %}
 - No evidence record was designated as counterevidence.
-{% endif %}
-{% if report.alternative_explanations %}
-{% for item in report.alternative_explanations %}
-- Alternative: {{ item | md }}
-{% endfor %}
-{% else %}
-- No verified alternative explanation was recorded.
 {% endif %}
 
 ## Next Best Action
@@ -94,6 +150,9 @@ No supporting evidence was accepted for a verified conclusion.
 {{ report.action.rationale | md }}
 
 Resolved confidence: **{{ report.action.resolved_confidence.value | humanize }}**{% if report.action.confidence_cap_applied %} (deterministic cap applied){% endif %}.
+{% for adjustment in report.action.confidence_adjustments %}
+- Confidence adjustment: {{ adjustment.reason | md }} Maximum confidence: **{{ adjustment.maximum_confidence.value | humanize }}**. Context: **{{ adjustment.context_classification.value | humanize }}**.{% if adjustment.evidence_ids %} Evidence: {% for evidence_id in adjustment.evidence_ids %}`{{ evidence_id | code }}`{% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
+{% endfor %}
 {% else %}
 No Next Best Action passed deterministic verification. No customer action should be taken from this report.
 {% endif %}
@@ -101,6 +160,7 @@ No Next Best Action passed deterministic verification. No customer action should
 ## Measurement plan
 
 {% if report.action %}
+- **Framing:** This is a hypothesis to test, not a promised retention effect.
 - **Success metric:** {{ report.action.recommended_success_metric | md }}
 - **Suggested experiment:** {{ report.action.suggested_experiment | md }}
 {% else %}
@@ -139,9 +199,9 @@ No measurement plan is available because no action passed verification.
 ## Evidence ledger
 
 {% if report.evidence_ledger %}
-| Evidence ID | Role | Tool | Status | Metric | Limitations |
-|---|---|---|---|---|---|
-{% for item in report.evidence_ledger %}| `{{ item.evidence_id | code }}` | {{ item.role | humanize }} | `{{ item.source_tool.value | code }}` | {{ item.source_status.value | humanize if item.source_status else "Unavailable" }} | {{ item.metric | humanize }} | {{ item.limitations | map('md') | join('; ') if item.limitations else "None recorded" }} |
+| Evidence ID | Role | Tool | Status | Metric | Maximum claim | Limitations |
+|---|---|---|---|---|---|---|
+{% for item in report.evidence_ledger %}| `{{ item.evidence_id | code }}` | {{ item.role | humanize }} | `{{ item.source_tool.value | code }}` | {{ item.source_status.value | humanize if item.source_status else "Unavailable" }} | {{ item.metric | humanize }}{% if item.text_value %}: {{ item.text_value | md }}{% endif %} | {{ item.maximum_claim_type.value | humanize }} | {{ item.limitations | map('md') | join('; ') if item.limitations else "None recorded" }} |
 {% endfor %}
 {% else %}
 The immutable evidence ledger is empty.

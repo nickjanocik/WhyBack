@@ -3,6 +3,8 @@
 from whyback.reporting.models import ReportData, TraceViewData
 from whyback.reporting.render import (
     ReportBundlePaths,
+    build_interpretation_limits,
+    build_population_context,
     build_report_data,
     render_report_html,
     render_report_json,
@@ -19,6 +21,8 @@ __all__ = [
     "ReportBundlePaths",
     "ReportData",
     "TraceViewData",
+    "build_interpretation_limits",
+    "build_population_context",
     "build_report_data",
     "build_trace_view",
     "render_report_html",

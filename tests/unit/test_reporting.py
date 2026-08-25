@@ -20,8 +20,13 @@ from whyback.agent.state import (
     ToolAttemptRecord,
     ToolHistoryEntry,
 )
-from whyback.agent.verifier import VerificationResult, VerifiedFinalDecision
+from whyback.agent.verifier import (
+    ConfidenceAdjustment,
+    VerificationResult,
+    VerifiedFinalDecision,
+)
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType, ContextClassification
 from whyback.observability import AuditEvent, AuditEventName, AuditJsonlWriter
 from whyback.reporting import (
     build_report_data,
@@ -39,6 +44,7 @@ RUN_ID = UUID("00000000-0000-0000-0000-000000000181")
 CALL_ID = "call-report-category"
 SUPPORT_ID = "ev-support-category"
 COUNTER_ID = "ev-counter-category"
+PEER_CALL_ID = "call-report-peer"
 
 
 def _snapshot() -> DeclineSnapshot:
@@ -123,7 +129,10 @@ def _outcome() -> InvestigationOutcome:
     )
     driver = DriverClaim(
         summary="<script>alert('x')</script> is a plausible category driver.",
+        claim_type=ClaimType.ASSOCIATIONAL,
         supporting_evidence_ids=(SUPPORT_ID,),
+        counterevidence_ids=(COUNTER_ID,),
+        limitations=("This is an observational association.",),
     )
     proposal = FinishProposal(
         driver_summary=(driver,),
@@ -142,6 +151,13 @@ def _outcome() -> InvestigationOutcome:
         proposed_confidence=ConfidenceLevel.HIGH,
         resolved_confidence=ResolvedConfidence.MEDIUM,
         confidence_cap_applied=True,
+        confidence_adjustments=(
+            ConfidenceAdjustment(
+                context_classification=ContextClassification.INSUFFICIENT_CONTEXT,
+                maximum_confidence=ResolvedConfidence.MEDIUM,
+                reason="Comparison context is insufficient.",
+            ),
+        ),
         supporting_evidence_ids=(SUPPORT_ID,),
         counterevidence_ids=(COUNTER_ID,),
         next_best_action_id=ActionId.CATEGORY_WINBACK,
@@ -174,6 +190,175 @@ def _outcome() -> InvestigationOutcome:
     )
 
 
+def _outcome_with_population_context() -> InvestigationOutcome:
+    outcome = _outcome()
+    values = {
+        "target_retailer_sales_change": -0.50,
+        "population_household_count": 20.0,
+        "population_median_retailer_sales_change": -0.10,
+        "population_retailer_sales_change_q25": -0.20,
+        "population_retailer_sales_change_q75": 0.0,
+        "target_population_retailer_sales_change_percentile": 5.0,
+        "population_declining_household_share": 0.40,
+        "target_minus_population_median_change": -0.40,
+        "peer_household_count": 5.0,
+        "peer_median_retailer_sales_change": -0.05,
+        "peer_retailer_sales_change_q25": -0.10,
+        "peer_retailer_sales_change_q75": 0.02,
+        "target_peer_retailer_sales_change_percentile": 0.0,
+        "peer_declining_household_share": 0.20,
+        "target_minus_peer_median_change": -0.45,
+    }
+    records = tuple(
+        EvidenceRecord(
+            evidence_id=f"ev-peer-{index:02d}",
+            run_id=RUN_ID,
+            household_id="181",
+            source_tool=ToolName.PEER_COMPARISON,
+            source_tool_call_id=PEER_CALL_ID,
+            metric=metric,
+            dimensions={
+                "target_excluded": "true",
+                "cohort_definition": "A declared target-excluded comparison cohort.",
+            },
+            value=value,
+            unit=("households" if metric.endswith("household_count") else "proportion"),
+            maximum_claim_type=ClaimType.DESCRIPTIVE,
+        )
+        for index, (metric, value) in enumerate(values.items(), start=1)
+    )
+    classification = EvidenceRecord(
+        evidence_id="ev-peer-classification",
+        run_id=RUN_ID,
+        household_id="181",
+        source_tool=ToolName.PEER_COMPARISON,
+        source_tool_call_id=PEER_CALL_ID,
+        metric="context_classification",
+        dimensions={"target_excluded": "true"},
+        text_value=ContextClassification.CUSTOMER_SPECIFIC.value,
+        unit="classification",
+        maximum_claim_type=ClaimType.ASSOCIATIONAL,
+    )
+    history = ToolHistoryEntry(
+        decision_number=2,
+        tool_name=ToolName.PEER_COMPARISON,
+        normalized_signature="peer-signature",
+        investigation_question="Is this decline unusual among comparison households?",
+        decision_summary="Compute population and behavioral-peer context.",
+        normalized_arguments={"household_id": "181", "peer_count": 5},
+        attempts=(
+            ToolAttemptRecord(
+                attempt=1,
+                tool_call_id=PEER_CALL_ID,
+                status=ToolStatus.OK,
+                elapsed_ms=4.0,
+            ),
+        ),
+        final_status=ToolStatus.OK,
+        evidence_ids=tuple(item.evidence_id for item in (*records, classification)),
+    )
+    state = outcome.state.model_copy(
+        update={
+            "tool_history": (*outcome.state.tool_history, history),
+            "evidence_ledger": (
+                *outcome.state.evidence_ledger,
+                *records,
+                classification,
+            ),
+        }
+    )
+    return outcome.model_copy(update={"state": state})
+
+
+def _outcome_with_conflicting_population_context() -> InvestigationOutcome:
+    outcome = _outcome_with_population_context()
+    broad_call_id = "call-report-peer-broad"
+    broad_values = {
+        "target_retailer_sales_change": -0.50,
+        "population_household_count": 21.0,
+        "population_median_retailer_sales_change": -0.45,
+        "population_retailer_sales_change_q25": -0.60,
+        "population_retailer_sales_change_q75": -0.30,
+        "target_population_retailer_sales_change_percentile": 45.0,
+        "population_declining_household_share": 0.80,
+        "target_minus_population_median_change": -0.05,
+        "peer_household_count": 5.0,
+        "peer_median_retailer_sales_change": -0.48,
+        "peer_retailer_sales_change_q25": -0.60,
+        "peer_retailer_sales_change_q75": -0.35,
+        "target_peer_retailer_sales_change_percentile": 40.0,
+        "peer_declining_household_share": 0.80,
+        "target_minus_peer_median_change": -0.02,
+    }
+    template_by_metric = {
+        record.metric: record
+        for record in outcome.state.evidence_ledger
+        if record.source_tool_call_id == PEER_CALL_ID
+    }
+    broad_records = tuple(
+        template_by_metric[metric].model_copy(
+            update={
+                "evidence_id": f"ev-peer-broad-{index:02d}",
+                "source_tool_call_id": broad_call_id,
+                "value": value,
+            }
+        )
+        for index, (metric, value) in enumerate(broad_values.items(), start=1)
+    )
+    broad_classification = template_by_metric["context_classification"].model_copy(
+        update={
+            "evidence_id": "ev-peer-broad-classification",
+            "source_tool_call_id": broad_call_id,
+            "text_value": ContextClassification.BROAD_CONTEXT.value,
+        }
+    )
+    original_history = outcome.state.tool_history[-1]
+    broad_history = original_history.model_copy(
+        update={
+            "decision_number": 3,
+            "normalized_signature": "peer-broad-signature",
+            "attempts": (
+                original_history.attempts[0].model_copy(
+                    update={"tool_call_id": broad_call_id}
+                ),
+            ),
+            "evidence_ids": tuple(
+                record.evidence_id for record in (*broad_records, broad_classification)
+            ),
+        }
+    )
+    state = outcome.state.model_copy(
+        update={
+            "tool_history": (*outcome.state.tool_history, broad_history),
+            "evidence_ledger": (
+                *outcome.state.evidence_ledger,
+                *broad_records,
+                broad_classification,
+            ),
+        }
+    )
+    assert outcome.verification is not None and outcome.verification.final is not None
+    final = outcome.verification.final.model_copy(
+        update={
+            "resolved_confidence": ResolvedConfidence.LOW,
+            "confidence_adjustments": (
+                *outcome.verification.final.confidence_adjustments,
+                ConfidenceAdjustment(
+                    context_classification=ContextClassification.BROAD_CONTEXT,
+                    maximum_confidence=ResolvedConfidence.LOW,
+                    reason="Broad contemporaneous movement limits confidence.",
+                    evidence_ids=(
+                        "ev-peer-classification",
+                        "ev-peer-broad-classification",
+                    ),
+                ),
+            ),
+        }
+    )
+    verification = outcome.verification.model_copy(update={"final": final})
+    return outcome.model_copy(update={"state": state, "verification": verification})
+
+
 def test_report_boundary_resolves_evidence_and_preserves_status_limitations() -> None:
     report = build_report_data(_outcome())
 
@@ -189,6 +374,12 @@ def test_report_boundary_resolves_evidence_and_preserves_status_limitations() ->
     assert report.tool_warnings[0].final_status is ToolStatus.PARTIAL
     assert "The result retained UNKNOWN mappings." in report.limitations
     assert report.action is not None and report.action.human_review_required
+    assert (
+        report.population_context.context_classification
+        is ContextClassification.INSUFFICIENT_CONTEXT
+    )
+    assert report.interpretation_limits.unobserved_factors
+    assert report.likely_drivers[0].claim_type is ClaimType.ASSOCIATIONAL
     with pytest.raises(TypeError, match="immutable"):
         report.supporting_evidence[0].dimensions["category"] = "mutated"
 
@@ -208,10 +399,14 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
     assert not markdown.endswith("\n\n")
     for section in (
         "Decline summary",
+        "Population and comparison context",
         "Investigation path",
         "Likely drivers",
         "Supporting evidence",
-        "Counterevidence and alternative explanations",
+        "What this analysis can establish",
+        "What this analysis cannot establish",
+        "Unobserved factors and alternative explanations",
+        "Counterevidence review",
         "Next Best Action",
         "Measurement plan",
         "Limitations",
@@ -228,8 +423,62 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
     assert "\n- Baseline: 90" in markdown
     assert "\n- Recent: 30" in markdown
     assert "\n- Change: -60" in markdown
-    assert "\n## Counterevidence and alternative explanations\n" in markdown
+    assert "\n## Counterevidence review\n" in markdown
     assert "\n- Alternative:" in markdown
+    assert "Associational claim" in markdown
+    assert "cannot establish" in markdown
+    assert "hypothesis to test" in markdown
+    assert "seasonal decline" not in markdown.casefold()
+
+
+def test_population_context_values_are_rendered_only_from_bound_evidence() -> None:
+    report = build_report_data(_outcome_with_population_context())
+
+    assert (
+        report.population_context.context_classification
+        is ContextClassification.CUSTOMER_SPECIFIC
+    )
+    assert report.population_context.eligible_population.cohort_count == 20
+    assert report.population_context.eligible_population.median_change == -0.10
+    assert report.population_context.behavioral_peers.cohort_count == 5
+    assert report.population_context.behavioral_peers.target_percentile == 0.0
+    markdown = render_report_markdown(report)
+    assert "Customer Specific" in markdown
+    assert "-50.0%" in markdown
+    assert "-10.0%" in markdown
+
+    tampered = report.model_dump(mode="json")
+    tampered["population_context"]["eligible_population"]["median_change"] = -0.11
+    with pytest.raises(ValidationError, match="ledger metric"):
+        type(report).model_validate(tampered)
+
+
+def test_conflicting_context_calls_bind_values_to_conservative_classification() -> None:
+    report = build_report_data(_outcome_with_conflicting_population_context())
+
+    context = report.population_context
+    assert context.context_classification is ContextClassification.BROAD_CONTEXT
+    assert context.classification_evidence_id == "ev-peer-broad-classification"
+    assert context.classification_evidence_ids == (
+        "ev-peer-classification",
+        "ev-peer-broad-classification",
+    )
+    assert context.eligible_population.cohort_count == 21
+    assert context.eligible_population.median_change == -0.45
+    assert all(
+        evidence_id.startswith("ev-peer-broad-")
+        for evidence_id in context.eligible_population.evidence_ids
+    )
+
+    cherry_picked = report.model_dump(mode="json")
+    cherry_picked["population_context"]["context_classification"] = (
+        ContextClassification.CUSTOMER_SPECIFIC.value
+    )
+    cherry_picked["population_context"]["classification_evidence_id"] = (
+        "ev-peer-classification"
+    )
+    with pytest.raises(ValidationError, match="conservative classification"):
+        type(report).model_validate(cherry_picked)
 
 
 def test_markdown_keeps_ordered_investigation_steps_on_separate_lines() -> None:
@@ -256,6 +505,29 @@ def test_markdown_keeps_ordered_investigation_steps_on_separate_lines() -> None:
 
 def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
     report = build_report_data(_outcome())
+
+    fabricated_unavailable_count = report.model_dump(mode="json")
+    fabricated_unavailable_count["population_context"]["eligible_population"][
+        "cohort_count"
+    ] = 999
+    with pytest.raises(ValidationError, match="without evidence must be zero"):
+        type(report).model_validate(fabricated_unavailable_count)
+
+    missing_population_context = report.model_dump(mode="json")
+    missing_population_context.pop("population_context")
+    with pytest.raises(ValidationError, match="population_context"):
+        type(report).model_validate(missing_population_context)
+
+    missing_interpretation_object = report.model_dump(mode="json")
+    missing_interpretation_object.pop("interpretation_limits")
+    with pytest.raises(ValidationError, match="interpretation_limits"):
+        type(report).model_validate(missing_interpretation_object)
+
+    empty_interpretation_object = report.model_dump(mode="json")
+    empty_interpretation_object["interpretation_limits"] = {}
+    with pytest.raises(ValidationError, match="observed_scope"):
+        type(report).model_validate(empty_interpretation_object)
+
     missing_action = report.model_dump(mode="json")
     missing_action["action"] = None
     with pytest.raises(ValidationError, match="completed report"):
@@ -265,6 +537,113 @@ def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
     wrong_owner["evidence_ledger"][0]["household_id"] = "different"
     with pytest.raises(ValidationError, match="belong"):
         type(report).model_validate(wrong_owner)
+
+    missing_counter_review = report.model_dump(mode="json")
+    missing_counter_review["likely_drivers"][0]["counterevidence_ids"] = []
+    missing_counter_review["likely_drivers"][0][
+        "no_material_counterevidence_reason"
+    ] = None
+    with pytest.raises(ValidationError, match="counterevidence"):
+        type(report).model_validate(missing_counter_review)
+
+    claim_above_evidence = report.model_dump(mode="json")
+    claim_above_evidence["supporting_evidence"][0]["maximum_claim_type"] = (
+        ClaimType.DESCRIPTIVE.value
+    )
+    claim_above_evidence["evidence_ledger"][0]["maximum_claim_type"] = (
+        ClaimType.DESCRIPTIVE.value
+    )
+    with pytest.raises(ValidationError, match="exceeds"):
+        type(report).model_validate(claim_above_evidence)
+
+    missing_interpretation_limits = report.model_dump(mode="json")
+    missing_interpretation_limits["interpretation_limits"]["observed_scope"] = []
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        type(report).model_validate(missing_interpretation_limits)
+
+
+def test_category_context_requires_explicit_target_exclusion_provenance() -> None:
+    report = build_report_data(_outcome())
+    document = report.model_dump(mode="json")
+    dimensions = {
+        "department": "GROCERY",
+        "product_category": "SOUP",
+        "direction": "loss",
+    }
+    values: tuple[tuple[str, float | None, str | None], ...] = (
+        ("category_percentage_change", -0.50, None),
+        ("category_population_household_count", 20.0, None),
+        ("category_population_median_change", -0.10, None),
+        ("category_population_declining_share", 0.40, None),
+        ("target_minus_category_population_median_change", -0.40, None),
+        (
+            "category_context_classification",
+            None,
+            ContextClassification.CUSTOMER_SPECIFIC.value,
+        ),
+    )
+    category_records: list[dict[str, object]] = []
+    for index, (metric, value, text_value) in enumerate(values, start=1):
+        context_metric = metric != "category_percentage_change"
+        category_records.append(
+            {
+                "evidence_id": f"ev-category-context-{index}",
+                "run_id": str(RUN_ID),
+                "household_id": "181",
+                "role": "context",
+                "source_tool": ToolName.CATEGORY_DECOMPOSITION.value,
+                "source_tool_call_id": CALL_ID,
+                "source_status": ToolStatus.PARTIAL.value,
+                "metric": metric,
+                "dimensions": {
+                    **dimensions,
+                    **({"target_excluded": "true"} if context_metric else {}),
+                },
+                "value": value,
+                "text_value": text_value,
+                "unit": "classification" if text_value else "ratio",
+                "maximum_claim_type": (
+                    ClaimType.ASSOCIATIONAL.value
+                    if text_value
+                    else ClaimType.DESCRIPTIVE.value
+                ),
+                "limitations": [],
+                "query_hash": "category-context-query",
+            }
+        )
+    document["evidence_ledger"].extend(category_records)
+    evidence_ids = [item["evidence_id"] for item in category_records]
+    classification_id = evidence_ids[-1]
+    document["population_context"]["category_context"] = [
+        {
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "available": True,
+            "target_change": -0.50,
+            "comparison_household_count": 20,
+            "population_median_change": -0.10,
+            "declining_household_share": 0.40,
+            "target_minus_population_median_change": -0.40,
+            "context_classification": ContextClassification.CUSTOMER_SPECIFIC.value,
+            "target_excluded": True,
+            "evidence_ids": evidence_ids,
+            "classification_evidence_id": classification_id,
+            "classification_evidence_ids": [classification_id],
+            "limitations": [],
+        }
+    ]
+
+    validated = type(report).model_validate(document)
+    assert validated.population_context.category_context[0].target_excluded
+
+    hidden_category_context = json.loads(json.dumps(document))
+    hidden_category_context["population_context"]["category_context"] = []
+    with pytest.raises(ValidationError, match="every ledger classification"):
+        type(report).model_validate(hidden_category_context)
+
+    category_records[-1]["dimensions"].pop("target_excluded")
+    with pytest.raises(ValidationError, match="target exclusion"):
+        type(report).model_validate(document)
 
 
 def test_html_is_escaped_self_contained_and_auditable() -> None:
@@ -284,9 +663,13 @@ def test_html_is_escaped_self_contained_and_auditable() -> None:
     assert "<script" not in html and "<link" not in html
     for section_id in (
         "decline-summary",
+        "population-comparison-context",
         "investigation-path",
         "likely-drivers",
         "supporting-evidence",
+        "what-analysis-can-establish",
+        "what-analysis-cannot-establish",
+        "unobserved-factors",
         "counterevidence-alternatives",
         "next-best-action",
         "measurement-plan",

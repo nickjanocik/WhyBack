@@ -132,6 +132,7 @@ def _context_evidence(
         source_tool=ToolName.PEER_COMPARISON,
         source_tool_call_id=call_id,
         metric="context_classification",
+        dimensions={"target_excluded": "true"},
         text_value=classification.value,
         unit="classification",
         query_hash="context-query",
@@ -142,13 +143,14 @@ def _category_context_evidence(
     classification: ContextClassification,
     *,
     evidence_id: str = "ev-category-context",
+    call_id: str = "call-category",
 ) -> EvidenceRecord:
     return EvidenceRecord(
         evidence_id=evidence_id,
         run_id=RUN_ID,
         household_id="1",
         source_tool=ToolName.CATEGORY_DECOMPOSITION,
-        source_tool_call_id="call-category",
+        source_tool_call_id=call_id,
         metric="category_context_classification",
         dimensions={
             "department": "GROCERY",
@@ -495,6 +497,66 @@ def test_broad_category_context_caps_category_driver_at_low() -> None:
     assert "not uniquely customer-specific" in adjustment.reason
 
 
+def test_conflicting_category_context_uses_conservative_low_cap() -> None:
+    category = _evidence(
+        "ev-category",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    insufficient = _category_context_evidence(
+        ContextClassification.INSUFFICIENT_CONTEXT,
+        evidence_id="ev-category-insufficient",
+    )
+    broad = _category_context_evidence(
+        ContextClassification.BROAD_CONTEXT,
+        evidence_id="ev-category-broad",
+        call_id="call-category-2",
+    )
+    overall = _context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
+    state = _state(
+        (category, insufficient, broad, overall),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category-2",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(evidence_ids=("ev-category",), action=ActionId.CATEGORY_WINBACK),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is ContextClassification.BROAD_CONTEXT
+    assert adjustment.evidence_ids == (
+        "ev-category-insufficient",
+        "ev-category-broad",
+    )
+
+
 def test_missing_category_context_caps_and_propagates_limitation() -> None:
     category = _evidence(
         "ev-category",
@@ -540,6 +602,71 @@ def test_missing_category_context_caps_and_propagates_limitation() -> None:
     assert adjustment.context_classification is (
         ContextClassification.INSUFFICIENT_CONTEXT
     )
+    assert any(
+        "category-population context was unavailable" in item.casefold()
+        for item in verdict.final.propagated_limitations
+    )
+
+
+def test_each_cited_category_requires_matching_context() -> None:
+    soup = _evidence(
+        "ev-soup",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    dairy = _evidence(
+        "ev-dairy",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=12.0,
+        recent_value=4.0,
+        dimensions={
+            "department": "DAIRY",
+            "product_category": "MILK",
+            "direction": "loss",
+        },
+    )
+    soup_context = _category_context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
+    overall_context = _context_evidence(ContextClassification.CUSTOMER_SPECIFIC)
+    state = _state(
+        (soup, dairy, soup_context, overall_context),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(
+        state,
+        _proposal(
+            evidence_ids=("ev-soup", "ev-dairy"),
+            action=ActionId.CATEGORY_WINBACK,
+        ),
+    )
+
+    assert verdict.passed and verdict.final is not None
+    adjustment = verdict.final.confidence_adjustments[0]
+    assert adjustment.context_classification is (
+        ContextClassification.INSUFFICIENT_CONTEXT
+    )
+    assert adjustment.evidence_ids == ()
     assert any(
         "category-population context was unavailable" in item.casefold()
         for item in verdict.final.propagated_limitations
@@ -621,6 +748,8 @@ def test_verifier_rejects_unsupported_claims(
     (
         "Promotion availability drove the decline.",
         "The loss resulted from promotion changes.",
+        "The loss resulted in the customer leaving.",
+        "Fewer visits made the customer disengage.",
         "The decline happened because of fewer offers.",
         "This action will increase engagement.",
         "The household was exposed to the recorded promotion.",
@@ -654,7 +783,18 @@ def test_verifier_rejects_adversarial_causal_and_exposure_claims(
     (
         ("This analysis cannot establish causality.", True),
         ("The recorded pattern did not cause the household's decline.", True),
+        ("There is no evidence that reduced promotions caused the decline.", True),
+        ("No evidence indicates promotions caused the decline.", True),
+        ("It is unknown whether promotions caused the decline.", True),
         ("The recorded pattern caused the household's decline.", False),
+        ("Reduced promotions prompted the customer to leave.", False),
+        ("Reduced promotions forced the household to disengage.", False),
+        ("Reduced promotions pushed the customer to leave.", False),
+        ("Reduced promotions were the reason for the decline.", False),
+        ("Reduced promotions are why the customer left.", False),
+        ("The decline occurred as a consequence of reduced promotions.", False),
+        ("Reduced promotions brought about the decline.", False),
+        ("Reduced promotions induced the decline.", False),
     ),
 )
 def test_causal_defense_distinguishes_denials_from_assertions(
@@ -711,6 +851,252 @@ def test_descriptive_claim_with_observational_evidence_passes() -> None:
 
     assert verdict.passed and verdict.final is not None
     assert verdict.final.drivers[0].claim_type is ClaimType.DESCRIPTIVE
+
+
+def test_code_owned_driver_accepts_full_bounded_support_and_counter_sets() -> None:
+    support = tuple(
+        _evidence(
+            f"ev-support-{index}",
+            tool=ToolName.CATEGORY_DECOMPOSITION,
+            call_id="call-category",
+            metric="category_retailer_sales_value",
+            baseline_value=10.0 + index,
+            recent_value=5.0,
+            dimensions={
+                "department": "GROCERY",
+                "product_category": f"CATEGORY_{index}",
+                "direction": "loss",
+            },
+        )
+        for index in range(7)
+    )
+    counters = tuple(
+        _category_context_evidence(
+            ContextClassification.BROAD_CONTEXT,
+            evidence_id=f"ev-counter-{index}",
+            call_id="call-category",
+        ).model_copy(
+            update={
+                "dimensions": {
+                    "department": "GROCERY",
+                    "product_category": f"CATEGORY_{index}",
+                    "direction": "loss",
+                    "target_excluded": "true",
+                }
+            }
+        )
+        for index in range(7)
+    )
+    support_ids = tuple(record.evidence_id for record in support)
+    counter_ids = tuple(record.evidence_id for record in counters)
+    driver = DriverClaim(
+        summary="Recorded category losses are plausible contributors.",
+        claim_type=ClaimType.ASSOCIATIONAL,
+        supporting_evidence_ids=support_ids,
+        counterevidence_ids=counter_ids,
+        limitations=("The evidence is observational.",),
+    )
+    proposal = FinishProposal(
+        driver_summary=(driver,),
+        proposed_confidence=ConfidenceLevel.HIGH,
+        supporting_evidence_ids=support_ids,
+        counterevidence_ids=counter_ids,
+        next_best_action_id=ActionId.CATEGORY_WINBACK,
+        rationale="Recorded category losses support a human-reviewed test.",
+        alternative_explanations=("Outside-retailer behavior remains unknown.",),
+        uncertainties=("Customer intent is not recorded.",),
+    )
+    state = _state(
+        (*support, *counters),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.drivers[0].supporting_evidence_ids == support_ids
+    assert verdict.final.drivers[0].counterevidence_ids == counter_ids
+
+
+def test_verifier_rejects_unrelated_counterevidence() -> None:
+    support = _evidence("ev-1")
+    unrelated = _evidence(
+        "ev-unrelated-counter",
+        metric="unrelated_metric",
+        baseline_value=1.0,
+        recent_value=2.0,
+    )
+    driver = DriverClaim(
+        summary="The observed decline warrants cautious monitoring.",
+        claim_type=ClaimType.ASSOCIATIONAL,
+        supporting_evidence_ids=(support.evidence_id,),
+        counterevidence_ids=(unrelated.evidence_id,),
+        limitations=("The evidence is observational.",),
+    )
+    proposal = FinishProposal(
+        driver_summary=(driver,),
+        proposed_confidence=ConfidenceLevel.MEDIUM,
+        supporting_evidence_ids=(support.evidence_id,),
+        counterevidence_ids=(unrelated.evidence_id,),
+        next_best_action_id=ActionId.MONITOR,
+        rationale="The recorded pattern supports human review.",
+        alternative_explanations=("Outside-retailer behavior remains unknown.",),
+        uncertainties=("Customer intent is not recorded.",),
+    )
+    state = _state((support, unrelated), (_history(),))
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert VerificationIssueCode.IRRELEVANT_COUNTEREVIDENCE in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_verifier_does_not_treat_malformed_adverse_record_as_counterevidence() -> None:
+    support = _evidence(
+        "ev-category-support",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    malformed = _evidence(
+        "ev-category-malformed-counter",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=9.0,
+        recent_value=4.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+        },
+    )
+    driver = DriverClaim(
+        summary="A recorded category loss is a plausible contributor.",
+        claim_type=ClaimType.ASSOCIATIONAL,
+        supporting_evidence_ids=(support.evidence_id,),
+        counterevidence_ids=(malformed.evidence_id,),
+        limitations=("The evidence is observational.",),
+    )
+    proposal = FinishProposal(
+        driver_summary=(driver,),
+        proposed_confidence=ConfidenceLevel.MEDIUM,
+        supporting_evidence_ids=(support.evidence_id,),
+        counterevidence_ids=(malformed.evidence_id,),
+        next_best_action_id=ActionId.CATEGORY_WINBACK,
+        rationale="The recorded pattern supports human review.",
+        alternative_explanations=("Outside-retailer behavior remains unknown.",),
+        uncertainties=("Customer intent is not recorded.",),
+    )
+    state = _state(
+        (support, malformed),
+        (
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert VerificationIssueCode.IRRELEVANT_COUNTEREVIDENCE in {
+        issue.code for issue in verdict.issues
+    }
+
+
+def test_resolved_driver_keeps_only_its_own_counterevidence() -> None:
+    cadence = _evidence(
+        "ev-cadence",
+        metric="distinct_trips",
+        baseline_value=5.0,
+        recent_value=2.0,
+    )
+    category = _evidence(
+        "ev-category-other",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_retailer_sales_value",
+        baseline_value=10.0,
+        recent_value=5.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "SOUP",
+            "direction": "loss",
+        },
+    )
+    category_counter = _evidence(
+        "ev-category-counter",
+        tool=ToolName.CATEGORY_DECOMPOSITION,
+        call_id="call-category",
+        metric="category_percentage_change",
+        baseline_value=1.0,
+        recent_value=2.0,
+        dimensions={
+            "department": "GROCERY",
+            "product_category": "BAKERY",
+            "direction": "gain",
+        },
+    )
+    cadence_driver = DriverClaim(
+        summary="Recorded visit cadence is a plausible contributor.",
+        claim_type=ClaimType.ASSOCIATIONAL,
+        supporting_evidence_ids=("ev-cadence",),
+        no_material_counterevidence_reason=(
+            "No material cadence counterevidence was identified."
+        ),
+        limitations=("The evidence is observational.",),
+    )
+    category_driver = DriverClaim(
+        summary="Recorded category movement is a plausible contributor.",
+        claim_type=ClaimType.ASSOCIATIONAL,
+        supporting_evidence_ids=("ev-category-other",),
+        counterevidence_ids=("ev-category-counter",),
+        limitations=("The evidence is observational.",),
+    )
+    proposal = FinishProposal(
+        driver_summary=(cadence_driver, category_driver),
+        proposed_confidence=ConfidenceLevel.HIGH,
+        supporting_evidence_ids=("ev-cadence", "ev-category-other"),
+        counterevidence_ids=("ev-category-counter",),
+        next_best_action_id=ActionId.VISIT_FREQUENCY_REACTIVATION,
+        rationale="Recorded visit cadence supports a human-reviewed test.",
+        alternative_explanations=("Outside-retailer activity remains unknown.",),
+        uncertainties=("Customer intent is not recorded.",),
+    )
+    state = _state(
+        (cadence, category, category_counter),
+        (
+            _history(),
+            _history(
+                tool=ToolName.CATEGORY_DECOMPOSITION,
+                call_id="call-category",
+                diagnostics={"baseline_reconciled": True, "recent_reconciled": True},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
+
+    assert verdict.passed and verdict.final is not None
+    assert verdict.final.supporting_evidence_ids == ("ev-cadence",)
+    assert verdict.final.counterevidence_ids == ()
+    assert verdict.final.drivers[0].counterevidence_ids == ()
+    assert verdict.final.drivers[0].no_material_counterevidence_reason is not None
 
 
 def test_resolved_driver_never_upgrades_descriptive_context_evidence() -> None:
@@ -876,6 +1262,30 @@ def test_conflicting_context_records_resolve_conservatively() -> None:
         "ev-context-customer",
         "ev-context-broad",
     )
+
+
+def test_context_classification_requires_expected_tool_and_exclusion_proof() -> None:
+    invalid_context = _context_evidence(ContextClassification.BROAD_CONTEXT).model_copy(
+        update={"source_tool": ToolName.CUSTOMER_TREND}
+    )
+    state = _state(
+        (_evidence("ev-1"), invalid_context),
+        (
+            _history(),
+            _history(
+                tool=ToolName.PEER_COMPARISON,
+                call_id="call-peer",
+                diagnostics={"target_excluded": True, "peer_household_ids": ["2"]},
+            ),
+        ),
+    )
+
+    verdict = FinalVerifier(load_action_catalog()).verify(state, _proposal())
+
+    assert not verdict.passed
+    assert VerificationIssueCode.INVALID_CONTEXT_EVIDENCE in {
+        issue.code for issue in verdict.issues
+    }
 
 
 def test_visit_action_rejects_stable_or_increasing_cadence() -> None:

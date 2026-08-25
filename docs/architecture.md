@@ -24,13 +24,15 @@ flowchart TB
         Q[Canonical Parquet<br/>10 tables]
         R[DataRepository<br/>DuckDB read-only views]
         D[Decline detector]
-        T[Six analytical tools]
+        T[Six analytical tools<br/>target + population context]
+        CP[ContextPolicy<br/>cohorts + classification thresholds]
         S --> P
         P --> M
         P --> Q
         Q --> R
         R --> D
         R --> T
+        CP --> T
     end
 
     subgraph Control[Bounded control plane]
@@ -39,7 +41,7 @@ flowchart TB
         MB[ModelBackend<br/>Gemini or scripted]
         RG[ToolRegistry]
         EL[EvidenceLedger]
-        FV[FinalVerifier]
+        FV[FinalVerifier<br/>claim ceilings + context caps]
         AC[ActionCatalog]
         X --> ST
         ST --> MB
@@ -49,12 +51,13 @@ flowchart TB
         EL --> ST
         MB -->|finish proposal| FV
         AC --> FV
+        CP --> FV
     end
 
     D --> X
     FV --> O[Verified outcome]
     ST --> A[Append-only JSONL audit]
-    O --> RP[JSON / Markdown / HTML report]
+    O --> RP[JSON / Markdown / HTML report<br/>context + claim boundaries]
     A --> TV[Offline HTML trace viewer]
 ```
 
@@ -133,6 +136,34 @@ Only `ok` and `partial` may carry evidence. Tool and contract code reject
 evidence whose source name or call ID does not match its envelope. Full results
 remain in application state and the sanitized tool-completion trace event; the
 model receives a compact form.
+
+### Population and category context
+
+`ContextPolicy` is the single immutable policy for comparison eligibility,
+minimum cohort sizes, and classification thresholds. With its declared
+defaults, baseline eligibility requires four active weeks, six distinct
+baskets, and positive retailer sales value. Reliable context requires 20
+target-excluded eligible households, five target-excluded behavioral peers, or
+20 target-excluded category households. A category comparison also requires at
+least 1.0 retailer sales value of baseline activity in that category.
+
+`peer_comparison` computes the target's signed retailer-sales change and the
+eligible-population and behavioral-peer median, interquartile range,
+percentile, declining share, target-minus-median gap, and cohort count. Signed
+change is `(recent - baseline) / baseline`; lower means worse. The target is
+excluded from both distributions, and robust scaling is fitted on comparison
+households only. `category_decomposition` computes corresponding
+contemporaneous context for selected major loss categories while preserving
+its existing target-total reconciliation.
+
+Classification is deterministic. A 0.10-or-larger target gap below both
+medians is `customer_specific` only without broad movement and is otherwise
+`mixed`. `broad_context` requires at least a 0.60 declining share in both
+population and peers and target movement within 0.10 of both medians. Cohorts
+below their minimum are `insufficient_context`; other reliable combinations
+are `mixed`. These are household-level descriptive comparisons, not causal
+controls. With roughly one year of source data, widespread movement is called
+**broad contemporaneous context**, never proven recurring seasonality.
 
 ## Control plane
 
@@ -219,13 +250,18 @@ model behavior.
 
 The evidence ledger accepts records only from successful results and checks
 unique ID, run, household, and source-call ownership. A finish proposal contains
-qualitative driver statements, support and counterevidence IDs, confidence,
-one allowlisted action, alternatives, and uncertainties.
+typed qualitative driver statements, support and counterevidence IDs,
+confidence, one allowlisted action, alternatives, and uncertainties. Every
+substantive driver declares `descriptive`, `associational`, or `causal`, cites
+counterevidence or records why none was material, and carries limitations.
+Every evidence record declares the strongest claim type it can support.
 
 `FinalVerifier` fails closed on:
 
 - missing, foreign, or failed-call evidence;
 - drivers not mapped to their support set;
+- driver claim types above a cited evidence ceiling, including every causal
+  driver from the current observational tools;
 - overlap between support and counterevidence;
 - action IDs or evidence prerequisites outside policy;
 - raw numerical or causal/guaranteed-retention claims in free text;
@@ -235,12 +271,18 @@ one allowlisted action, alternatives, and uncertainties.
 - target inclusion in its own peer cohort.
 
 When verification passes, the verifier resolves the catalog description,
-measurement plan, propagated limitations, and maximum allowed confidence. The
-renderer builds customer-behavior tables from tool ledger records and typed,
-run-owned detector evidence. It builds operational attempt and timing facts
-from typed history and audit events—never from model prose. JSON is the stable
-report boundary; Markdown and self-contained HTML are views of the same typed
-object.
+measurement plan, propagated limitations, and maximum allowed confidence.
+Broad population or peer context caps customer-specific confidence at low;
+mixed or missing context caps it at medium. Matching broad category movement
+also caps a category interpretation at low. Missing context is a limitation,
+not neutral evidence, and each adjustment is recorded with its evidence IDs in
+the audit trace. The renderer builds customer-behavior tables from tool ledger
+records and typed, run-owned detector evidence. It builds operational attempt
+and timing facts from typed history and audit events—never from model prose.
+JSON is the stable report boundary; Markdown and self-contained HTML are views
+of the same typed object. All three expose population/comparison context, claim
+labels, counterevidence, what the analysis can and cannot establish, unobserved
+factors, and a human-reviewed measurement plan.
 
 ## Audit and replay
 

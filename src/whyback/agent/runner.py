@@ -339,6 +339,10 @@ class InvestigationRunner:
                         driver.claim_type.value
                         for driver in decision.final.driver_summary
                     ],
+                    "driver_supporting_evidence_ids": [
+                        list(driver.supporting_evidence_ids)
+                        for driver in decision.final.driver_summary
+                    ],
                     "driver_counterevidence_ids": [
                         list(driver.counterevidence_ids)
                         for driver in decision.final.driver_summary

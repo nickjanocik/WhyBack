@@ -133,15 +133,20 @@ WhyBack separates control from calculation:
   questions, and remaining budgets. Each fresh decision offers one analytical
   function call or `finish_investigation`.
 - An immutable application-owned ledger records every successful deterministic
-  value. The final proposal uses evidence IDs and qualitative prose.
+  value and its maximum claim type. The final proposal uses evidence IDs,
+  typed descriptive or associational drivers, per-driver counterevidence, and
+  qualitative prose.
 - The verifier checks evidence ownership and origin, action prerequisites,
-  partial-data limitations, analytical reconciliation diagnostics, confidence,
-  and prohibited numerical or causal free text before rendering.
+  partial-data limitations, population/category context, claim ceilings,
+  analytical reconciliation diagnostics, confidence, and prohibited numerical
+  or causal free text before rendering.
 
 See [Architecture](docs/architecture.md),
 [Reliability](docs/reliability.md), the original
 [agent-loop ADR](docs/adr/001-own-the-agent-loop.md), and the current
-[Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md).
+[Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md). The
+[population-context and claim-boundary ADR](docs/adr/008-population-context-and-claim-boundaries.md)
+records this methodology.
 
 ## Decline detector
 
@@ -170,11 +175,11 @@ envelope with status, evidence, limitations, retryability, and provenance.
 | Tool | Question answered | Safety invariant |
 | --- | --- | --- |
 | `customer_trend` | Is decline mainly frequency, value, recency, or trajectory? | Empty windows are explicit; recorded quantity carries a fuel-scale caveat. |
-| `category_decomposition` | Which departments/categories account for lost retailer sales value? | `UNKNOWN` is retained and category totals reconcile. |
+| `category_decomposition` | Which departments/categories account for lost retailer sales value? | `UNKNOWN` is retained, totals reconcile, and major losses receive protected target-excluded category context. |
 | `basket_behavior` | Are there fewer visits, smaller baskets, or changed cadence/store behavior? | Metrics are computed at distinct-basket grain. |
 | `promotion_response` | Did purchasing associated with promotion availability change? | The join preserves rows and retailer sales value; availability is not household exposure. |
 | `coupon_campaign_history` | What participation, redemption, and transaction coupon behavior is known? | Type A exact delivered coupons remain unavailable and produce `partial`. |
-| `peer_comparison` | Is the target unusual among behavioral peers? | Robust baseline behavior drives peers; demographics do not; target is excluded. |
+| `peer_comparison` | Is the target unusual against the eligible population and behavioral peers? | Household distributions and robust behavioral matching exclude the target; demographics do not drive peers. |
 
 For source-specific caveats, see
 [Complete Journey data semantics](docs/data-semantics.md).
@@ -203,10 +208,12 @@ evidence or a run- and household-owned tool `EvidenceRecord`. Operational
 attempt, retry, and timing facts come from typed application history and audit
 events. None comes from model-authored prose. Failed calls cannot create
 evidence. The model may describe a plausible driver, but it must cite ledger
-IDs; numerical and causal assertions in free-form final fields are rejected.
-The verifier also checks category reconciliation, promotion non-multiplication,
-peer exclusion, action-catalog prerequisites, limitation propagation, and a
-deterministic confidence cap.
+IDs, declare claim strength, and address counterevidence. Numerical and causal
+assertions in free-form final fields are rejected. The verifier also checks
+category reconciliation, promotion non-multiplication, population/peer
+exclusion, category-cohort context, action-catalog prerequisites, limitation
+propagation, and deterministic context-aware confidence caps. Reports make
+observed scope, unobserved factors, and unsupported causal conclusions explicit.
 
 The only possible recommendations are
 `CATEGORY_WINBACK`, `VISIT_FREQUENCY_REACTIVATION`,
@@ -364,12 +371,14 @@ not hidden core dependencies.
 | Missing-data safety | `UNKNOWN` hierarchy; Type A `partial`; empty/missing explicit statuses | tool and integration tests, failure/report artifacts |
 | Promotion safety | Canonical product/store/week state and post-join reconciliation | preparation manifest, promotion property tests |
 | Behavioral peers | Robust-scaled behavior, no demographics, target exclusion | `src/whyback/tools/peer.py`, peer tests |
+| Population-relative context | Target-excluded eligible-population, peer, and protected category distributions with centralized classifications | `src/whyback/methodology.py`, peer/category context tests |
+| Claim boundaries | Typed evidence ceilings and driver claims, causal rejection, counterevidence, context-aware confidence | `src/whyback/agent/verifier.py`, verifier/report tests |
 | Replayable audit | Sanitized append-only JSONL and offline HTML viewer | `src/whyback/observability/`, `src/whyback/reporting/` |
 | Reports | Strict JSON plus deterministic Markdown/HTML | report tests, `artifacts/demo/` |
-| Behavioral evaluations | Six versioned scenarios and deterministic aggregate metrics | `evals/`, `artifacts/evals/` |
+| Behavioral evaluations | Twelve versioned scenarios and deterministic aggregate metrics | `evals/`, `artifacts/evals/` |
 | Quality and CI | Frozen install, Ruff, Pyright, branch coverage/JUnit, artifact check | `.github/workflows/ci.yml`, `artifacts/tests/` |
 | Honest live status | Gemini analytical-call contract validated on synthetic state; longer synthetic run timed out safely; no official data sent and no completed live investigation claimed | this README, ADR 007, and artifact manifests |
-| Design and operations record | Architecture, reliability, evaluation, seven ADRs, production plan | `docs/` |
+| Design and operations record | Architecture, reliability, evaluation, eight ADRs, production plan | `docs/` |
 
 ## Repository map
 

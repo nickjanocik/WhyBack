@@ -20,12 +20,18 @@ from typing import Literal, cast
 from pydantic import ValidationError
 
 from whyback.agent.actions import ActionCatalogError, ActionId, load_action_catalog
-from whyback.agent.verifier import is_report_safe_qualitative
+from whyback.agent.verifier import (
+    is_relevant_counterevidence,
+    is_report_safe_qualitative,
+)
 from whyback.data.download import SOURCE_FILES
 from whyback.data.manifest import DataManifest, preparation_code_sha256
 from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType
 from whyback.observability import AuditEvent, AuditEventName, read_audit_events
 from whyback.reporting import (
+    build_interpretation_limits,
+    build_population_context,
     render_report_html,
     render_report_markdown,
     render_trace_html,
@@ -85,12 +91,41 @@ _DRIVER_TEMPLATES = {
         "underlying reason remains uncertain."
     ),
 }
+_DESCRIPTIVE_DRIVER_TEMPLATES = {
+    ActionId.CATEGORY_WINBACK: (
+        "A recorded mapped category-level loss is present in the observed decline."
+    ),
+    ActionId.VISIT_FREQUENCY_REACTIVATION: (
+        "Recorded visit cadence declined during the observed period."
+    ),
+    ActionId.PROMOTION_VALUE_REENGAGEMENT: (
+        "Recorded promotion-associated or coupon activity declined during the "
+        "observed period."
+    ),
+    ActionId.PERSONALIZED_CHECK_IN: (
+        "Multiple distinct computed behavioral measures changed during the observed "
+        "period."
+    ),
+    ActionId.MONITOR: (
+        "A recorded decline signal is present and warrants monitored reassessment; "
+        "its underlying reason remains unknown."
+    ),
+}
+_CLAIM_ORDER = {
+    ClaimType.DESCRIPTIVE: 0,
+    ClaimType.ASSOCIATIONAL: 1,
+    ClaimType.CAUSAL: 2,
+}
 _VERIFIED_ALTERNATIVES = (
     "Recorded evidence does not distinguish the observed signal from unobserved "
     "activity outside this retailer.",
 )
 _VERIFIED_UNCERTAINTIES = (
     "Customer intent and activity outside the recorded retailer data are not observed.",
+)
+_OBSERVATIONAL_DRIVER_LIMITATION = (
+    "The observational evidence supports an association, not a causal explanation "
+    "of the household's behavior."
 )
 
 
@@ -152,6 +187,15 @@ class ManifestValidation:
     is_artifact_manifest: bool
     data: Mapping[str, object] | None
     issues: tuple[VerificationIssue, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ProposedDriverTrace:
+    """One model-proposed driver reconstructed from a finish audit event."""
+
+    claim_type: ClaimType
+    supporting_evidence_ids: tuple[str, ...]
+    counterevidence_ids: tuple[str, ...]
 
 
 def sha256_file(path: Path) -> str:
@@ -1522,6 +1566,57 @@ def _accepted_evidence_ids(
     return (), ()
 
 
+def _proposed_drivers(
+    events: Sequence[AuditEvent],
+) -> tuple[ProposedDriverTrace, ...] | None:
+    """Recover per-driver evidence accounting from the accepted finish request."""
+
+    for event in reversed(events):
+        if event.event is not AuditEventName.FINISH_REQUESTED:
+            continue
+        raw_claim_types = event.details.get("driver_claim_types")
+        raw_supporting = event.details.get("driver_supporting_evidence_ids")
+        raw_counterevidence = event.details.get("driver_counterevidence_ids")
+        if not all(
+            isinstance(item, list)
+            for item in (raw_claim_types, raw_supporting, raw_counterevidence)
+        ):
+            return None
+        assert isinstance(raw_claim_types, list)
+        assert isinstance(raw_supporting, list)
+        assert isinstance(raw_counterevidence, list)
+        if not (
+            len(raw_claim_types) == len(raw_supporting) == len(raw_counterevidence)
+        ):
+            return None
+        drivers: list[ProposedDriverTrace] = []
+        for raw_claim_type, support, counters in zip(
+            raw_claim_types,
+            raw_supporting,
+            raw_counterevidence,
+            strict=True,
+        ):
+            try:
+                claim_type = ClaimType(raw_claim_type)
+            except (TypeError, ValueError):
+                return None
+            if (
+                not isinstance(support, list)
+                or not isinstance(counters, list)
+                or any(not isinstance(item, str) for item in (*support, *counters))
+            ):
+                return None
+            drivers.append(
+                ProposedDriverTrace(
+                    claim_type=claim_type,
+                    supporting_evidence_ids=tuple(cast(str, item) for item in support),
+                    counterevidence_ids=tuple(cast(str, item) for item in counters),
+                )
+            )
+        return tuple(drivers)
+    return None
+
+
 def _expected_report_evidence(
     record: EvidenceRecord,
     status: ToolStatus,
@@ -1717,6 +1812,9 @@ def _validate_report_trace_pair(
         *(step.investigation_question for step in report.investigation_path),
         *report.alternative_explanations,
         *report.uncertainties,
+        *report.interpretation_limits.observed_scope,
+        *report.interpretation_limits.unobserved_factors,
+        *report.interpretation_limits.causal_limitations,
         *((report.action.rationale,) if report.action is not None else ()),
     )
     if any(not is_report_safe_qualitative(item) for item in qualitative_claims):
@@ -1749,6 +1847,42 @@ def _validate_report_trace_pair(
         for record, status in trace.evidence
     )
     expected_by_id = {item.evidence_id: item for item in expected_ledger}
+    trace_records = tuple(record for record, _ in trace.evidence)
+    try:
+        expected_population_context = build_population_context(trace_records)
+        expected_interpretation_limits = build_interpretation_limits(
+            trace_records,
+            expected_population_context.context_classification,
+        )
+    except ValidationError as error:
+        issues.append(
+            _issue(
+                trace_path,
+                root,
+                "invalid_methodology_context",
+                f"Trace evidence cannot produce report-safe context: {error}",
+            )
+        )
+    else:
+        if report.population_context != expected_population_context:
+            issues.append(
+                _issue(
+                    report_path,
+                    root,
+                    "report_population_context_mismatch",
+                    "Report population context is not the exact trace reconstruction",
+                )
+            )
+        if report.interpretation_limits != expected_interpretation_limits:
+            issues.append(
+                _issue(
+                    report_path,
+                    root,
+                    "report_interpretation_limits_mismatch",
+                    "Report interpretation limits are not the code-owned "
+                    "reconstruction",
+                )
+            )
     expected_supporting = tuple(
         expected_by_id[evidence_id]
         for evidence_id in supporting_ids
@@ -1800,15 +1934,133 @@ def _validate_report_trace_pair(
             )
         )
     if report.action is not None:
-        driver_template = _DRIVER_TEMPLATES.get(report.action.action_id)
+        action_definition = load_action_catalog().get(report.action.action_id)
+        trace_records_by_id = {record.evidence_id: record for record in trace_records}
+        supporting_trace_records = tuple(
+            trace_records_by_id[evidence_id]
+            for evidence_id in supporting_ids
+            if evidence_id in trace_records_by_id
+        )
+        driver_supporting = tuple(
+            record
+            for record in supporting_trace_records
+            if any(
+                record.source_tool in rule.source_tools
+                and record.metric in rule.metrics
+                and any(predicate.matches(record) for predicate in rule.predicates)
+                for rule in action_definition.evidence_prerequisites
+            )
+        )
+        driver_supporting_ids = tuple(
+            record.evidence_id for record in driver_supporting
+        )
+        proposed_drivers = _proposed_drivers(trace.events)
+        if (
+            report.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE
+            and proposed_drivers is None
+        ):
+            issues.append(
+                _issue(
+                    trace_path,
+                    root,
+                    "trace_driver_provenance_missing",
+                    "A supported action requires complete per-driver finish provenance",
+                )
+            )
+        contributing_drivers = tuple(
+            driver
+            for driver in proposed_drivers or ()
+            if set(driver_supporting_ids).intersection(driver.supporting_evidence_ids)
+        )
+        resolved_counterevidence_ids = tuple(
+            dict.fromkeys(
+                evidence_id
+                for driver in contributing_drivers
+                for evidence_id in driver.counterevidence_ids
+            )
+        )
+        if any(
+            counter_id in trace_records_by_id
+            and not is_relevant_counterevidence(
+                action_definition,
+                trace_records_by_id[counter_id],
+                tuple(
+                    trace_records_by_id[evidence_id]
+                    for evidence_id in driver.supporting_evidence_ids
+                    if evidence_id in trace_records_by_id
+                ),
+            )
+            for driver in contributing_drivers
+            for counter_id in driver.counterevidence_ids
+        ):
+            issues.append(
+                _issue(
+                    trace_path,
+                    root,
+                    "trace_irrelevant_counterevidence",
+                    "A resolved driver labels unrelated evidence as counterevidence",
+                )
+            )
+        if report.action.action_id is not ActionId.INSUFFICIENT_EVIDENCE and (
+            driver_supporting_ids != supporting_ids
+            or resolved_counterevidence_ids != counterevidence_ids
+            or not contributing_drivers
+        ):
+            issues.append(
+                _issue(
+                    trace_path,
+                    root,
+                    "trace_resolved_driver_mismatch",
+                    "Passing evidence roles do not match per-driver action resolution",
+                )
+            )
+        expected_claim_type = (
+            min(
+                (
+                    *(item.maximum_claim_type for item in driver_supporting),
+                    *(item.claim_type for item in contributing_drivers),
+                ),
+                key=_CLAIM_ORDER.__getitem__,
+            )
+            if driver_supporting or contributing_drivers
+            else ClaimType.ASSOCIATIONAL
+        )
+        templates = (
+            _DESCRIPTIVE_DRIVER_TEMPLATES
+            if expected_claim_type is ClaimType.DESCRIPTIVE
+            else _DRIVER_TEMPLATES
+        )
+        driver_template = templates.get(report.action.action_id)
         expected_drivers = (
             (
                 DriverReportData(
                     summary=driver_template,
-                    supporting_evidence_ids=supporting_ids,
+                    claim_type=expected_claim_type,
+                    supporting_evidence_ids=driver_supporting_ids,
+                    counterevidence_ids=resolved_counterevidence_ids,
+                    no_material_counterevidence_reason=(
+                        None
+                        if resolved_counterevidence_ids
+                        else (
+                            "No material counterevidence was cited from the "
+                            "available ledger."
+                        )
+                    ),
+                    limitations=tuple(
+                        dict.fromkeys(
+                            (
+                                _OBSERVATIONAL_DRIVER_LIMITATION,
+                                *(
+                                    limitation
+                                    for record in driver_supporting
+                                    for limitation in record.limitations
+                                ),
+                            )
+                        )
+                    ),
                 ),
             )
-            if driver_template is not None and supporting_ids
+            if driver_template is not None and driver_supporting_ids
             else ()
         )
         if (
@@ -1912,6 +2164,20 @@ def _validate_report_trace_pair(
                     root,
                     "report_verdict_mismatch",
                     "Report action confidence does not match VERIFICATION_PASSED",
+                )
+            )
+        expected_adjustments = passing_verdict.details.get("confidence_adjustments", [])
+        actual_adjustments = [
+            item.model_dump(mode="json")
+            for item in report.action.confidence_adjustments
+        ]
+        if expected_adjustments != actual_adjustments:
+            issues.append(
+                _issue(
+                    report_path,
+                    root,
+                    "report_confidence_adjustment_mismatch",
+                    "Report confidence adjustments do not match VERIFICATION_PASSED",
                 )
             )
         try:

@@ -28,6 +28,8 @@ from whyback.data.manifest import DataManifest, preparation_code_sha256
 from whyback.observability import AuditEvent, AuditEventName
 from whyback.observability.audit import read_audit_events
 from whyback.reporting import (
+    build_interpretation_limits,
+    build_population_context,
     render_report_html,
     render_report_markdown,
     render_trace_html,
@@ -95,6 +97,10 @@ def test_model_metadata_requires_a_non_space_gemini_key(
 
 
 def _report() -> dict[str, object]:
+    population_context = build_population_context(())
+    interpretation_limits = build_interpretation_limits(
+        (), population_context.context_classification
+    )
     return {
         "schema_version": 2,
         "product_name": "WhyBack",
@@ -140,6 +146,7 @@ def _report() -> dict[str, object]:
             "flagged": True,
             "partial_week_limitation": "Week 53 may be partial.",
         },
+        "population_context": population_context.model_dump(mode="json"),
         "investigation_path": [],
         "likely_drivers": [],
         "supporting_evidence": [],
@@ -147,6 +154,7 @@ def _report() -> dict[str, object]:
         "evidence_ledger": [],
         "alternative_explanations": [],
         "uncertainties": [],
+        "interpretation_limits": interpretation_limits.model_dump(mode="json"),
         "action": None,
         "limitations": [
             "Week 53 may be partial.",
@@ -593,6 +601,17 @@ def _write_live_artifacts(root: Path) -> None:
         "rationale": "Available verified evidence does not support a customer action.",
         "resolved_confidence": "insufficient",
         "confidence_cap_applied": True,
+        "confidence_adjustments": [
+            {
+                "context_classification": "insufficient_context",
+                "maximum_confidence": "medium",
+                "reason": (
+                    "Population or peer context is insufficient, so missing comparison "
+                    "evidence cannot be treated as neutral."
+                ),
+                "evidence_ids": [],
+            }
+        ],
         "recommended_success_metric": action.success_metric.description,
         "suggested_experiment": action.experiment.description,
         "human_review_required": True,
@@ -644,6 +663,9 @@ def _write_live_artifacts(root: Path) -> None:
                 "next_best_action_id": "INSUFFICIENT_EVIDENCE",
                 "supporting_evidence_ids": [],
                 "counterevidence_ids": [],
+                "driver_claim_types": [],
+                "driver_supporting_evidence_ids": [],
+                "driver_counterevidence_ids": [],
             },
             **common,
         ),
@@ -660,6 +682,17 @@ def _write_live_artifacts(root: Path) -> None:
                 "next_best_action_id": "INSUFFICIENT_EVIDENCE",
                 "resolved_confidence": "insufficient",
                 "confidence_cap_applied": True,
+                "confidence_adjustments": [
+                    {
+                        "context_classification": "insufficient_context",
+                        "maximum_confidence": "medium",
+                        "reason": (
+                            "Population or peer context is insufficient, so missing "
+                            "comparison evidence cannot be treated as neutral."
+                        ),
+                        "evidence_ids": [],
+                    }
+                ],
                 "supporting_evidence_ids": [],
                 "counterevidence_ids": [],
             },
@@ -1074,12 +1107,68 @@ def test_completed_trace_requires_passing_verdict_and_matching_confidence(
     _write_live_artifacts(confidence_root)
     report_path = confidence_root / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    report["action"]["resolved_confidence"] = "high"
+    report["action"]["resolved_confidence"] = "low"
     _write_exact_report_bundle(report_path, report)
     _write_results_files(confidence_root)
     _rehash_manifest(confidence_root)
     bad_confidence = verify_artifact_tree(confidence_root, allow_live_skipped=True)
     assert "report_verdict_mismatch" in {item.code for item in bad_confidence.issues}
+
+
+def test_artifact_verifier_reconciles_context_confidence_adjustments(
+    tmp_path: Path,
+) -> None:
+    _write_live_artifacts(tmp_path)
+    report_path = tmp_path / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["action"]["confidence_adjustments"][0]["reason"] = (
+        "A tampered confidence-adjustment reason."
+    )
+    _write_exact_report_bundle(report_path, report)
+    _write_results_files(tmp_path)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert "report_confidence_adjustment_mismatch" in {
+        item.code for item in result.issues
+    }
+
+
+def test_artifact_verifier_reconstructs_methodology_sections_from_trace(
+    tmp_path: Path,
+) -> None:
+    context_root = tmp_path / "context"
+    _write_live_artifacts(context_root)
+    context_report_path = context_root / "customer_77" / "report.json"
+    context_report = json.loads(context_report_path.read_text(encoding="utf-8"))
+    context_report["population_context"]["limitations"] = [
+        "A schema-valid but unevidenced population limitation."
+    ]
+    _write_exact_report_bundle(context_report_path, context_report)
+    _write_results_files(context_root)
+    _rehash_manifest(context_root)
+
+    context_result = verify_artifact_tree(context_root, allow_live_skipped=True)
+    assert "report_population_context_mismatch" in {
+        item.code for item in context_result.issues
+    }
+
+    limits_root = tmp_path / "limits"
+    _write_live_artifacts(limits_root)
+    limits_report_path = limits_root / "customer_77" / "report.json"
+    limits_report = json.loads(limits_report_path.read_text(encoding="utf-8"))
+    limits_report["interpretation_limits"]["causal_limitations"][0] = (
+        "Reduced promotions caused the household's decline."
+    )
+    _write_exact_report_bundle(limits_report_path, limits_report)
+    _write_results_files(limits_root)
+    _rehash_manifest(limits_root)
+
+    limits_result = verify_artifact_tree(limits_root, allow_live_skipped=True)
+    limits_codes = {item.code for item in limits_result.issues}
+    assert "report_interpretation_limits_mismatch" in limits_codes
+    assert "unsafe_report_prose" in limits_codes
 
 
 def test_live_history_and_skip_are_credential_independent(

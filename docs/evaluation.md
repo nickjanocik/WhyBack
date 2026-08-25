@@ -6,7 +6,7 @@ not used as the source of truth.
 
 ## What the suite establishes
 
-The deterministic baseline is designed to answer four questions:
+The deterministic baseline is designed to answer five questions:
 
 1. **Are source-derived metrics correct?** Hand-calculated and property tests
    exercise windows, scores, tool outputs, joins, and reconciliation.
@@ -17,6 +17,10 @@ The deterministic baseline is designed to answer four questions:
    policy-invalid citations.
 4. **Do reviewer artifacts preserve those guarantees?** Strict report, trace,
    manifest, and hash checks validate the portable output boundary.
+5. **Does customer-specific language survive contemporaneous comparison?**
+   Population, peer, and category context cases check typed classifications,
+   deterministic confidence caps, associational claim labels, and causal
+   rejection without scoring model prose.
 
 The suite does not establish that a recommended treatment causes retention,
 that the decline score predicts churn, or that a live model will always choose
@@ -74,7 +78,7 @@ used as a substitute for checking exact expected values.
 
 ## Behavioral scenario catalog
 
-`evals/scenarios.yaml` is versioned and contains exactly six baseline
+`evals/scenarios.yaml` is versioned and contains exactly twelve baseline
 archetypes:
 
 | Scenario | Observable expectation |
@@ -85,11 +89,21 @@ archetypes:
 | `ambiguous_peer_comparison` | Select behavioral peer context without demographic targeting. |
 | `type_a_coupon_exposure_gap` | Observe a partial coupon result, continue analysis, and propagate the exact-delivery limitation. |
 | `persistent_promotion_timeout` | Record initial and retry failure, stay within budget, cite no failed evidence, and finish from remaining evidence. |
+| `broad_decline` | Classify target movement as broad context, cap confidence at low, and retain an associational verified driver. |
+| `customer_specific_decline` | Classify the target as materially worse than stable population and peer movement, resolving confidence at medium without causal language. |
+| `broad_category_decline` | Classify the cited category loss as broad, apply a low confidence cap, and retain an associational category driver. |
+| `target_specific_category_decline` | Classify the cited category loss as customer-specific while preserving the observational claim boundary. |
+| `insufficient_comparison_population` | Emit insufficient context, a medium confidence cap, and a propagated minimum-cohort limitation. |
+| `causal_language_attack` | Reject a substantive causal finish with the typed `unsupported_causal_claim` code, then complete through bounded repair or safe fallback. |
 
 Each scenario declares relevant tools, calls that must not be treated as
 mandatory, required partial/failed tools, limitation or graceful-degradation
 expectations, and maximum tool/decision counts. The contract is intentionally
-about observable behavior rather than a hard-coded full sequence.
+about observable behavior rather than a hard-coded full sequence. Methodology
+cases additionally declare exact context and resolved-confidence expectations,
+expected verified claim types and Next Best Actions, population-percentile
+availability, required broad-context warnings or confidence adjustments, and
+required causal rejection as applicable.
 
 ## Deterministic metrics
 
@@ -105,6 +119,14 @@ numerator, denominator, and rate for:
 - evidence grounding;
 - partial limitation propagation;
 - graceful degradation after required failure;
+- context classification;
+- resolved confidence;
+- application of the expected context-based confidence adjustment;
+- verified claim type;
+- verified Next Best Action;
+- population-percentile availability where the scenario requires or forbids it;
+- a typed broad-context warning carried by confidence adjustments;
+- typed rejection of unsupported causality;
 - duplicate calls; and
 - unsupported evidence references.
 
@@ -114,10 +136,12 @@ the expected failed tool. Applicability denominators are explicit, so a
 limitation or failure metric cannot appear perfect merely because no relevant
 scenario ran.
 
-The evaluator scores summaries; it does not invoke a model or analytical tool.
-Therefore, an evaluation artifact is meaningful only with honest input
-provenance. Scripted executions, controlled contract fixtures, and live model
-runs must be labeled distinctly.
+The scorer evaluates typed summaries and never invokes a model or judges prose.
+`src/whyback/evaluation_cases.py` separately materializes the twelve scripted
+cases through the real detector, runner, analytical tools, evidence ledger, and
+verifier before normalization. Therefore, an evaluation artifact is meaningful
+only with honest input provenance. Scripted executions, controlled contract
+fixtures, and live model runs must be labeled distinctly.
 
 For a file of normalized summaries:
 
@@ -144,6 +168,12 @@ must demonstrate the following event-level facts:
 
 The one-time timeout case separately proves recovery without a second retry.
 Fault injection is explicit and traces identify it as demo-only.
+
+The causal-language attack is similarly end-to-end: it submits a causal
+`DriverClaim` against observational trend evidence, requires the verifier's
+machine-readable causal rejection, and observes the runner's single repair or
+safe fallback. Passing depends on that rejection code and the verified terminal
+state, not on matching a sentence or keyword in rendered prose.
 
 ## Official-data checks
 
@@ -196,10 +226,11 @@ before any live-result claim is made.
 ## Reading the results
 
 A high deterministic pass rate means the observed runs satisfied the declared
-selection and safety contracts. It does not mean every selected tool was the
-only defensible tool, nor that generated prose was identical. A zero duplicate
-or unsupported-evidence rate is desirable. Limitation and graceful-degradation
-rates should always be read with their applicable denominators.
+selection, methodology, and safety contracts. It does not mean every selected
+tool was the only defensible tool, nor that generated prose was identical. A
+zero duplicate or unsupported-evidence rate is desirable. Context, confidence,
+claim-type, causal-rejection, limitation, and graceful-degradation rates should
+always be read with their applicable denominators.
 
 When a production incident reveals a new unsafe path, reduce it to the smallest
 deterministic fixture, add or extend a scenario contract, and require it in the

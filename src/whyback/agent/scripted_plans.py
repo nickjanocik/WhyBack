@@ -152,14 +152,7 @@ def build_scripted_plan(
             _tool(ToolName.BASKET_BEHAVIOR, household_id),
             _tool(ToolName.PEER_COMPARISON, household_id),
         ]
-        counterevidence = (
-            _evidence_id(
-                run_id,
-                1,
-                ToolName.COUPON_CAMPAIGN_HISTORY,
-                1,
-            ),
-        )
+        counterevidence = ()
     else:
         # The injected promotion call consumes two execution attempts before the
         # independent analytical calls. Both timeout modes use the same call indexes.

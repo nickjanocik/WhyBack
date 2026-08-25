@@ -193,7 +193,10 @@ def _category_population_frames() -> dict[str, pd.DataFrame]:
 
 
 def _category_population_context(
-    call_id: str, *, minimum_category_households: int = 5
+    call_id: str,
+    *,
+    minimum_category_households: int = 5,
+    meaningful_category_baseline_retailer_sales_value: float = 1.0,
 ) -> ToolExecutionContext:
     return ToolExecutionContext(
         run_id=RUN_ID,
@@ -206,7 +209,10 @@ def _category_population_context(
             recent_end=8,
         ),
         context_policy=ContextPolicy(
-            minimum_category_households=minimum_category_households
+            minimum_category_households=minimum_category_households,
+            meaningful_category_baseline_retailer_sales_value=(
+                meaningful_category_baseline_retailer_sales_value
+            ),
         ),
     )
 
@@ -276,6 +282,46 @@ def test_category_context_suppresses_undersized_population(tmp_path: Path) -> No
     assert "category_population_declining_share" not in evidence
     assert "target_minus_category_population_median_change" not in evidence
     assert any("policy requires at least 6" in item for item in result.limitations)
+
+
+def test_category_context_excludes_subthreshold_baseline_shoppers(
+    tmp_path: Path,
+) -> None:
+    frames = _category_population_frames()
+    tiny_soup_purchase = {
+        **frames["transactions"].iloc[0].to_dict(),
+        "household_id": "7",
+        "basket_id": "7-tiny-soup-baseline",
+        "product_id": "1000",
+        "sales_value": 0.5,
+        "week": 1,
+        "transaction_timestamp": "2017-01-03T11:00:00",
+    }
+    frames["transactions"] = pd.concat(
+        [frames["transactions"], pd.DataFrame([tiny_soup_purchase])],
+        ignore_index=True,
+    )
+    prepare_frames_for_tests(frames, tmp_path)
+
+    with DataRepository(tmp_path) as repository:
+        default_threshold = category_decomposition(
+            CategoryDecompositionInput(household_id="1", top_n=1),
+            _category_population_context("category-threshold-default"),
+            repository,
+        )
+        lower_threshold = category_decomposition(
+            CategoryDecompositionInput(household_id="1", top_n=1),
+            _category_population_context(
+                "category-threshold-lower",
+                meaningful_category_baseline_retailer_sales_value=0.1,
+            ),
+            repository,
+        )
+
+    default_evidence = {item.metric: item for item in default_threshold.evidence}
+    lower_evidence = {item.metric: item for item in lower_threshold.evidence}
+    assert default_evidence["category_population_household_count"].value == 5
+    assert lower_evidence["category_population_household_count"].value == 6
 
 
 def test_category_context_classifies_broad_contemporaneous_decline(
