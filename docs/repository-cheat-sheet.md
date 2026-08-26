@@ -14,7 +14,7 @@
 - **A language model decides which approved question to ask next.** It never
   receives raw tables or writes SQL
   ([`state.py` lines 303–351](../src/whyback/agent/state.py#L303-L351),
-  [`gemini_backend.py` lines 281–313](../src/whyback/agent/gemini_backend.py#L281-L313)).
+  [`gemini_backend.py` lines 275–323](../src/whyback/agent/gemini_backend.py#L275-L323)).
 - **Ordinary code owns the quantities.** The detector calculates the warning-light
   score, six fixed tools calculate all post-detection customer-behavior evidence,
   and typed history/audit records operational counts and timing. The model
@@ -297,7 +297,7 @@ decline score = 50% sales drop + 30% trip drop + 20% active-week drop
   ([`runner.py` lines 229–238](../src/whyback/agent/runner.py#L229-L238),
   [`runner.py` lines 464–537](../src/whyback/agent/runner.py#L464-L537)).
 - The Gemini adapter forces function calling and rejects zero, multiple, or
-  unknown calls ([`gemini_backend.py` lines 240–414](../src/whyback/agent/gemini_backend.py#L240-L414)).
+  unknown calls ([`gemini_backend.py` lines 275–455](../src/whyback/agent/gemini_backend.py#L275-L455)).
 - The default ceilings are five actual tool attempts, six model decisions, one
   retry for an explicitly retryable failure, and a 30-second tool timeout
   ([`app.toml` lines 19–25](../configs/app.toml#L19-L25)).
@@ -311,7 +311,7 @@ decline score = 50% sales drop + 30% trip drop + 20% active-week drop
   offered menu; if Gemini nevertheless asks for a function it was not offered,
   the Gemini adapter rejects that response
   ([`runner.py` lines 464–637](../src/whyback/agent/runner.py#L464-L637),
-  [`gemini_backend.py` lines 421–439](../src/whyback/agent/gemini_backend.py#L421-L439)).
+  [`gemini_backend.py` lines 425–439](../src/whyback/agent/gemini_backend.py#L425-L439)).
 - The runner executes the tool behind a timeout boundary. An expected problem
   becomes a typed status; an unexpected integrity problem remains traceable
   ([`runner.py` lines 729–798](../src/whyback/agent/runner.py#L729-L798)).
@@ -488,7 +488,8 @@ closed if the allowlist or structure is wrong
 - `POST /api/demo` accepts only a JSON object with a valid customer count and
   returns a job ID with HTTP 202
   ([`index.mjs` lines 679–705](../web/server/index.mjs#L679-L705)).
-- The server serializes jobs: one live Gemini batch at a time
+- The server permits only one live Gemini batch at a time; a second launch is
+  rejected instead of being queued
   ([`live-trace.mjs` lines 367–560](../web/server/live-trace.mjs#L367-L560)).
 - React polls `GET /api/demo/status?job=...&after=...` and asks only for new
   events after its cursor ([`App.tsx` lines 129–244](../web/src/App.tsx#L129-L244)).

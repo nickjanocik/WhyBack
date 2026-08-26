@@ -2345,7 +2345,7 @@ It:
   ([lines 56–74](../.github/workflows/security.yml#L56-L74)).
 
 Local secret/data hygiene is reinforced by
-[` .gitignore`](../.gitignore#L1-L46): `.env`, keys, raw R files, Parquet,
+[`.gitignore`](../.gitignore#L1-L46): `.env`, keys, raw R files, Parquet,
 DuckDB files, prepared data, local/live artifacts, caches, and telemetry state
 are ignored. [`.env.example`](../.env.example#L1-L8) contains names and safe
 defaults only.
