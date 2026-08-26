@@ -8,8 +8,9 @@ evidence, authors recommendations, or executes customer actions.
 
 ## Useful features
 
-- Start the real `whyback demo` CLI with a bounded household count; the web app
-  has no scripted or fixture fallback.
+- Start a unique new `whyback demo` CLI run with a bounded household count. It
+  reuses the currently validated official data, preserves earlier runs for
+  audit, and has no scripted or fixture fallback.
 - Browse preserved, verifier-sealed CLI runs and search their ranked household
   queues. Bundled examples and unverified output are excluded.
 - Compare baseline and recent retailer sales value, basket count, and active

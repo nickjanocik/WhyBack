@@ -170,7 +170,7 @@ describe("dashboard interactions", () => {
     expect(count).toHaveValue(5);
     await user.clear(count);
     await user.type(count, "24");
-    await user.click(screen.getByRole("button", { name: /run whyback cli/i }));
+    await user.click(screen.getByRole("button", { name: /start new run/i }));
     expect(onRun).toHaveBeenCalledWith(24);
   });
 
@@ -214,7 +214,7 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(/gemini_api_key is not configured/i);
-    const start = screen.getByRole("button", { name: /run whyback cli/i });
+    const start = screen.getByRole("button", { name: /start new run/i });
     expect(start).toBeDisabled();
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
     await user.click(start);
@@ -301,6 +301,7 @@ describe("dashboard interactions", () => {
         open
         status={status}
         hasVisibleReport
+        reportRefreshFailed={false}
         onClose={onClose}
         onRefreshReports={vi.fn()}
         onStartRun={vi.fn()}
@@ -310,6 +311,7 @@ describe("dashboard interactions", () => {
     expect(screen.getByRole("heading", { name: "Live run activity" })).toBeInTheDocument();
     expect(screen.getByText(status.command!)).toBeInTheDocument();
     expect(screen.getByText(/private model reasoning is not collected/i)).toBeInTheDocument();
+    expect(screen.getByText(/existing verified report remains visible/i)).toBeInTheDocument();
     expect(screen.getByText(/4 earlier audit events were omitted/i)).toBeInTheDocument();
     expect(screen.getByText("Did visit frequency change?")).toBeInTheDocument();
     expect(
@@ -335,6 +337,7 @@ describe("dashboard interactions", () => {
     const drawerProps = {
       status: idleStatus,
       hasVisibleReport: false,
+      reportRefreshFailed: false,
       onClose,
       onRefreshReports: vi.fn(),
       onStartRun: vi.fn(),
@@ -404,9 +407,9 @@ describe("dashboard interactions", () => {
     expect(document.querySelector(".workspace-layout")).not.toHaveAttribute("inert");
   });
 
-  it("offers a manual report refresh after a completed CLI run", async () => {
+  it("offers a genuinely new run after a completed CLI run", async () => {
     const user = userEvent.setup();
-    const onRefreshReports = vi.fn();
+    const onStartRun = vi.fn();
     const completedStatus: DemoStatusResponse = {
       ...idleStatus,
       jobId: "123e4567-e89b-42d3-a456-426614174000",
@@ -423,16 +426,70 @@ describe("dashboard interactions", () => {
         open
         status={completedStatus}
         hasVisibleReport={false}
+        reportRefreshFailed={false}
+        onClose={vi.fn()}
+        onRefreshReports={vi.fn()}
+        onStartRun={onStartRun}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Refresh verified reports" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Start new run" }));
+    expect(onStartRun).toHaveBeenCalledOnce();
+  });
+
+  it("offers report reload only after automatic publication refresh is exhausted", async () => {
+    const user = userEvent.setup();
+    const onRefreshReports = vi.fn();
+    const completedStatus: DemoStatusResponse = {
+      ...idleStatus,
+      jobId: "123e4567-e89b-42d3-a456-426614174000",
+      status: "completed",
+      customers: 5,
+      completedAt: "2026-08-25T12:00:00Z",
+      collectionId: "live-123e4567-e89b-42d3-a456-426614174000",
+    };
+
+    render(
+      <LiveTraceDrawer
+        open
+        status={completedStatus}
+        hasVisibleReport
+        reportRefreshFailed
         onClose={vi.fn()}
         onRefreshReports={onRefreshReports}
         onStartRun={vi.fn()}
       />,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Refresh verified reports" }),
-    );
+    expect(screen.queryByRole("button", { name: "Start new run" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reload verified reports" }));
     expect(onRefreshReports).toHaveBeenCalledOnce();
+  });
+
+  it("prefills and clamps a visible run size each time the launcher opens", async () => {
+    const props = {
+      running: false,
+      error: null,
+      customerLimits: demoCustomerLimits,
+      liveRun: readyLiveRun,
+      onClose: vi.fn(),
+      onRun: vi.fn(),
+    };
+    const { rerender } = render(
+      <RunCliDialog {...props} open initialCustomers={8} />,
+    );
+
+    expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(8);
+    rerender(<RunCliDialog {...props} open={false} initialCustomers={99} />);
+    await waitFor(() => {
+      expect(screen.queryByRole("spinbutton", { name: "Households" })).not.toBeInTheDocument();
+    });
+    rerender(<RunCliDialog {...props} open initialCustomers={99} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(24);
+    });
   });
 
   it("contains modal focus, makes the workspace inert, and restores focus", async () => {

@@ -12,30 +12,35 @@ interface RunCliDialogProps {
   error: string | null;
   customerLimits: DemoCustomerLimits;
   liveRun: LiveRunConfiguration;
+  initialCustomers?: number | null;
   onClose: () => void;
   onRun: (customers: number) => Promise<void>;
 }
 
 const DEFAULT_CUSTOMERS = 5;
 
+/** Mounts fresh launcher state whenever a new dialog session begins. */
+export function RunCliDialog(props: RunCliDialogProps) {
+  return (
+    <AnimatePresence>
+      {props.open && <RunCliDialogContent {...props} />}
+    </AnimatePresence>
+  );
+}
+
 /** Renders a compact launch dialog; credentials remain entirely server-side. */
-export function RunCliDialog({
-  open,
+function RunCliDialogContent({
   running,
   error,
   customerLimits,
   liveRun,
+  initialCustomers,
   onClose,
   onRun,
 }: RunCliDialogProps) {
   const reduceMotion = useReducedMotion();
-  const [customerInput, setCustomerInput] = useState(
-    String(
-      Math.min(
-        customerLimits.maximum,
-        Math.max(customerLimits.minimum, DEFAULT_CUSTOMERS),
-      ),
-    ),
+  const [customerInput, setCustomerInput] = useState(() =>
+    String(boundedInitialCustomers(customerLimits, initialCustomers)),
   );
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
@@ -48,7 +53,6 @@ export function RunCliDialog({
 
   // Make the workspace inert, contain focus, and restore the launch control on close.
   useEffect(() => {
-    if (!open) return;
     const previousFocus =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const appContent = document.querySelector<HTMLElement>(".app-content");
@@ -94,7 +98,7 @@ export function RunCliDialog({
       appContent?.removeAttribute("inert");
       previousFocus?.focus();
     };
-  }, [open]);
+  }, []);
 
   const customers = Number(customerInput);
   const countIsValid =
@@ -103,107 +107,115 @@ export function RunCliDialog({
     customers <= customerLimits.maximum;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="dialog-backdrop"
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !running) onClose();
-          }}
+    <motion.div
+      className="dialog-backdrop"
+      initial={reduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !running) onClose();
+      }}
+    >
+      <motion.section
+        ref={dialogRef}
+        className="run-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="run-cli-title"
+        tabIndex={-1}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98, y: 8 }}
+        transition={{ type: "spring", stiffness: 360, damping: 30 }}
+      >
+        <button
+          className="dialog-close"
+          type="button"
+          onClick={onClose}
+          disabled={running}
+          aria-label="Close CLI run dialog"
         >
-          <motion.section
-            ref={dialogRef}
-            className="run-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="run-cli-title"
-            tabIndex={-1}
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 8 }}
-            transition={{ type: "spring", stiffness: 360, damping: 30 }}
-          >
-            <button
-              className="dialog-close"
-              type="button"
-              onClick={onClose}
-              disabled={running}
-              aria-label="Close CLI run dialog"
-            >
-              <X size={18} />
-            </button>
+          <X size={18} />
+        </button>
 
-            <div className="run-dialog__title">
-              <span><Terminal size={18} /></span>
-              <div>
-                <span className="eyebrow">WhyBack CLI</span>
-                <h2 id="run-cli-title">Start an investigation run</h2>
-              </div>
-            </div>
+        <div className="run-dialog__title">
+          <span><Terminal size={18} /></span>
+          <div>
+            <span className="eyebrow">WhyBack CLI</span>
+            <h2 id="run-cli-title">Start a new investigation run</h2>
+          </div>
+        </div>
 
-            <dl className="run-config-summary">
-              <div><dt>Backend</dt><dd>Gemini API</dd></div>
-              <div><dt>Model</dt><dd><code>{liveRun.model}</code></dd></div>
-              <div><dt>Credential</dt><dd>Server environment</dd></div>
-            </dl>
+        <dl className="run-config-summary">
+          <div><dt>Backend</dt><dd>Gemini API</dd></div>
+          <div><dt>Model</dt><dd><code>{liveRun.model}</code></dd></div>
+          <div><dt>Credential</dt><dd>Server environment</dd></div>
+        </dl>
 
-            <label className="customer-count-field">
-              <span>Households</span>
-              <input
-                type="number"
-                min={customerLimits.minimum}
-                max={customerLimits.maximum}
-                step={1}
-                value={customerInput}
-                disabled={running || !liveRun.ready}
-                aria-describedby="customer-count-help"
-                onChange={(event) => setCustomerInput(event.currentTarget.value)}
-              />
-            </label>
-            <p id="customer-count-help" className="field-help">
-              Enter {customerLimits.minimum}–{customerLimits.maximum}. The CLI selects the highest-ranked eligible households.
-            </p>
+        <label className="customer-count-field">
+          <span>Households</span>
+          <input
+            type="number"
+            min={customerLimits.minimum}
+            max={customerLimits.maximum}
+            step={1}
+            value={customerInput}
+            disabled={running || !liveRun.ready}
+            aria-describedby="customer-count-help"
+            onChange={(event) => setCustomerInput(event.currentTarget.value)}
+          />
+        </label>
+        <p id="customer-count-help" className="field-help">
+          Enter {customerLimits.minimum}–{customerLimits.maximum}. The CLI selects the highest-ranked eligible households.
+        </p>
 
-            <p className="run-boundary">
-              <Cpu size={15} />
-              <span>
-                This uses real provider quota. Python computes every metric; the run only recommends actions for human review and executes no outreach.
-              </span>
-            </p>
+        <p className="run-boundary">
+          <Cpu size={15} />
+          <span>
+            A unique run is created from the validated official data, and earlier runs stay in history. This uses real provider quota; Python computes every metric and executes no outreach.
+          </span>
+        </p>
 
-            {!liveRun.ready && (
-              <div className="dialog-error" role="alert">
-                {liveRun.blockedReason ?? "The CLI run is not ready on this bridge."}
-              </div>
-            )}
-            {!countIsValid && (
-              <div className="dialog-error" role="alert">
-                Choose a whole number from {customerLimits.minimum} through {customerLimits.maximum}.
-              </div>
-            )}
-            {error && <div className="dialog-error" role="alert">{error}</div>}
+        {!liveRun.ready && (
+          <div className="dialog-error" role="alert">
+            {liveRun.blockedReason ?? "The CLI run is not ready on this bridge."}
+          </div>
+        )}
+        {!countIsValid && (
+          <div className="dialog-error" role="alert">
+            Choose a whole number from {customerLimits.minimum} through {customerLimits.maximum}.
+          </div>
+        )}
+        {error && <div className="dialog-error" role="alert">{error}</div>}
 
-            <button
-              className="run-submit"
-              type="button"
-              aria-busy={running}
-              onClick={() => {
-                if (liveRun.ready && countIsValid) void onRun(customers);
-              }}
-              disabled={running || !liveRun.ready || !countIsValid}
-            >
-              {running ? (
-                <><LoaderCircle className="spin" size={18} /> Starting CLI…</>
-              ) : (
-                <><Play size={18} /> Run WhyBack CLI</>
-              )}
-            </button>
-          </motion.section>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <button
+          className="run-submit"
+          type="button"
+          aria-busy={running}
+          onClick={() => {
+            if (liveRun.ready && countIsValid) void onRun(customers);
+          }}
+          disabled={running || !liveRun.ready || !countIsValid}
+        >
+          {running ? (
+            <><LoaderCircle className="spin" size={18} /> Starting CLI…</>
+          ) : (
+            <><Play size={18} /> Start new run</>
+          )}
+        </button>
+      </motion.section>
+    </motion.div>
+  );
+}
+
+/** Chooses a safe launcher default from the visible run or the product default. */
+function boundedInitialCustomers(
+  customerLimits: DemoCustomerLimits,
+  requested: number | null | undefined,
+): number {
+  const candidate = Number.isInteger(requested) ? requested! : DEFAULT_CUSTOMERS;
+  return Math.min(
+    customerLimits.maximum,
+    Math.max(customerLimits.minimum, candidate),
   );
 }

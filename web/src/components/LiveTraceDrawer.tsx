@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   Play,
   Radio,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -20,6 +21,7 @@ interface LiveTraceDrawerProps {
   open: boolean;
   status: DemoStatusResponse;
   hasVisibleReport: boolean;
+  reportRefreshFailed: boolean;
   onClose: () => void;
   onRefreshReports: () => void;
   onStartRun: () => void;
@@ -30,6 +32,7 @@ export function LiveTraceDrawer({
   open,
   status,
   hasVisibleReport,
+  reportRefreshFailed,
   onClose,
   onRefreshReports,
   onStartRun,
@@ -268,13 +271,14 @@ export function LiveTraceDrawer({
 
           {status.status !== "running" && (
             <footer className="live-trace-footer">
-              {status.status === "completed" ? (
+              {status.status === "completed" && reportRefreshFailed ? (
                 <button type="button" onClick={onRefreshReports}>
-                  <CircleCheck size={15} /> Refresh verified reports
+                  <CircleCheck size={15} /> Reload verified reports
                 </button>
               ) : (
                 <button type="button" onClick={onStartRun}>
-                  <Play size={15} /> {status.status === "failed" ? "Configure another run" : "Configure CLI run"}
+                  {status.status === "idle" ? <Play size={15} /> : <RefreshCw size={15} />}
+                  {status.status === "idle" ? "Configure CLI run" : "Start new run"}
                 </button>
               )}
             </footer>

@@ -83,6 +83,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [railOpen, setRailOpen] = useState(false);
   const [workspaceRefreshAttempt, setWorkspaceRefreshAttempt] = useState(0);
+  const [reportRefreshFailed, setReportRefreshFailed] = useState(false);
   const mobileMenuRef = useRef<HTMLButtonElement>(null);
   const activeJobRef = useRef<string | null>(null);
   const liveCursorRef = useRef(0);
@@ -221,6 +222,7 @@ export default function App() {
     getWorkspace(controller.signal)
       .then((nextWorkspace) => {
         setWorkspaceRefreshAttempt(0);
+        setReportRefreshFailed(false);
         initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
         setToast("CLI run verified. Reports refreshed.");
       })
@@ -232,6 +234,8 @@ export default function App() {
               refreshedJobRef.current = null;
               setWorkspaceRefreshAttempt((attempt) => attempt + 1);
             }, 500 * (workspaceRefreshAttempt + 1));
+          } else {
+            setReportRefreshFailed(true);
           }
         }
       });
@@ -309,6 +313,7 @@ export default function App() {
       liveCursorRef.current = status.cursor;
       refreshedJobRef.current = null;
       setWorkspaceRefreshAttempt(0);
+      setReportRefreshFailed(false);
       setLiveStatus(status);
       setDialogOpen(false);
       setLiveOpen(true);
@@ -319,18 +324,20 @@ export default function App() {
     }
   }
 
-  /** Retries workspace discovery when automatic post-run publication refresh is exhausted. */
+  /** Recovers a verified collection after automatic publication refresh is exhausted. */
   async function handleRefreshReports() {
     setLoading(true);
     try {
       const nextWorkspace = await getWorkspace();
       setWorkspaceRefreshAttempt(0);
+      setReportRefreshFailed(false);
       initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
       setLiveOpen(false);
-      setToast("Verified CLI reports refreshed.");
+      setToast("Verified CLI reports reloaded.");
     } catch {
       setLoading(false);
-      setToast("The verified report list could not be refreshed. Try again.");
+      setReportRefreshFailed(true);
+      setToast("The verified report list could not be reloaded. Try again.");
     }
   }
 
@@ -339,6 +346,16 @@ export default function App() {
   const customerLimits = workspace?.demoCustomerLimits;
   const liveRun = workspace?.liveRun;
   const hasReports = Boolean(selectedCollection && householdId);
+  const priorRunCustomerCount =
+    selectedCollection && selectedCollection.reportCount > 0
+      ? selectedCollection.reportCount
+      : liveStatus.customers;
+
+  /** Opens the bounded launcher for a uniquely owned CLI run. */
+  function openNewRun() {
+    setRunError(null);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="app-shell">
@@ -376,11 +393,11 @@ export default function App() {
               className="run-button"
               type="button"
               disabled={runBusy || !customerLimits || !liveRun}
-              onClick={() => { setRunError(null); setDialogOpen(true); }}
-              aria-label={runRunning ? "WhyBack CLI running" : "Run WhyBack CLI"}
+              onClick={openNewRun}
+              aria-label={runRunning ? "WhyBack CLI running" : "Start a new WhyBack CLI run"}
             >
-              {runRunning ? <LoaderCircle className="spin" size={15} /> : <Terminal size={15} />}
-              <span className="run-button__label">{runRunning ? "CLI running" : "Run CLI"}</span>
+              {runRunning ? <LoaderCircle className="spin" size={15} /> : <RefreshCw size={15} />}
+              <span className="run-button__label">{runRunning ? "CLI running" : "New run"}</span>
             </button>
           </div>
         </header>
@@ -449,10 +466,7 @@ export default function App() {
                 liveRun={liveRun}
                 status={liveStatus}
                 onOpenActivity={() => setLiveOpen(true)}
-                onStart={() => {
-                  setRunError(null);
-                  setDialogOpen(true);
-                }}
+                onStart={openNewRun}
               />
             )}
             {!loading && !error && investigation && (
@@ -469,12 +483,12 @@ export default function App() {
           open={liveOpen}
           status={liveStatus}
           hasVisibleReport={hasReports}
+          reportRefreshFailed={reportRefreshFailed}
           onClose={() => setLiveOpen(false)}
           onRefreshReports={() => void handleRefreshReports()}
           onStartRun={() => {
             setLiveOpen(false);
-            setRunError(null);
-            setDialogOpen(true);
+            openNewRun();
           }}
         />
       </div>
@@ -486,6 +500,7 @@ export default function App() {
           error={runError}
           customerLimits={customerLimits}
           liveRun={liveRun}
+          initialCustomers={priorRunCustomerCount}
           onClose={() => !runStarting && setDialogOpen(false)}
           onRun={handleRunCli}
         />

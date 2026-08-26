@@ -100,8 +100,8 @@ describe("CLI application workflow", () => {
     expect(screen.getByText(/excludes bundled examples and unverified output/i)).toBeInTheDocument();
     expect(screen.queryByText(/committed sample|official type a|boundary case/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Configure CLI run" }));
-    const launchDialog = screen.getByRole("dialog", { name: "Start an investigation run" });
+    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
+    const launchDialog = screen.getByRole("dialog", { name: "Start a new investigation run" });
     const count = screen.getByRole("spinbutton", { name: "Households" });
     await user.clear(count);
     await user.type(count, "4");
@@ -122,5 +122,89 @@ describe("CLI application workflow", () => {
     expect(drawer).toHaveTextContent(runningStatus.command!);
     expect(drawer).toHaveTextContent(/cli run not published/i);
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+  });
+
+  it("reruns the visible batch without clearing its verified collection", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    const existingWorkspace: Workspace = {
+      ...workspace,
+      collections: [
+        {
+          id: "live-ceff4f61-0000-4000-8000-000000000000",
+          title: "Run · ceff4f61",
+          datasetKind: "official_complete_journey",
+          executionMode: "live",
+          backend: "gemini",
+          modelExecution: "live_gemini",
+          reportCount: 5,
+          completedCount: 0,
+          humanReviewRequired: true,
+          reports: Array.from({ length: 5 }, (_, index) => ({
+            householdId: String(index + 1),
+            runId: `run-${index + 1}`,
+            runStatus: "failed" as const,
+            declineScore: 1,
+            salesDrop: 1,
+            tripDrop: 1,
+            activeWeekDrop: 1,
+            baselineSales: 100,
+            recentSales: 0,
+            actionId: null,
+            confidence: null,
+            evidenceCount: 0,
+            warningCount: 0,
+            generatedAt: "2026-08-26T12:00:00Z",
+          })),
+        },
+      ],
+    };
+    const nextRunningStatus: DemoStatusResponse = {
+      ...runningStatus,
+      jobId: "223e4567-e89b-42d3-a456-426614174000",
+      customers: 5,
+      command:
+        "uv run whyback demo --customers 5 --backend gemini --output-dir artifacts/local/live-runs/live-223e4567-e89b-42d3-a456-426614174000",
+      collectionId: "live-223e4567-e89b-42d3-a456-426614174000",
+    };
+    const never = new Promise<never>(() => undefined);
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+      if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/investigation?")) return never;
+      if (url === "/api/demo" && init?.method === "POST") {
+        return jsonResponse(nextRunningStatus, 202);
+      }
+      if (url.startsWith("/api/demo/status?after=0&job=")) return never;
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByRole("combobox", { name: "CLI run" })).toHaveValue(
+      existingWorkspace.collections[0]!.id,
+    );
+    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
+    expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(5);
+    await user.click(screen.getByRole("button", { name: "Start new run" }));
+
+    const drawer = await screen.findByRole("dialog", { name: "Live run activity" });
+    expect(drawer).toHaveTextContent(nextRunningStatus.command!);
+    expect(drawer).toHaveTextContent(/existing verified report remains visible/i);
+    expect(screen.getByRole("combobox", { name: "CLI run" })).toHaveValue(
+      existingWorkspace.collections[0]!.id,
+    );
+    expect(document.querySelector<HTMLButtonElement>(".run-button")).toBeDisabled();
+    expect(fetchMock.mock.calls.filter(([url]) => url === "/api/workspace")).toHaveLength(1);
+
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) => url === "/api/demo" && init?.method === "POST",
+    );
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ customers: 5 });
   });
 });
