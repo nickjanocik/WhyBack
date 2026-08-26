@@ -209,7 +209,9 @@ test("accepts only a customer count from the browser", () => {
     liveRunRequestError({ customers: 5, apiKey: "browser-key" }),
     "The live run request may contain only customers.",
   );
-  assert.match(liveRunRequestError({ customers: 4 }), /5 through 24/u);
+  assert.equal(liveRunRequestError({ customers: 3 }), null);
+  assert.equal(liveRunRequestError({ customers: 4 }), null);
+  assert.match(liveRunRequestError({ customers: 2 }), /3 through 24/u);
 });
 
 test("constructs only the fixed Gemini command in a unique live collection", () => {

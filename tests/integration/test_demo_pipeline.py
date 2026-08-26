@@ -141,11 +141,11 @@ def test_synthetic_demo_supports_the_full_customer_maximum(tmp_path: Path) -> No
     )
 
 
-@pytest.mark.parametrize("customers", [MIN_DEMO_CUSTOMERS, DEFAULT_DEMO_CUSTOMERS + 1])
-def test_synthetic_demo_supports_small_bounded_batches(
+@pytest.mark.parametrize("customers", [MIN_DEMO_CUSTOMERS, 4])
+def test_synthetic_demo_supports_assignment_sized_batches(
     tmp_path: Path, customers: int
 ) -> None:
-    """Verify that representative supported small batch sizes can run."""
+    """Verify that both assignment-requested small batch sizes can run."""
 
     summary = build_synthetic_demo(tmp_path, customers=customers)
 
@@ -207,9 +207,9 @@ def test_demo_boundaries_fail_before_creating_output(
     synthetic_output = tmp_path / "synthetic"
     official_output = tmp_path / "official"
 
-    with pytest.raises(ValueError, match="between 5 and 24"):
+    with pytest.raises(ValueError, match="between 3 and 24"):
         build_synthetic_demo(synthetic_output, customers=customers)
-    with pytest.raises(ValueError, match="between 5 and 24"):
+    with pytest.raises(ValueError, match="between 3 and 24"):
         build_official_demo(
             tmp_path / "missing-prepared-data",
             official_output,

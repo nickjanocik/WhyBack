@@ -32,8 +32,9 @@ flowchart LR
 
 Python 3.12 and [`uv`](https://docs.astral.sh/uv/) are required. The default
 five-customer demo and test paths use the deterministic `ScriptedBackend`; no
-API key or full dataset is needed. Batches from 5 through 24 customers are
-accepted, with five as the default.
+API key or full dataset is needed. Batches from 3 through 24 customers are
+accepted, so the assignment's 3–4-customer exercise and stricter five-result
+deliverable are both supported.
 
 ```bash
 uv sync --frozen --extra dev
@@ -262,7 +263,7 @@ The credential-free demo always generates a persistent timeout example while
 still completing the requested customer reports:
 
 ```bash
-uv run whyback demo --customers 5 --output-dir artifacts/local/failure-demo
+uv run whyback demo --customers 3 --output-dir artifacts/local/failure-demo
 uv run whyback verify-artifacts artifacts/local/failure-demo
 ```
 
@@ -274,9 +275,10 @@ See [Reliability and failure semantics](docs/reliability.md).
 
 ## Results for five customers
 
-The CLI and dashboard accept 5–24 customers, and integration tests execute
-representative small batches plus the full 24-customer maximum. The committed
-reviewer run uses the default of five.
+The CLI and dashboard accept 3–24 customers, and integration tests execute
+three-, four-, five-, and 24-customer batches. The committed reviewer run uses
+the default of five because the deliverables separately require at least five
+results.
 
 The official detector deterministically selected households `5`, `181`, `423`,
 `472`, and `682`. This ordering is preserved even when paths look similar.
@@ -414,7 +416,7 @@ dependencies.
 | --- | --- | --- |
 | Official pinned data and hashes | Verified downloader, contracts, idempotent R-to-Parquet preparation, manifest | `src/whyback/data/`, `docs/data-semantics.md` |
 | Transparent decline detection | Max-week 8+8 windows, eligibility, weighted score, sensitivity | `src/whyback/detection/decline.py`, detector artifacts |
-| Bounded batch sizes | Explicit 5–24 bounds with a five-customer default | `src/whyback/demo_limits.py`, demo/CLI/web boundary tests |
+| Assignment batch sizes | Explicit 3–24 bounds; deterministic tests run both 3- and 4-customer batches; committed default remains five | `src/whyback/demo_limits.py`, demo/CLI/web boundary tests |
 | Six deterministic tools | Strict inputs/results, DuckDB calculations, provenance | `src/whyback/tools/`, unit/property tests |
 | Dynamic model selection | Provider-neutral backend; fresh Gemini function-calling requests or scripted decisions | `src/whyback/agent/backend.py`, `gemini_backend.py`, `scripted_backend.py` |
 | Bounded reliable loop | Tool/turn budgets, duplicate refusal, timeout, one retry, one repair | `src/whyback/agent/runner.py`, orchestration tests |

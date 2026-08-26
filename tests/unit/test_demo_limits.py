@@ -15,7 +15,7 @@ from whyback.demo_limits import (
 def test_demo_customer_limits_cover_the_full_synthetic_population() -> None:
     """Verify that demo customer limits cover the full synthetic population."""
 
-    assert MIN_DEMO_CUSTOMERS == 5
+    assert MIN_DEMO_CUSTOMERS == 3
     assert DEFAULT_DEMO_CUSTOMERS == 5
     assert MAX_DEMO_CUSTOMERS == 24
 
@@ -41,5 +41,5 @@ def test_demo_customer_limit_rejects_values_outside_boundaries(
 ) -> None:
     """Verify that demo customer limit rejects values outside boundaries."""
 
-    with pytest.raises(ValueError, match="between 5 and 24"):
+    with pytest.raises(ValueError, match="between 3 and 24"):
         validate_demo_customer_count(customers)

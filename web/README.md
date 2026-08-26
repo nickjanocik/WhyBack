@@ -56,12 +56,13 @@ The web launcher is Gemini-only. It executes a fixed command through an
 argument array, never a shell string or a browser-selected backend:
 
 ```bash
-uv run whyback demo --customers <5-24> --backend gemini \
+uv run whyback demo --customers <3-24> --backend gemini \
   --output-dir artifacts/local/live-runs/live-<job-id>
 ```
 
-The supported range is inclusive from five through 24 households. The launch
-control defaults to five. Every household
+The supported range is inclusive from three through 24 households. The launch
+control defaults to five, so both the 3–4-customer exercise and the committed
+five-result deliverable remain reproducible. Every household
 can make up to six real model decisions, so larger batches take longer and can
 consume more provider quota.
 
