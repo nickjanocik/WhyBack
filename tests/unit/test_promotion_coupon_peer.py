@@ -1,3 +1,5 @@
+"""Tests for WhyBack's promotion coupon peer behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,6 +28,8 @@ RUN_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _context(household_id: str, call_id: str = "call") -> ToolExecutionContext:
+    """Create the context value used by these tests."""
+
     return ToolExecutionContext(
         run_id=RUN_ID,
         tool_call_id=call_id,
@@ -40,6 +44,8 @@ def _context(household_id: str, call_id: str = "call") -> ToolExecutionContext:
 
 
 def test_promotion_enrichment_is_nonmultiplicative(tmp_path: Path) -> None:
+    """Verify that promotion enrichment is nonmultiplicative."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = run_promotion_response(
@@ -64,6 +70,8 @@ def test_promotion_enrichment_is_nonmultiplicative(tmp_path: Path) -> None:
 def test_type_a_coupon_history_is_partial_without_fabricated_exposure(
     tmp_path: Path,
 ) -> None:
+    """Verify that type a coupon history is partial without fabricated exposure."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = run_coupon_campaign_history(
@@ -84,6 +92,8 @@ def test_type_a_coupon_history_is_partial_without_fabricated_exposure(
 
 
 def _peer_frames() -> dict[str, pd.DataFrame]:
+    """Create source frames for target-excluded peer comparisons."""
+
     frames = minimal_source_frames()
     transaction_rows: list[dict[str, object]] = []
     for household in range(1, 8):
@@ -140,6 +150,8 @@ def _peer_frames() -> dict[str, pd.DataFrame]:
 
 
 def test_peer_comparison_excludes_target_and_is_deterministic(tmp_path: Path) -> None:
+    """Verify that peer comparison excludes target and is deterministic."""
+
     prepare_frames_for_tests(_peer_frames(), tmp_path)
     context = ToolExecutionContext(
         run_id=RUN_ID,
@@ -210,6 +222,8 @@ def test_peer_comparison_excludes_target_and_is_deterministic(tmp_path: Path) ->
 
 
 def test_peer_comparison_suppresses_undersized_distributions(tmp_path: Path) -> None:
+    """Verify that peer comparison suppresses undersized distributions."""
+
     prepare_frames_for_tests(_peer_frames(), tmp_path)
     context = ToolExecutionContext(
         run_id=RUN_ID,
@@ -247,6 +261,8 @@ def test_peer_comparison_suppresses_undersized_distributions(tmp_path: Path) -> 
 
 
 def test_peer_context_is_invariant_to_transaction_row_order(tmp_path: Path) -> None:
+    """Verify that peer context is invariant to transaction row order."""
+
     first_dir = tmp_path / "first"
     second_dir = tmp_path / "second"
     first = _peer_frames()
@@ -260,6 +276,8 @@ def test_peer_context_is_invariant_to_transaction_row_order(tmp_path: Path) -> N
     )
 
     def run(prepared_dir: Path, call_id: str):
+        """Run the local scenario and return its deterministic result."""
+
         context = ToolExecutionContext(
             run_id=RUN_ID,
             tool_call_id=call_id,

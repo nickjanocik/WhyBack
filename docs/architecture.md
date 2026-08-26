@@ -59,6 +59,8 @@ flowchart TB
     ST --> A[Append-only JSONL audit]
     O --> RP[JSON / Markdown / HTML report<br/>context + claim boundaries]
     A --> TV[Offline HTML trace viewer]
+    RP --> UI[Local React reviewer dashboard]
+    A --> UI
 ```
 
 | Area | Responsibility | Explicitly does not do |
@@ -70,6 +72,7 @@ flowchart TB
 | `whyback.observability` | Validate, sanitize, and append external lifecycle events | Store hidden chain of thought or credentials |
 | `whyback.reporting` | Resolve authoritative state into strict JSON and static reports/viewers | Trust model-authored numerical prose |
 | `evals` | Score observable behavior and safety invariants | Judge stylistic prose or prove causal effectiveness |
+| `web` | Serve and review sanitized local artifacts and bounded live-run status | Calculate evidence, choose actions, expose credentials, or mutate customer systems |
 
 ## Data plane
 

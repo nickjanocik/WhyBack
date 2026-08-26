@@ -37,6 +37,8 @@ def _invalid_customer_result(
     context: ToolExecutionContext,
     timer: ToolTimer,
 ) -> ToolResult:
+    """Return an evidence-free failure when model input targets another household."""
+
     return ToolResult(
         tool_call_id=context.tool_call_id,
         tool_name=ToolName.PROMOTION_RESPONSE,
@@ -181,6 +183,8 @@ def run_promotion_response(
     by_period = {str(row["period"]): row for row in joined_records}
 
     def metric(period: str, name: str) -> float:
+        """Read one joined period metric and use zero for an absent period."""
+
         row = by_period.get(period)
         return 0.0 if row is None else float(row[name])
 

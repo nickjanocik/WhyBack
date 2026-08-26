@@ -34,6 +34,8 @@ _EVENT_TITLES: Final = {
 
 
 def _category(name: AuditEventName) -> str:
+    """Map an audit event to the timeline section used by the trace viewer."""
+
     if name in {
         AuditEventName.MODEL_DECISION_REQUESTED,
         AuditEventName.MODEL_DECISION_RECEIVED,
@@ -64,6 +66,8 @@ def _category(name: AuditEventName) -> str:
 def _first_string(
     details: Mapping[str, JsonValue], keys: tuple[str, ...]
 ) -> str | None:
+    """Return the first nonempty string stored under the preferred detail keys."""
+
     for key in keys:
         value = details.get(key)
         if isinstance(value, str) and value:
@@ -74,6 +78,8 @@ def _first_string(
 def _first_number(
     details: Mapping[str, JsonValue], keys: tuple[str, ...]
 ) -> float | None:
+    """Return the first numeric, non-boolean value under the preferred keys."""
+
     for key in keys:
         value = details.get(key)
         if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -82,6 +88,8 @@ def _first_number(
 
 
 def _string_tuple(value: JsonValue | None) -> tuple[str, ...]:
+    """Normalize a string or string-valued JSON list into an immutable tuple."""
+
     if isinstance(value, str):
         return (value,)
     if isinstance(value, list):
@@ -90,6 +98,8 @@ def _string_tuple(value: JsonValue | None) -> tuple[str, ...]:
 
 
 def _evidence_ids(details: Mapping[str, JsonValue]) -> tuple[str, ...]:
+    """Extract the first supported evidence-ID representation from event details."""
+
     for key in ("evidence_ids", "added_evidence_ids", "supporting_evidence_ids"):
         values = _string_tuple(details.get(key))
         if values:
@@ -99,6 +109,8 @@ def _evidence_ids(details: Mapping[str, JsonValue]) -> tuple[str, ...]:
 
 
 def _retry_label(name: AuditEventName, details: Mapping[str, JsonValue]) -> str | None:
+    """Describe the scheduled attempt for retry events only."""
+
     if name is not AuditEventName.RETRY_SCHEDULED:
         return None
     attempt = details.get("attempt") or details.get("next_attempt")
@@ -106,6 +118,8 @@ def _retry_label(name: AuditEventName, details: Mapping[str, JsonValue]) -> str 
 
 
 def _verifier_label(name: AuditEventName) -> str | None:
+    """Reduce verifier lifecycle events to the status shown in the timeline."""
+
     if name is AuditEventName.VERIFICATION_PASSED:
         return "passed"
     if name is AuditEventName.VERIFICATION_REJECTED:
@@ -176,6 +190,8 @@ def build_trace_view(events: Sequence[AuditEvent]) -> TraceViewData:
 
 
 def _pretty_json(value: object) -> str:
+    """Format arbitrary event details for readable display in the HTML trace."""
+
     return json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False)
 
 

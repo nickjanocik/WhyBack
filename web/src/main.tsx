@@ -1,3 +1,5 @@
+/** Mounts the WhyBack React application with accessibility-aware motion settings. */
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { MotionConfig } from "motion/react";

@@ -61,9 +61,11 @@ _REQUIRED_STEP_NAMES = frozenset(
     {
         "coverage_configuration",
         "frozen_sync",
+        "web_frozen_install",
         "ruff_format",
         "ruff_lint",
         "pyright",
+        "web_quality",
         "pytest",
         "test_output_validation",
         "deterministic_evals",
@@ -77,7 +79,7 @@ _REQUIRED_STEP_NAMES = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class ProcessResult:
-    """Minimal, injectable subprocess result."""
+    """Store a command's exit code and captured output streams."""
 
     returncode: int
     stdout: str
@@ -85,9 +87,12 @@ class ProcessResult:
 
 
 class CommandRunner(Protocol):
-    """Boundary used by the real gate and fast unit-test fakes."""
+    """Describe the callable used to run quality-gate commands."""
 
-    def __call__(self, command: tuple[str, ...], cwd: Path) -> ProcessResult: ...
+    def __call__(self, command: tuple[str, ...], cwd: Path) -> ProcessResult:
+        """Run one command in a directory and return its captured result."""
+
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +121,8 @@ class StepRecord:
     stderr: str
 
     def as_json(self) -> dict[str, object]:
+        """Return this step as a JSON-ready audit record."""
+
         return {
             "name": self.name,
             "kind": self.kind,
@@ -150,6 +157,8 @@ class GatePaths:
 
     @classmethod
     def under(cls, root: Path) -> GatePaths:
+        """Return every quality-gate output path beneath a repository root."""
+
         directory = root / "artifacts" / "tests"
         return cls(
             directory=directory,
@@ -173,12 +182,14 @@ class GatePaths:
 
 
 def utc_now() -> datetime:
-    """Return a timezone-aware timestamp through an injectable boundary."""
+    """Return the current UTC time through a helper that tests can replace."""
 
     return datetime.now(UTC)
 
 
 def _timestamp(value: datetime) -> str:
+    """Render a timestamp in UTC using the portable trailing-Z form."""
+
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
@@ -245,6 +256,8 @@ def source_tree_hash(root: Path) -> str:
 def _quiet_command(
     runner: CommandRunner, command: tuple[str, ...], root: Path
 ) -> str | None:
+    """Return trimmed command output only when the command succeeds."""
+
     result = runner(command, root)
     if result.returncode != 0:
         return None
@@ -253,6 +266,8 @@ def _quiet_command(
 
 
 def _read_toml(path: Path) -> Mapping[str, object]:
+    """Read a TOML mapping, returning an empty mapping when it is unavailable."""
+
     try:
         with path.open("rb") as stream:
             return cast(Mapping[str, object], tomllib.load(stream))
@@ -261,6 +276,8 @@ def _read_toml(path: Path) -> Mapping[str, object]:
 
 
 def _nested_mapping(value: object) -> Mapping[str, object]:
+    """Return a mapping value or an empty mapping for an unexpected type."""
+
     return cast(Mapping[str, object], value) if isinstance(value, Mapping) else {}
 
 
@@ -501,6 +518,8 @@ def build_command_specs(
     """Build the required commands in their stable execution order."""
 
     def relative(path: Path) -> str:
+        """Render a gate output path relative to the repository root."""
+
         return path.relative_to(root).as_posix()
 
     artifact_command = [
@@ -545,9 +564,14 @@ def build_command_specs(
     ]
     return (
         CommandSpec("frozen_sync", ("uv", "sync", "--frozen", "--extra", "dev")),
+        CommandSpec(
+            "web_frozen_install",
+            ("npm", "--prefix", "web", "ci", "--ignore-scripts"),
+        ),
         CommandSpec("ruff_format", ("uv", "run", "ruff", "format", "--check", ".")),
         CommandSpec("ruff_lint", ("uv", "run", "ruff", "check", ".")),
         CommandSpec("pyright", ("uv", "run", "pyright")),
+        CommandSpec("web_quality", ("npm", "--prefix", "web", "run", "check")),
         CommandSpec(
             "pytest",
             (
@@ -580,6 +604,8 @@ def _run_step(
     now: Callable[[], datetime],
     monotonic: Callable[[], float],
 ) -> StepRecord:
+    """Execute one external gate command and record its timing and output."""
+
     started_wall = now()
     started_clock = monotonic()
     result = runner(spec.command, root)
@@ -606,6 +632,8 @@ def _internal_step(
     message: str,
     now: Callable[[], datetime],
 ) -> StepRecord:
+    """Create a zero-duration record for an in-process quality check."""
+
     timestamp = _timestamp(now())
     return StepRecord(
         name=name,
@@ -623,6 +651,8 @@ def _internal_step(
 
 
 def _missing_eval(now: Callable[[], datetime]) -> StepRecord:
+    """Create the failed step recorded when the required eval input is absent."""
+
     timestamp = _timestamp(now())
     return StepRecord(
         name="deterministic_evals",
@@ -640,6 +670,8 @@ def _missing_eval(now: Callable[[], datetime]) -> StepRecord:
 
 
 def _atomic_write(path: Path, text: str) -> None:
+    """Publish text by replacing the destination with a completed temporary file."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(text, encoding="utf-8")
@@ -805,6 +837,8 @@ def _audit_document(
     prior_invocations: Sequence[Mapping[str, object]],
     lifecycle: GateLifecycle,
 ) -> dict[str, object]:
+    """Build the authoritative audit document for the gate's current lifecycle."""
+
     recorded_required = {step.name for step in steps if step.required}
     required_steps_complete = _REQUIRED_STEP_NAMES.issubset(recorded_required)
     unique_step_names = len({step.name for step in steps}) == len(steps)
@@ -843,6 +877,8 @@ def _audit_document(
 
 
 def _persist_audit(paths: GatePaths, audit: Mapping[str, object]) -> None:
+    """Atomically write matching JSON and Markdown audit documents."""
+
     _atomic_write(
         paths.audit_json,
         json.dumps(audit, indent=2, sort_keys=True) + "\n",
@@ -904,6 +940,8 @@ def run_quality_gate(
     test_summary: dict[str, object] = {}
 
     def persist_progress() -> None:
+        """Checkpoint the running audit after each newly observed result."""
+
         audit = _audit_document(
             invocation_id=invocation_id,
             started_at=started_at,
@@ -1014,6 +1052,8 @@ def run_quality_gate(
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for repository and live-run policy options."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--root",
@@ -1041,7 +1081,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entry point."""
+    """Run the quality gate, print its audit JSON, and return its exit code."""
 
     arguments = _parser().parse_args(argv)
     exit_code, audit = run_quality_gate(

@@ -20,12 +20,16 @@ from whyback.tools.contracts import ToolName
 
 
 class ScriptedPlan(StrEnum):
+    """Name each deterministic control path available to demos and tests."""
+
     STANDARD = "standard"
     TYPE_A_PARTIAL = "type-a-partial"
     PROMOTION_TIMEOUT = "promotion-timeout"
 
 
 def _tool(name: ToolName, household_id: str) -> ToolDecision:
+    """Build a scripted request for one household-level analytical tool."""
+
     questions = {
         ToolName.CUSTOMER_TREND: "Is the decline primarily frequency or value related?",
         ToolName.CATEGORY_DECOMPOSITION: (
@@ -51,6 +55,8 @@ def _tool(name: ToolName, household_id: str) -> ToolDecision:
 
 
 def _evidence_id(run_id: UUID, call_index: int, name: ToolName, ordinal: int) -> str:
+    """Reproduce the evidence identifier a scripted tool call will emit."""
+
     return f"ev_{make_tool_call_id(run_id, call_index, name)}_{ordinal:03d}"
 
 
@@ -60,6 +66,8 @@ def _supported_finish(
     basket_id: str,
     counterevidence_ids: tuple[str, ...] = (),
 ) -> FinishDecision:
+    """Build the standard cadence proposal with explicit support and limitations."""
+
     supporting = (trend_id, basket_id)
     return FinishDecision(
         investigation_question="Is the available evidence sufficient to finish?",
@@ -107,6 +115,8 @@ def _supported_finish(
 
 
 def _insufficient_finish() -> FinishDecision:
+    """Build the governed no-action proposal used after a failed verification."""
+
     return FinishDecision(
         investigation_question="Can any catalog action be supported safely?",
         decision_summary="Use the governed no-action fallback.",

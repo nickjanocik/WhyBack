@@ -1,3 +1,4 @@
+# Audit locked dependencies, workflow syntax, and Git history for leaked secrets.
 name: WhyBack security
 
 on:

@@ -1,3 +1,5 @@
+"""Tests for WhyBack's prepared repository behavior."""
+
 from __future__ import annotations
 
 import json
@@ -13,6 +15,8 @@ from whyback.data.repository import DataRepository, PreparedDataError
 def test_preparation_builds_canonical_views_without_economic_multiplication(
     tmp_path: Path,
 ) -> None:
+    """Verify canonical preparation without multiplying economic values."""
+
     frames = minimal_source_frames()
     frames["coupons"].loc[len(frames["coupons"])] = frames["coupons"].iloc[0]
     prepare_frames_for_tests(frames, tmp_path)
@@ -53,6 +57,8 @@ def test_preparation_builds_canonical_views_without_economic_multiplication(
 
 
 def test_repository_fails_when_required_table_is_missing(tmp_path: Path) -> None:
+    """Verify that repository fails when required table is missing."""
+
     try:
         DataRepository(tmp_path, required_tables=("transactions",))
     except PreparedDataError as error:
@@ -64,6 +70,8 @@ def test_repository_fails_when_required_table_is_missing(tmp_path: Path) -> None
 def test_repository_rejects_a_prepared_table_changed_after_manifest(
     tmp_path: Path,
 ) -> None:
+    """Verify that repository rejects a prepared table changed after manifest."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     transactions = tmp_path / "transactions.parquet"
     transactions.write_bytes(transactions.read_bytes() + b"tampered")
@@ -73,6 +81,8 @@ def test_repository_rejects_a_prepared_table_changed_after_manifest(
 
 
 def test_repository_rejects_forged_official_source_provenance(tmp_path: Path) -> None:
+    """Verify that repository rejects forged official source provenance."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     manifest_path = tmp_path / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

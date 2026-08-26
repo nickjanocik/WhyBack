@@ -1,3 +1,5 @@
+/** Tests localhost security, live-run subprocess boundaries, and graceful shutdown. */
+
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -23,12 +25,14 @@ import {
   stopActiveLiveProcesses,
 } from "./index.mjs";
 
+/** Creates a temporary repository root and registers cleanup with the test. */
 async function makeRoot(context) {
   const root = await mkdtemp(path.join(os.tmpdir(), "whyback-index-test-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
 
+/** Writes the minimum owned live output expected before independent verification. */
 async function writeVerifiedLiveOutput(descriptor, householdIds) {
   await mkdir(descriptor.directory, { recursive: true });
   await writeFile(
@@ -176,6 +180,7 @@ test("validates official prepared data without passing the Gemini credential", a
 test("fails closed without live readiness before invoking the run manager", () => {
   let starts = 0;
   const manager = {
+    /** Records whether readiness allowed the test manager to start. */
     start() {
       starts += 1;
       return {};
@@ -204,7 +209,7 @@ test("accepts only a customer count from the browser", () => {
     liveRunRequestError({ customers: 5, apiKey: "browser-key" }),
     "The live run request may contain only customers.",
   );
-  assert.match(liveRunRequestError({ customers: 4 }), /5 through 24/u);
+  assert.match(liveRunRequestError({ customers: 2 }), /3 through 24/u);
 });
 
 test("constructs only the fixed Gemini command in a unique live collection", () => {
@@ -417,6 +422,7 @@ test("shutdown terminates an active live child before releasing it", async (cont
 test("dashboard shutdown closes the listener, stops processes, and exits once", async () => {
   const calls = [];
   const server = {
+    /** Simulates an HTTP listener that closes immediately. */
     close(callback) {
       calls.push("server");
       callback();
@@ -440,6 +446,7 @@ test("dashboard shutdown performs its final process drain after HTTP close", asy
   const calls = [];
   let finishClose = null;
   const server = {
+    /** Holds the HTTP close callback so the test can complete it later. */
     close(callback) {
       calls.push("server");
       finishClose = callback;

@@ -1,3 +1,5 @@
+"""Tests for WhyBack's audit trace behavior."""
+
 from __future__ import annotations
 
 import json
@@ -23,6 +25,8 @@ RUN_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _event(name: AuditEventName, *, step: int) -> AuditEvent:
+    """Create a sanitized audit event for writer tests."""
+
     return AuditEvent(
         timestamp=datetime(2026, 8, 24, 12, step, tzinfo=UTC),
         event=name,
@@ -33,6 +37,8 @@ def _event(name: AuditEventName, *, step: int) -> AuditEvent:
 
 
 def test_writer_appends_compact_valid_jsonl_in_order(tmp_path: Path) -> None:
+    """Verify that writer appends compact valid jsonl in order."""
+
     path = tmp_path / "trace.jsonl"
     expected = (
         _event(AuditEventName.RUN_STARTED, step=0),
@@ -54,6 +60,8 @@ def test_writer_appends_compact_valid_jsonl_in_order(tmp_path: Path) -> None:
 
 
 def test_reopening_writer_never_overwrites_existing_trace(tmp_path: Path) -> None:
+    """Verify that reopening writer never overwrites existing trace."""
+
     path = tmp_path / "trace.jsonl"
     first = _event(AuditEventName.RUN_STARTED, step=0)
     second = _event(AuditEventName.RUN_COMPLETED, step=1)
@@ -67,6 +75,8 @@ def test_reopening_writer_never_overwrites_existing_trace(tmp_path: Path) -> Non
 
 
 def test_sanitizer_recursively_redacts_secret_keys_and_values() -> None:
+    """Verify that sanitizer recursively redacts secret keys and values."""
+
     details = sanitize_details(
         {
             "provider": "openai",
@@ -89,6 +99,8 @@ def test_sanitizer_recursively_redacts_secret_keys_and_values() -> None:
 
 
 def test_sanitizer_redacts_gemini_and_legacy_openai_api_key_fields() -> None:
+    """Verify that sanitizer redacts gemini and legacy openai api key fields."""
+
     details = sanitize_details(
         {
             "gemini_api_key": "gemini-placeholder-secret",
@@ -103,6 +115,8 @@ def test_sanitizer_redacts_gemini_and_legacy_openai_api_key_fields() -> None:
 
 
 def test_sanitizer_redacts_google_api_key_shaped_free_text() -> None:
+    """Verify that sanitizer redacts google api key shaped free text."""
+
     modern_key = f"AQ.{'a' * 40}"
     legacy_key = f"AIza{'b' * 35}"
 
@@ -120,6 +134,8 @@ def test_sanitizer_redacts_google_api_key_shaped_free_text() -> None:
 
 
 def test_sanitizer_can_reject_secrets_and_always_rejects_hidden_reasoning() -> None:
+    """Verify that sanitizer can reject secrets and always rejects hidden reasoning."""
+
     with pytest.raises(UnsafeAuditDetailError, match="secret-like audit field"):
         sanitize_details(
             {"password": "value"},
@@ -144,6 +160,8 @@ def test_sanitizer_can_reject_secrets_and_always_rejects_hidden_reasoning() -> N
 
 
 def test_audit_event_normalizes_aware_timestamp_to_utc() -> None:
+    """Verify that audit event normalizes aware timestamp to utc."""
+
     event = AuditEvent(
         timestamp=datetime(
             2026,
@@ -162,6 +180,8 @@ def test_audit_event_normalizes_aware_timestamp_to_utc() -> None:
 
 
 def test_audit_event_is_strict_and_immutable() -> None:
+    """Verify that audit event is strict and immutable."""
+
     event = _event(AuditEventName.RUN_STARTED, step=0)
 
     with pytest.raises(ValidationError, match="Instance is frozen"):
@@ -181,6 +201,8 @@ def test_audit_event_is_strict_and_immutable() -> None:
 def test_writer_revalidates_an_event_at_the_persistence_boundary(
     tmp_path: Path,
 ) -> None:
+    """Verify that writer revalidates an event at the persistence boundary."""
+
     event = _event(AuditEventName.RUN_STARTED, step=0)
     # Simulate an exotic caller bypassing the public immutable interface.
     dict.__setitem__(event.details, "api_key", "plaintext-secret")

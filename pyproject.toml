@@ -1,3 +1,4 @@
+# Define WhyBack's package, locked dependency policy, and Python quality tools.
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

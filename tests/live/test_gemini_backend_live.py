@@ -1,3 +1,5 @@
+"""Tests for WhyBack's gemini backend live behavior."""
+
 from __future__ import annotations
 
 import os
@@ -14,6 +16,8 @@ _GEMINI_API_KEY_PRESENT = bool((os.getenv("GEMINI_API_KEY") or "").strip())
 
 
 def _state() -> InvestigationState:
+    """Create an application-owned investigation state for this test."""
+
     return InvestigationState.start(
         DeclineSnapshot(
             household_id="live-contract-smoke",
@@ -43,6 +47,8 @@ def _state() -> InvestigationState:
     reason="GEMINI_API_KEY is absent; live Gemini execution was not attempted.",
 )
 def test_gemini_backend_returns_one_strict_investigation_decision() -> None:
+    """Verify that gemini backend returns one strict investigation decision."""
+
     registry = build_tool_registry()
     backend = GeminiFunctionCallingBackend(thinking_level="low", timeout_seconds=90.0)
 

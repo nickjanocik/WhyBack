@@ -1,3 +1,5 @@
+"""Tests for WhyBack's reporting behavior."""
+
 from __future__ import annotations
 
 import json
@@ -48,6 +50,8 @@ PEER_CALL_ID = "call-report-peer"
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="181",
         baseline_start_week=38,
@@ -77,6 +81,8 @@ def _evidence(
     baseline: float,
     recent: float,
 ) -> EvidenceRecord:
+    """Create a typed evidence record with test-controlled values."""
+
     return EvidenceRecord(
         evidence_id=evidence_id,
         run_id=RUN_ID,
@@ -100,6 +106,8 @@ def _evidence(
 
 
 def _outcome() -> InvestigationOutcome:
+    """Create a verified investigation outcome for reporting tests."""
+
     support = _evidence(
         SUPPORT_ID,
         category="<script>alert('x')</script>",
@@ -207,6 +215,8 @@ def _outcome() -> InvestigationOutcome:
 
 
 def _outcome_with_population_context() -> InvestigationOutcome:
+    """Create a verified outcome containing population context."""
+
     outcome = _outcome()
     values = {
         "target_retailer_sales_change": -0.50,
@@ -309,6 +319,8 @@ def _outcome_with_population_context() -> InvestigationOutcome:
 
 
 def _outcome_with_conflicting_population_context() -> InvestigationOutcome:
+    """Create an outcome with deliberately conflicting population context."""
+
     outcome = _outcome_with_population_context()
     broad_call_id = "call-report-peer-broad"
     broad_values = {
@@ -424,6 +436,8 @@ def _outcome_with_conflicting_population_context() -> InvestigationOutcome:
 
 
 def test_report_boundary_resolves_evidence_and_preserves_status_limitations() -> None:
+    """Verify resolved evidence and preserved status limitations in reports."""
+
     report = build_report_data(_outcome())
 
     assert report.decline.baseline_retailer_sales_value == 120.0
@@ -449,6 +463,8 @@ def test_report_boundary_resolves_evidence_and_preserves_status_limitations() ->
 
 
 def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None:
+    """Verify that json and markdown have required sections and no model numbers."""
+
     report = build_report_data(_outcome())
 
     json_text = render_report_json(report)
@@ -496,6 +512,8 @@ def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None
 
 
 def test_population_context_values_are_rendered_only_from_bound_evidence() -> None:
+    """Verify that population context values are rendered only from bound evidence."""
+
     report = build_report_data(_outcome_with_population_context())
 
     assert (
@@ -518,6 +536,8 @@ def test_population_context_values_are_rendered_only_from_bound_evidence() -> No
 
 
 def test_conflicting_context_calls_bind_values_to_conservative_classification() -> None:
+    """Verify that conflicting context produces a conservative classification."""
+
     report = build_report_data(_outcome_with_conflicting_population_context())
 
     context = report.population_context
@@ -546,6 +566,8 @@ def test_conflicting_context_calls_bind_values_to_conservative_classification() 
 
 
 def test_markdown_keeps_ordered_investigation_steps_on_separate_lines() -> None:
+    """Verify that markdown keeps ordered investigation steps on separate lines."""
+
     outcome = _outcome()
     first = outcome.state.tool_history[0]
     second = first.model_copy(
@@ -568,6 +590,8 @@ def test_markdown_keeps_ordered_investigation_steps_on_separate_lines() -> None:
 
 
 def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
+    """Verify that report schema rejects lifecycle and evidence owner conflicts."""
+
     report = build_report_data(_outcome())
 
     fabricated_unavailable_count = report.model_dump(mode="json")
@@ -627,6 +651,8 @@ def test_report_schema_rejects_lifecycle_and_evidence_owner_conflicts() -> None:
 
 
 def test_report_schema_recomputes_counterevidence_and_confidence_policy() -> None:
+    """Verify that report schema recomputes counterevidence and confidence policy."""
+
     customer_specific = build_report_data(_outcome_with_population_context())
     forged_high = customer_specific.model_dump(mode="json")
     forged_high["action"]["resolved_confidence"] = ResolvedConfidence.HIGH.value
@@ -654,6 +680,8 @@ def test_report_schema_recomputes_counterevidence_and_confidence_policy() -> Non
 
 
 def test_report_schema_requires_grounded_and_exact_evidence_partitions() -> None:
+    """Verify that report schema requires grounded and exact evidence partitions."""
+
     report = build_report_data(_outcome())
 
     unsupported_action = report.model_dump(mode="json")
@@ -682,6 +710,8 @@ def test_report_schema_requires_grounded_and_exact_evidence_partitions() -> None
 
 
 def test_category_context_requires_explicit_target_exclusion_provenance() -> None:
+    """Verify that category context requires explicit target exclusion provenance."""
+
     report = build_report_data(_outcome())
     document = report.model_dump(mode="json")
     dimensions = {
@@ -766,6 +796,8 @@ def test_category_context_requires_explicit_target_exclusion_provenance() -> Non
 
 
 def test_html_is_escaped_self_contained_and_auditable() -> None:
+    """Verify that html is escaped self contained and auditable."""
+
     html = render_report_html(build_report_data(_outcome()))
 
     assert html.startswith("<!doctype html>")
@@ -804,6 +836,8 @@ def _trace_event(
     offset: int,
     details: dict[str, object],
 ) -> AuditEvent:
+    """Create a reviewer-safe trace event for rendering tests."""
+
     return AuditEvent(
         timestamp=datetime(2026, 8, 24, 12, tzinfo=UTC) + timedelta(seconds=offset),
         event=name,
@@ -816,6 +850,8 @@ def _trace_event(
 def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
     tmp_path: Path,
 ) -> None:
+    """Verify that trace viewer reads jsonl and exposes chronology and controls."""
+
     trace_path = tmp_path / "run.trace.jsonl"
     events = (
         _trace_event(AuditEventName.RUN_STARTED, 0, {"status": "running"}),
@@ -895,6 +931,8 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
 
 
 def test_bundle_and_trace_outputs_open_without_sibling_assets(tmp_path: Path) -> None:
+    """Verify that bundle and trace outputs open without sibling assets."""
+
     bundle = write_report_bundle(_outcome(), tmp_path / "report", stem="household")
     assert bundle.json.name == "household.json"
     assert bundle.markdown.name == "household.md"

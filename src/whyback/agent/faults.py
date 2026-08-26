@@ -36,6 +36,8 @@ class DemoFaultInjector:
         *,
         enabled: Literal[True],
     ) -> None:
+        """Create an injector only after the caller explicitly enables demo faults."""
+
         if enabled is not True:
             raise DemoFaultConfigurationError(
                 "Demo fault injection requires enabled=True acknowledgement"
@@ -49,6 +51,8 @@ class DemoFaultInjector:
         *,
         enabled: Literal[True],
     ) -> DemoFaultInjector:
+        """Parse an allowlisted fault specification and return its injector."""
+
         try:
             scenario = DemoFaultScenario(spec)
         except ValueError as error:

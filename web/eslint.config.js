@@ -1,3 +1,5 @@
+/** Defines the lint rules shared by the dashboard source, server, and tests. */
+
 import eslint from "@eslint/js";
 import vitest from "@vitest/eslint-plugin";
 import reactHooks from "eslint-plugin-react-hooks";

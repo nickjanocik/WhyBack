@@ -1,3 +1,5 @@
+/* Defines the responsive visual system and accessible interaction states for the dashboard. */
+
 :root {
   color-scheme: light;
   --ink: #14251f;
@@ -660,6 +662,7 @@ select:focus-visible {
 }
 
 .metric-card {
+  container-type: inline-size;
   padding: 19px 20px 15px;
   background: rgb(255 255 255 / 92%);
   border: 1px solid var(--line);
@@ -696,7 +699,7 @@ select:focus-visible {
 
 .metric-values {
   display: grid;
-  grid-template-columns: 1fr 18px 1fr;
+  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
   align-items: end;
   gap: 8px;
   margin: 15px 0 12px;
@@ -706,6 +709,7 @@ select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .metric-values small {
@@ -770,9 +774,9 @@ select:focus-visible {
 }
 
 .legend .legend__divider {
-  width: 1px;
+  width: 0;
   height: 10px;
-  background: var(--accent);
+  background: none;
   border-left: 1px dashed var(--accent);
 }
 
@@ -1392,7 +1396,7 @@ select:focus-visible {
 .path-step__line {
   position: absolute;
   top: 30px;
-  right: 0;
+  right: 16px;
   left: 48px;
   height: 1px;
   background: var(--line);
@@ -1437,6 +1441,10 @@ select:focus-visible {
   margin-top: auto;
   color: var(--faint);
   font-size: 7px;
+}
+
+.ledger-surface {
+  container-type: inline-size;
 }
 
 .filter-bar {
@@ -1486,7 +1494,9 @@ select:focus-visible {
 }
 
 .clear-filter {
+  justify-self: start;
   padding: 7px 10px;
+  white-space: nowrap;
   color: var(--danger);
   font-size: 8px;
   font-weight: 700;
@@ -1870,6 +1880,7 @@ select:focus-visible {
 
 .trace-row__body > div:first-child {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 10px;
 }
@@ -2617,9 +2628,25 @@ select:focus-visible {
 }
 
 .live-run-details summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--mint-dark);
   font-weight: 750;
   cursor: pointer;
+  list-style: none;
+}
+
+.live-run-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.live-run-details summary svg {
+  transition: transform 180ms ease;
+}
+
+.live-run-details[open] summary svg {
+  transform: rotate(180deg);
 }
 
 .live-run-details dl {
@@ -3051,5 +3078,82 @@ select:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* The baseline and recent values share the card in equal halves, so the display
+   size has to follow the card width rather than the viewport width: a narrow
+   workspace column otherwise slices a currency value against the card border. */
+@container (max-width: 211px) {
+  .metric-values strong {
+    font-size: 19px;
+  }
+}
+
+@container (max-width: 181px) {
+  .metric-values strong {
+    font-size: 15px;
+  }
+}
+
+@container (max-width: 149px) {
+  .metric-values {
+    grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .metric-values > svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .metric-values strong {
+    font-size: 13px;
+  }
+}
+
+@container (max-width: 132px) {
+  .metric-values strong {
+    font-size: 12px;
+  }
+}
+
+/* The step-filter button is only rendered while a path step is selected. All
+   four controls have hard minimum widths, so below this the last one is pushed
+   out of the card: give it the stacked row the narrow layout already uses. */
+@container (max-width: 580px) {
+  .filter-bar:has(.clear-filter) {
+    grid-template-columns: minmax(0, 1fr) 1fr;
+  }
+
+  .filter-bar:has(.clear-filter) .filter-search {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Below this the five summary tracks no longer fit the ledger card, and the
+   chevron is pushed past its right edge: fall back to the stacked row the
+   narrow layout already defines. */
+@container (max-width: 500px) {
+  .evidence-row__summary {
+    grid-template-columns: 8px minmax(0, 1fr) 18px;
+  }
+
+  .evidence-value {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .evidence-role {
+    display: none;
+  }
+
+  .evidence-chevron {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .evidence-detail__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

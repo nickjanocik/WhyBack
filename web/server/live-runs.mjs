@@ -1,3 +1,5 @@
+/** Owns, seals, verifies, and discovers preserved live Gemini artifact collections. */
+
 import { createHash } from "node:crypto";
 import { lstat, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -16,6 +18,7 @@ const OWNERSHIP_DOCUMENT = Object.freeze({
 });
 const VERIFICATION_STATUS = "verified_live_gemini";
 
+/** Returns metadata only for a real directory that is not a symbolic link. */
 async function realDirectoryDetails(directory) {
   try {
     const details = await lstat(directory);
@@ -26,6 +29,7 @@ async function realDirectoryDetails(directory) {
   }
 }
 
+/** Checks that a directory carries exactly the expected WhyBack ownership marker. */
 async function isExactOwnershipMarker(directory) {
   const marker = path.join(directory, OWNERSHIP_MARKER);
   let details;
@@ -58,10 +62,12 @@ async function isExactOwnershipMarker(directory) {
   }
 }
 
+/** Identifies record-shaped JSON values used in trusted marker checks. */
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** Confirms that a manifest proves one complete, human-reviewed live Gemini batch. */
 function terminalManifestIsLive(manifest) {
   if (
     !isPlainObject(manifest) ||
@@ -101,6 +107,7 @@ function terminalManifestIsLive(manifest) {
   );
 }
 
+/** Reads bytes only from a real, non-symlink file. */
 async function realFileBytes(filePath) {
   let details;
   try {
@@ -114,12 +121,15 @@ async function realFileBytes(filePath) {
     : null;
 }
 
+/** Produces the hexadecimal SHA-256 identity for one byte sequence. */
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
+/** Hashes every safe artifact path and file hash into one deterministic tree digest. */
 async function artifactTreeSha256(directory) {
   const files = [];
+  /** Walks the tree while rejecting links, special files, and unreadable branches. */
   async function walk(current) {
     let entries;
     try {
@@ -156,6 +166,7 @@ async function artifactTreeSha256(directory) {
   return digest.digest("hex");
 }
 
+/** Resolves the live-run root only when every directory segment is real. */
 async function safeLiveRunRoot(repositoryRoot) {
   let current = path.resolve(repositoryRoot);
   for (const segment of ["artifacts", "local", "live-runs"]) {
@@ -165,16 +176,19 @@ async function safeLiveRunRoot(repositoryRoot) {
   return current;
 }
 
+/** Extracts the canonical version-four UUID from a live collection ID. */
 function collectionUuid(collectionId) {
   return typeof collectionId === "string"
     ? LIVE_RUN_ID.exec(collectionId)?.[1] ?? null
     : null;
 }
 
+/** Reports whether a collection ID has the only accepted live-run shape. */
 export function isLiveRunCollectionId(collectionId) {
   return collectionUuid(collectionId) !== null;
 }
 
+/** Derives the fixed collection ID and output path for one validated job ID. */
 export function createLiveRunDescriptor(repositoryRoot, jobId) {
   if (typeof jobId !== "string" || !JOB_ID.test(jobId)) {
     throw new TypeError("Live run job ID must be a canonical version-4 UUID.");
@@ -188,6 +202,7 @@ export function createLiveRunDescriptor(repositoryRoot, jobId) {
   };
 }
 
+/** Builds display metadata for a valid live-run collection. */
 export function liveRunCollectionDefinition(collectionId, modifiedAtMs = 0) {
   const uuid = collectionUuid(collectionId);
   if (!uuid) return null;
@@ -200,6 +215,7 @@ export function liveRunCollectionDefinition(collectionId, modifiedAtMs = 0) {
   };
 }
 
+/** Resolves a live directory only when it remains under the safe root and is owned. */
 export async function resolveOwnedLiveRunDirectory(repositoryRoot, collectionId) {
   const definition = liveRunCollectionDefinition(collectionId);
   if (!definition) return null;
@@ -211,6 +227,7 @@ export async function resolveOwnedLiveRunDirectory(repositoryRoot, collectionId)
   return (await isExactOwnershipMarker(candidate)) ? candidate : null;
 }
 
+/** Revalidates the manifest, seal, and current artifact bytes before browsing a run. */
 export async function resolveVerifiedLiveRunDirectory(
   repositoryRoot,
   collectionId,
@@ -242,6 +259,7 @@ export async function resolveVerifiedLiveRunDirectory(
   }
 }
 
+/** Writes a one-time verification seal after a live artifact tree passes validation. */
 export async function markLiveRunVerified(repositoryRoot, collectionId) {
   const directory = await resolveOwnedLiveRunDirectory(repositoryRoot, collectionId);
   if (!directory) {
@@ -282,6 +300,7 @@ export async function markLiveRunVerified(repositoryRoot, collectionId) {
   return directory;
 }
 
+/** Finds sealed live collections and orders the newest reviewer results first. */
 export async function discoverLiveRunCollections(repositoryRoot) {
   const root = await safeLiveRunRoot(repositoryRoot);
   if (!root) return [];

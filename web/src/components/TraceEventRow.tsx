@@ -1,3 +1,5 @@
+/** Turns one sanitized audit event into a categorized, human-readable timeline row. */
+
 import {
   Bot,
   CircleAlert,
@@ -9,6 +11,7 @@ import {
 import { eventLabel, humanize } from "../lib/report";
 import type { LiveTraceEvent, TraceEvent } from "../types";
 
+/** Renders an audit event with its safe details and optional household source. */
 export function TraceEventRow({
   event,
   showSource = false,
@@ -45,6 +48,7 @@ export function TraceEventRow({
   );
 }
 
+/** Groups audit event names into the small visual categories used by the timeline. */
 function traceCategory(event: string): string {
   if (
     event.includes("failed") ||
@@ -92,6 +96,7 @@ const detailPriorityByKey = new Map(
   detailPriority.map((key, index) => [key, index]),
 );
 
+/** Orders allow-listed details by reviewer importance and removes empty values. */
 function orderedDetails(details: Record<string, unknown>) {
   return Object.entries(details)
     .filter(([, value]) => value !== null && value !== "")
@@ -102,6 +107,7 @@ function orderedDetails(details: Record<string, unknown>) {
     );
 }
 
+/** Chooses the icon associated with an event's visual category. */
 function traceIcon(event: string) {
   const category = traceCategory(event);
   if (category === "verify") return <ShieldCheck size={15} />;
@@ -111,6 +117,7 @@ function traceIcon(event: string) {
   return <ListFilter size={15} />;
 }
 
+/** Formats one already-sanitized trace value without exposing raw object content. */
 function formatTraceDetail(value: unknown): string {
   if (Array.isArray(value)) return value.map(String).join(", ") || "None";
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -121,6 +128,7 @@ function formatTraceDetail(value: unknown): string {
   return String(value);
 }
 
+/** Formats an audit timestamp as local clock time with a safe fallback. */
 function formatTraceTime(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.valueOf())

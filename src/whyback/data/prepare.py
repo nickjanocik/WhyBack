@@ -72,6 +72,8 @@ PREPARED_TABLE_ORDER: Final = (
 
 
 def _read_r_frame(path: Path, table: str) -> pd.DataFrame:
+    """Load one R object, preserving New York transaction timestamp semantics."""
+
     # The source stores transaction timestamps as epoch values described in
     # America/New_York local time. Pyreadr otherwise applies UTC and shifts
     # dates around midnight, corrupting active-day and cadence calculations.
@@ -85,6 +87,8 @@ def _read_r_frame(path: Path, table: str) -> pd.DataFrame:
 
 
 def _source_tree_identity() -> tuple[str, bool]:
+    """Report the configured or Git-derived source revision and dirty status."""
+
     configured = os.getenv("WHYBACK_SOURCE_TREE_VERSION")
     if configured:
         return configured, os.getenv("WHYBACK_SOURCE_TREE_DIRTY") == "1"
@@ -121,16 +125,22 @@ def _source_tree_identity() -> tuple[str, bool]:
 
 
 def _write_parquet(frame: pd.DataFrame, path: Path) -> None:
+    """Write a Zstandard-compressed frame to a temporary file, then publish it."""
+
     temporary = path.with_suffix(path.suffix + ".tmp")
     frame.to_parquet(temporary, index=False, compression="zstd")
     temporary.replace(path)
 
 
 def _sql_path(path: Path) -> str:
+    """Resolve a path and escape apostrophes for a DuckDB SQL string literal."""
+
     return str(path.resolve()).replace("'", "''")
 
 
 def _copy_query(connection: duckdb.DuckDBPyConnection, query: str, path: Path) -> None:
+    """Run a query into compressed Parquet and atomically publish the result."""
+
     temporary = path.with_suffix(path.suffix + ".tmp")
     destination = _sql_path(temporary)
     connection.execute(
@@ -140,6 +150,8 @@ def _copy_query(connection: duckdb.DuckDBPyConnection, query: str, path: Path) -
 
 
 def _build_derived_tables(prepared_dir: Path) -> dict[str, str]:
+    """Build deterministic household-week and basket tables and their definitions."""
+
     transactions_path = _sql_path(prepared_dir / "transactions.parquet")
     products_path = _sql_path(prepared_dir / "products.parquet")
     definitions = {
@@ -198,6 +210,8 @@ def _build_derived_tables(prepared_dir: Path) -> dict[str, str]:
 
 
 def _write_promotion_state(frame: pd.DataFrame, prepared_dir: Path) -> str:
+    """Collapse promotion rows to canonical product-store-week availability state."""
+
     path = prepared_dir / "promotion_state.parquet"
     connection = duckdb.connect()
     try:

@@ -37,12 +37,16 @@ ToolHandler = Callable[[Any, ToolExecutionContext, DataRepository], ToolResult]
 
 @dataclass(frozen=True, slots=True)
 class RegisteredTool:
+    """One analytical handler paired with its input contract and model description."""
+
     name: ToolName
     input_model: type[BaseModel]
     handler: ToolHandler
     description: str
 
     def definition(self) -> ToolDefinition:
+        """Expose this registered handler as a provider-neutral function schema."""
+
         return ToolDefinition(
             name=self.name,
             description=self.description,
@@ -114,17 +118,23 @@ class ToolRegistry:
     """Validate, dispatch, describe, and normalize the six analytical tools."""
 
     def __init__(self, tools: Sequence[RegisteredTool] = TOOL_SPECS) -> None:
+        """Index a unique set of tools by their public analytical names."""
+
         self._tools = {tool.name: tool for tool in tools}
         if len(self._tools) != len(tools):
             raise ValueError("Tool names must be unique")
 
     @property
     def names(self) -> tuple[ToolName, ...]:
+        """Return registered tool names in their stable declaration order."""
+
         return tuple(self._tools)
 
     def definitions(
         self, allowed: Sequence[ToolName] | None = None
     ) -> tuple[ToolDefinition, ...]:
+        """Return strict schemas for all tools or only an allowed subset."""
+
         permitted = set(allowed) if allowed is not None else set(self._tools)
         return tuple(
             tool.definition() for name, tool in self._tools.items() if name in permitted
@@ -133,6 +143,8 @@ class ToolRegistry:
     def normalize_arguments(
         self, name: ToolName, arguments: Mapping[str, Any]
     ) -> tuple[BaseModel, str]:
+        """Validate arguments and hash their canonical JSON for duplicate checks."""
+
         tool = self._tools[name]
         validated = tool.input_model.model_validate(dict(arguments))
         payload = validated.model_dump(mode="json")
@@ -147,6 +159,8 @@ class ToolRegistry:
         context: ToolExecutionContext,
         repository: DataRepository,
     ) -> ToolResult:
+        """Validate model arguments, dispatch the handler, or return a typed refusal."""
+
         try:
             parameters, _ = self.normalize_arguments(name, arguments)
         except (KeyError, ValidationError):
@@ -174,6 +188,8 @@ class ToolRegistry:
 
 
 def build_tool_registry() -> ToolRegistry:
+    """Construct the standard registry containing all six analytical tools."""
+
     return ToolRegistry()
 
 

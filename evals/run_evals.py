@@ -59,7 +59,7 @@ class ScenarioArchetype(StrEnum):
 
 
 class ScenarioDefinition(BaseModel):
-    """Strict, prose-independent expectations for one behavioral scenario."""
+    """Define the expected tools and outcomes for one behavioral scenario."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -87,6 +87,8 @@ class ScenarioDefinition(BaseModel):
 
     @model_validator(mode="after")
     def validate_tool_expectations(self) -> Self:
+        """Reject duplicate or contradictory scenario expectations."""
+
         groups = (
             self.relevant_tools,
             self.irrelevant_mandatory_tools,
@@ -156,6 +158,8 @@ class ScenarioCatalog(BaseModel):
 
     @model_validator(mode="after")
     def validate_baseline_catalog(self) -> Self:
+        """Require the exact baseline scenario order and one of every archetype."""
+
         identifiers = tuple(item.scenario_id for item in self.scenarios)
         if identifiers != EXPECTED_SCENARIO_IDS:
             raise ValueError(
@@ -207,6 +211,8 @@ class NormalizedRunSummary(BaseModel):
 
     @model_validator(mode="after")
     def validate_summary(self) -> Self:
+        """Require normalized run facts to be unique and internally consistent."""
+
         unique_groups = (
             self.partial_tools,
             self.failed_tools,
@@ -308,6 +314,8 @@ class RateMetric(BaseModel):
 
     @model_validator(mode="after")
     def validate_rate(self) -> Self:
+        """Require counts to reconcile exactly with the optional rate."""
+
         if self.numerator > self.denominator:
             raise ValueError("Metric numerator cannot exceed its denominator")
         expected = self.numerator / self.denominator if self.denominator else None
@@ -317,6 +325,8 @@ class RateMetric(BaseModel):
 
     @classmethod
     def from_counts(cls, numerator: int, denominator: int) -> RateMetric:
+        """Build a rate from counts, leaving it undefined for a zero denominator."""
+
         return cls(
             numerator=numerator,
             denominator=denominator,
@@ -379,6 +389,8 @@ class EvaluationReport(BaseModel):
 
     @model_validator(mode="after")
     def validate_pass_state(self) -> Self:
+        """Require the report result to match scenario coverage and run outcomes."""
+
         expected = not self.missing_scenario_ids and all(
             run.scenario_contract_passed for run in self.runs
         )
@@ -400,12 +412,16 @@ def load_scenario_catalog(path: Path | str | None = None) -> ScenarioCatalog:
 
 
 def _unique(values: Sequence[str]) -> tuple[str, ...]:
+    """Return strings once each while preserving their first-seen order."""
+
     return tuple(dict.fromkeys(values))
 
 
 def _context_classifications(
     state: InvestigationState,
 ) -> tuple[ContextClassification, ...]:
+    """Collect unique valid context classifications from the evidence ledger."""
+
     classifications: list[ContextClassification] = []
     for record in state.evidence_ledger:
         if (
@@ -429,6 +445,8 @@ def _context_classifications(
 def _verification_rejection_codes(
     state: InvestigationState,
 ) -> tuple[VerificationIssueCode, ...]:
+    """Recover unique typed rejection codes from stored verification issues."""
+
     codes: list[VerificationIssueCode] = []
     for issue in state.verification_issues:
         raw_code = issue.partition(":")[0]
@@ -468,6 +486,8 @@ def _state_facts(
     tuple[str, ...],
     int,
 ]:
+    """Extract tool, evidence, limitation, and execution facts from run state."""
+
     selected = tuple(item.tool_name for item in state.tool_history)
     partial = tuple(
         dict.fromkeys(
@@ -835,6 +855,8 @@ def evaluate_run(
 
 
 def _boolean_rate(runs: Sequence[RunEvaluation], attribute: str) -> RateMetric:
+    """Calculate the true-value rate for one boolean run attribute."""
+
     values = [bool(getattr(item, attribute)) for item in runs]
     return RateMetric.from_counts(sum(values), len(values))
 
@@ -842,6 +864,8 @@ def _boolean_rate(runs: Sequence[RunEvaluation], attribute: str) -> RateMetric:
 def _applicable_rate(
     runs: Sequence[RunEvaluation], applicable: str, passed: str
 ) -> RateMetric:
+    """Calculate a pass rate using only runs where the check applies."""
+
     applicable_runs = [item for item in runs if bool(getattr(item, applicable))]
     return RateMetric.from_counts(
         sum(bool(getattr(item, passed)) for item in applicable_runs),
@@ -1083,6 +1107,8 @@ def load_normalized_runs(path: Path | str) -> tuple[NormalizedRunSummary, ...]:
 
 
 def _normalized_input_metadata(path: Path) -> Mapping[str, object]:
+    """Read optional provenance metadata from a normalized-run input document."""
+
     raw: object = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, Mapping):
         return {}
@@ -1091,6 +1117,8 @@ def _normalized_input_metadata(path: Path) -> Mapping[str, object]:
 
 
 def _sha256_file(path: Path) -> str:
+    """Hash a file in chunks without loading it all into memory."""
+
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -1099,6 +1127,8 @@ def _sha256_file(path: Path) -> str:
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for deterministic evaluation inputs."""
+
     parser = argparse.ArgumentParser(
         description="Score normalized WhyBack runs without invoking a model."
     )

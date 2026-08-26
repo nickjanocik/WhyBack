@@ -1,3 +1,5 @@
+/** Converts validated report contracts into consistent human-readable dashboard values. */
+
 import type { EvidenceRecord, ReportData, TraceEvent } from "../types";
 
 export interface TrendPoint {
@@ -13,12 +15,14 @@ const currencyUnits = new Set([
 
 const percentageUnits = new Set(["share", "fraction", "proportion", "rate", "ratio"]);
 
+/** Converts a machine identifier into a title-like display label. */
 export function humanize(value: string): string {
   return value
     .replaceAll("_", " ")
     .replace(/\b\w/gu, (character) => character.toUpperCase());
 }
 
+/** Formats retailer sales value in the dashboard's fixed US-dollar presentation. */
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -27,10 +31,12 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+/** Formats a finite metric with a bounded number of decimal places. */
 export function formatNumber(value: number, maximumFractionDigits = 1): string {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits }).format(value);
 }
 
+/** Formats a stored ratio as a percentage for reviewer display. */
 export function formatPercent(value: number, digits = 0): string {
   return new Intl.NumberFormat("en-US", {
     style: "percent",
@@ -38,12 +44,14 @@ export function formatPercent(value: number, digits = 0): string {
   }).format(value);
 }
 
+/** Chooses currency, percent, or numeric formatting from an evidence unit. */
 export function formatMetricValue(value: number, unit: string | null): string {
   if (unit && currencyUnits.has(unit)) return formatCurrency(value);
   if (unit && percentageUnits.has(unit)) return formatPercent(value, 1);
   return formatNumber(value, Math.abs(value) < 10 ? 2 : 1);
 }
 
+/** Extracts and sorts valid weekly retailer-sales evidence from a report ledger. */
 export function weeklyTrend(report: ReportData): TrendPoint[] {
   return report.evidence_ledger
     .filter(
@@ -56,6 +64,7 @@ export function weeklyTrend(report: ReportData): TrendPoint[] {
     .sort((left, right) => left.week - right.week);
 }
 
+/** Selects the paired, scalar, text, or unavailable display form for one record. */
 export function evidenceDisplayValue(record: EvidenceRecord): string {
   if (record.text_value) return record.text_value;
   if (record.baseline_value !== null || record.recent_value !== null) {
@@ -73,15 +82,18 @@ export function evidenceDisplayValue(record: EvidenceRecord): string {
   return "Not available";
 }
 
+/** Shortens a long identifier for display while leaving short identifiers intact. */
 export function compactId(value: string, length = 8): string {
   if (value.length <= length * 2 + 1) return value;
   return `${value.slice(0, length)}…${value.slice(-length)}`;
 }
 
+/** Removes evidence-write noise from the default audit timeline. */
 export function meaningfulTrace<T extends TraceEvent>(trace: T[]): T[] {
   return trace.filter((item) => item.event !== "evidence_added");
 }
 
+/** Returns a reviewer-friendly label for known audit events. */
 export function eventLabel(event: string): string {
   const labels: Record<string, string> = {
     run_started: "Investigation started",
@@ -102,6 +114,7 @@ export function eventLabel(event: string): string {
   return labels[event] ?? humanize(event);
 }
 
+/** Returns the governed display name for a catalog action ID. */
 export function actionLabel(actionId: string): string {
   const labels: Record<string, string> = {
     VISIT_FREQUENCY_REACTIVATION: "Restore visit rhythm",
@@ -114,6 +127,7 @@ export function actionLabel(actionId: string): string {
   return labels[actionId] ?? humanize(actionId);
 }
 
+/** Collects visible limitations once while preserving their first-seen order. */
 export function uniqueLimitations(report: ReportData): string[] {
   const values = [
     ...report.limitations,

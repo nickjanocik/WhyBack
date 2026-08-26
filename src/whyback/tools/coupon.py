@@ -22,6 +22,8 @@ TYPE_A_LIMITATION = (
 
 
 def _date_text(value: object) -> str:
+    """Serialize date-like campaign fields while tolerating source scalar types."""
+
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     return str(value)
@@ -131,6 +133,8 @@ def run_coupon_campaign_history(
     usage_by_period = {str(row["period"]): row for row in usage}
 
     def usage_value(period: str, field: str) -> float:
+        """Read one coupon-usage measure and use zero for an absent period."""
+
         row = usage_by_period.get(period)
         return 0.0 if row is None else float(row[field])
 

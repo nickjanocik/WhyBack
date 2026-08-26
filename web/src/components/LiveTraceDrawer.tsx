@@ -1,5 +1,8 @@
+/** Shows bounded, sanitized live-run activity in an accessible modal drawer. */
+
 import {
   Activity,
+  ChevronDown,
   CircleAlert,
   CircleCheck,
   LoaderCircle,
@@ -22,6 +25,7 @@ interface LiveTraceDrawerProps {
   onStartRun: () => void;
 }
 
+/** Renders live job status, optional evidence writes, and per-household audit events. */
 export function LiveTraceDrawer({
   open,
   status,
@@ -36,15 +40,18 @@ export function LiveTraceDrawer({
   const closeRef = useRef<HTMLButtonElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  // Evidence writes are useful on demand but hidden initially to keep the audit readable.
   const events = useMemo(
     () => (showEvidenceEvents ? status.events : meaningfulTrace(status.events)),
     [showEvidenceEvents, status.events],
   );
 
+  // Keep the latest close callback available without rebuilding the focus-trap effect.
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  // Make the workspace inert, contain keyboard focus, and restore the trigger on close.
   useEffect(() => {
     if (!open) return;
     const previousFocus = document.activeElement instanceof HTMLElement
@@ -63,6 +70,7 @@ export function LiveTraceDrawer({
       closeRef.current?.focus();
     });
 
+    /** Closes on Escape and wraps Tab focus within the modal drawer. */
     function handleKey(event: KeyboardEvent) {
       const drawer = drawerRef.current;
       if (!drawer || drawer.closest("[inert]")) return;
@@ -110,6 +118,7 @@ export function LiveTraceDrawer({
     };
   }, [open]);
 
+  // Follow new events unless the reviewer has paused automatic scrolling.
   useEffect(() => {
     if (!open || !follow) return;
     endRef.current?.scrollIntoView({
@@ -168,7 +177,9 @@ export function LiveTraceDrawer({
 
           {status.jobId && (
             <details className="live-run-details">
-              <summary>Run details</summary>
+              <summary>
+                <ChevronDown size={12} aria-hidden="true" /> Run details
+              </summary>
               <dl>
                 <div><dt>Backend</dt><dd>{humanize(status.backend)}</dd></div>
                 <div><dt>Model</dt><dd><code>{status.model || "—"}</code></dd></div>
@@ -269,11 +280,13 @@ export function LiveTraceDrawer({
   );
 }
 
+/** Converts the machine live-run phase into its compact display label. */
 function phaseLabel(status: DemoStatusResponse["status"]): string {
   if (status === "idle") return "Idle";
   return humanize(status);
 }
 
+/** Formats a live timestamp as local time and handles missing or invalid values. */
 function formatTimestamp(value: string | null): string {
   if (!value) return "—";
   const date = new Date(value);

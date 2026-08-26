@@ -46,9 +46,13 @@ class ToolTimer:
 
     @classmethod
     def start(cls) -> ToolTimer:
+        """Start a timer from the current monotonic clock reading."""
+
         return cls(time.perf_counter())
 
     def elapsed_ms(self) -> float:
+        """Return nonnegative milliseconds elapsed since this timer started."""
+
         return max(0.0, (time.perf_counter() - self.started) * 1000)
 
 
@@ -61,6 +65,8 @@ def make_provenance(
     rows_examined: int,
     diagnostics: dict[str, JsonValue] | None = None,
 ) -> ToolProvenance:
+    """Build replay metadata for a deterministic analytical invocation."""
+
     normalized = normalized_parameters(parameters)
     normalized["analysis_window"] = json.loads(context.window.model_dump_json())
     return ToolProvenance(
@@ -80,6 +86,8 @@ class EvidenceFactory:
     """Create stable unique records tied to one run, customer, and tool call."""
 
     def __init__(self, context: ToolExecutionContext, tool_name: ToolName) -> None:
+        """Bind new evidence IDs and ownership fields to one tool call."""
+
         self._context = context
         self._tool_name = tool_name
         self._counter = 0
@@ -99,6 +107,8 @@ class EvidenceFactory:
         limitations: tuple[str, ...] = (),
         sql_hash: str | None = None,
     ) -> EvidenceRecord:
+        """Create the next owned evidence record after normalizing finite numbers."""
+
         self._counter += 1
         return EvidenceRecord(
             evidence_id=f"ev_{self._context.tool_call_id}_{self._counter:03d}",
@@ -121,6 +131,8 @@ class EvidenceFactory:
 
 
 def _finite_or_none(value: float | None) -> float | None:
+    """Convert a finite numeric value to float and suppress non-finite values."""
+
     if value is None:
         return None
     number = float(value)
@@ -130,12 +142,16 @@ def _finite_or_none(value: float | None) -> float | None:
 
 
 def percentage_change(baseline: float, recent: float) -> float | None:
+    """Return signed change relative to baseline magnitude, or none at zero."""
+
     if baseline == 0:
         return None
     return (recent - baseline) / abs(baseline)
 
 
 def median(values: list[float]) -> float | None:
+    """Return the numeric median, or none when no observations exist."""
+
     if not values:
         return None
     return float(np.median(np.asarray(values, dtype=float)))

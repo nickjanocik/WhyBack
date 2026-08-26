@@ -48,6 +48,8 @@ class DimensionPredicate(BaseModel):
     value: str = Field(min_length=1)
 
     def matches(self, record: EvidenceRecord) -> bool:
+        """Return whether the record satisfies this dimension constraint."""
+
         observed = record.dimensions.get(self.key)
         if observed is None:
             return False
@@ -68,6 +70,8 @@ class EvidencePredicate(BaseModel):
     dimensions: tuple[DimensionPredicate, ...] = ()
 
     def matches(self, record: EvidenceRecord) -> bool:
+        """Return whether the record satisfies this metric and threshold rule."""
+
         if record.metric != self.metric or not all(
             item.matches(record) for item in self.dimensions
         ):
@@ -101,6 +105,8 @@ class EvidencePrerequisite(BaseModel):
 
     @model_validator(mode="after")
     def validate_evidence_rule(self) -> Self:
+        """Reject contradictory, duplicate, or incomplete evidence rules."""
+
         if len(set(self.source_tools)) != len(self.source_tools):
             raise ValueError("Evidence prerequisite source tools must be unique")
         if len(set(self.metrics)) != len(self.metrics):
@@ -161,6 +167,8 @@ class ActionDefinition(BaseModel):
 
     @model_validator(mode="after")
     def validate_selection_policy(self) -> Self:
+        """Keep supported actions separate from the no-action fallback."""
+
         is_insufficient = self.action_id is ActionId.INSUFFICIENT_EVIDENCE
         if self.fallback_only != is_insufficient:
             raise ValueError(
@@ -185,6 +193,8 @@ class ActionCatalog(BaseModel):
 
     @model_validator(mode="after")
     def validate_exact_allowlist(self) -> Self:
+        """Require exactly one definition for every approved action ID."""
+
         action_ids = [action.action_id for action in self.actions]
         if len(action_ids) != len(set(action_ids)):
             raise ValueError("Action IDs must be unique")

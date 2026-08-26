@@ -1,3 +1,5 @@
+/** Exercises artifact discovery, sanitization, and path-safety contracts. */
+
 import assert from "node:assert/strict";
 import {
   copyFile,
@@ -32,6 +34,7 @@ const OWNERSHIP = {
 const FIRST_LIVE_JOB = "123e4567-e89b-42d3-a456-426614174000";
 const SECOND_LIVE_JOB = "223e4567-e89b-42d3-b456-426614174000";
 
+/** Creates a disposable repository-shaped tree with representative artifact layouts. */
 async function fixtureRoot() {
   const root = await mkdtemp(path.join(os.tmpdir(), "whyback-dashboard-test-"));
   const collection = path.join(root, "artifacts", "demo");
@@ -89,6 +92,7 @@ async function fixtureRoot() {
   return root;
 }
 
+/** Writes a sealed live collection fixture, with optional deliberate tampering. */
 async function writeLiveCollection(
   root,
   { jobId, householdId, generatedAt, modifiedAt },
@@ -166,7 +170,7 @@ test("loads collection summaries from canonical report artifacts", async (contex
   context.after(() => rm(root, { recursive: true, force: true }));
 
   const workspace = await loadWorkspace(root);
-  assert.deepEqual(workspace.demoCustomerLimits, { minimum: 5, maximum: 24 });
+  assert.deepEqual(workspace.demoCustomerLimits, { minimum: 3, maximum: 24 });
   assert.equal(workspace.collections.length, 1);
   assert.equal(workspace.collections[0].id, "demo");
   assert.equal(workspace.collections[0].reports[0].householdId, "7");

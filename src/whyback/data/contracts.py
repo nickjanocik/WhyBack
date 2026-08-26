@@ -112,11 +112,15 @@ def normalize_identifier(value: object) -> str:
 
 
 def _normalize_identifiers(frame: pd.DataFrame, columns: tuple[str, ...]) -> None:
+    """Normalize selected identifier columns to pandas string values in place."""
+
     for column in columns:
         frame[column] = frame[column].map(normalize_identifier).astype("string")
 
 
 def _normalize_numeric(frame: pd.DataFrame, columns: tuple[str, ...]) -> None:
+    """Parse selected numeric columns in place and reject non-finite values."""
+
     for column in columns:
         frame[column] = pd.to_numeric(frame[column], errors="raise")
         values = frame[column].astype("float64")

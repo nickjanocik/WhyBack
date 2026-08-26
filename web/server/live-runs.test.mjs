@@ -1,3 +1,5 @@
+/** Verifies live-run ownership, sealing, tamper detection, and safe discovery. */
+
 import assert from "node:assert/strict";
 import {
   mkdir,
@@ -31,12 +33,14 @@ const OWNERSHIP = {
   scope: "replaceable_generated_artifact_tree",
 };
 
+/** Creates a disposable repository root and registers automatic cleanup. */
 async function temporaryRoot(context) {
   const root = await mkdtemp(path.join(os.tmpdir(), "whyback-live-runs-test-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
 
+/** Creates a live-run directory with the supplied ownership marker. */
 async function makeOwnedRun(root, jobId, marker = OWNERSHIP) {
   const descriptor = createLiveRunDescriptor(root, jobId);
   await mkdir(descriptor.directory, { recursive: true });
@@ -47,6 +51,7 @@ async function makeOwnedRun(root, jobId, marker = OWNERSHIP) {
   return descriptor;
 }
 
+/** Writes the smallest terminal live artifact set that can be sealed. */
 async function completeLiveRun(root, descriptor, householdId = "7") {
   await writeFile(
     path.join(descriptor.directory, "manifest.json"),

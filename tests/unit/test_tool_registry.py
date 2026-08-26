@@ -1,3 +1,5 @@
+"""Tests for WhyBack's tool registry behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,6 +18,8 @@ from whyback.tools.registry import ToolRegistry
 
 
 def _context() -> ToolExecutionContext:
+    """Create the context value used by these tests."""
+
     return ToolExecutionContext(
         run_id=UUID("00000000-0000-0000-0000-000000000001"),
         tool_call_id="call",
@@ -30,6 +34,8 @@ def _context() -> ToolExecutionContext:
 
 
 def test_registry_exposes_exactly_six_strict_tool_definitions() -> None:
+    """Verify that registry exposes exactly six strict tool definitions."""
+
     registry = ToolRegistry()
 
     definitions = registry.definitions()
@@ -44,6 +50,8 @@ def test_registry_exposes_exactly_six_strict_tool_definitions() -> None:
 
 
 def test_normalized_arguments_include_defaults_and_ignore_key_order() -> None:
+    """Verify that normalized arguments include defaults and ignore key order."""
+
     registry = ToolRegistry()
 
     first, first_key = registry.normalize_arguments(
@@ -62,6 +70,8 @@ def test_normalized_arguments_include_defaults_and_ignore_key_order() -> None:
 def test_invalid_arguments_return_typed_failure_without_evidence(
     tmp_path: Path,
 ) -> None:
+    """Verify that invalid arguments return typed failure without evidence."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     registry = ToolRegistry()
     with DataRepository(tmp_path) as repository:

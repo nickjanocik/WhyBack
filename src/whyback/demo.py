@@ -26,7 +26,7 @@ from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY, load_settings
 from whyback.data.manifest import DataManifest
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
-from whyback.demo_limits import MIN_DEMO_CUSTOMERS, validate_demo_customer_count
+from whyback.demo_limits import DEFAULT_DEMO_CUSTOMERS, validate_demo_customer_count
 from whyback.detection.decline import (
     DeclineSnapshot,
     candidates_frame,
@@ -90,6 +90,8 @@ def _select_requested_households(
 
 
 def _sha256(path: Path) -> str:
+    """Return the SHA-256 digest of an artifact or prepared-data file."""
+
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
@@ -98,6 +100,8 @@ def _sha256(path: Path) -> str:
 
 
 def _write_json(path: Path, value: object) -> None:
+    """Write stable, human-readable JSON with a trailing newline."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         f"{json.dumps(value, indent=2, sort_keys=True, default=str)}\n",
@@ -106,10 +110,14 @@ def _write_json(path: Path, value: object) -> None:
 
 
 def _write_ownership_marker(directory: Path) -> None:
+    """Mark a generated directory as safe for WhyBack to replace exactly."""
+
     _write_json(directory / _ARTIFACT_OWNERSHIP_MARKER, _ARTIFACT_OWNERSHIP_DOCUMENT)
 
 
 def _is_owned_artifact_tree(directory: Path) -> bool:
+    """Return whether a directory carries the exact WhyBack ownership marker."""
+
     marker = directory / _ARTIFACT_OWNERSHIP_MARKER
     try:
         return json.loads(marker.read_text(encoding="utf-8")) == (
@@ -120,6 +128,8 @@ def _is_owned_artifact_tree(directory: Path) -> bool:
 
 
 def _demo_run_id(dataset_kind: DatasetKind, household_id: str, label: str) -> UUID:
+    """Derive a repeatable run ID for one dataset, household, and demo variant."""
+
     return uuid5(_DEMO_NAMESPACE, f"{dataset_kind}:{household_id}:{label}")
 
 
@@ -306,6 +316,8 @@ def synthetic_demo_frames() -> dict[str, pd.DataFrame]:
 
 
 def _dataset_kind_for_manifest(manifest: DataManifest) -> DatasetKind:
+    """Classify a manifest as the supported synthetic or official data source."""
+
     if (
         manifest.source_repository == SYNTHETIC_DATASET_REPOSITORY
         and manifest.source_commit == SYNTHETIC_DATASET_VERSION
@@ -326,6 +338,8 @@ def _dataset_kind_for_manifest(manifest: DataManifest) -> DatasetKind:
 def _validated_dataset_identity(
     manifest: DataManifest, expected_kind: DatasetKind
 ) -> tuple[str, str]:
+    """Confirm the requested dataset label and return its repository and commit."""
+
     actual_kind = _dataset_kind_for_manifest(manifest)
     if actual_kind != expected_kind:
         raise ValueError(
@@ -348,6 +362,8 @@ def identify_prepared_dataset(prepared_dir: Path) -> DatasetKind:
 
 
 def _manifest_hashes(prepared_dir: Path, manifest: DataManifest) -> dict[str, str]:
+    """Collect the manifest, source, and prepared-table hashes used by a run."""
+
     return {
         "manifest/manifest.json": _sha256(prepared_dir / "manifest.json"),
         **{f"source/{item.filename}": item.sha256 for item in manifest.sources},
@@ -362,6 +378,8 @@ def _make_backend(
     run_id: UUID,
     plan: ScriptedPlan,
 ) -> ScriptedBackend | GeminiFunctionCallingBackend:
+    """Construct the requested backend with the run-specific scripted plan."""
+
     if backend == "scripted":
         return ScriptedBackend(
             build_scripted_plan(
@@ -514,6 +532,8 @@ def _results_markdown(
     backend: BackendName,
     outcomes: list[InvestigationOutcome],
 ) -> str:
+    """Render the Markdown index for a batch of investigation results."""
+
     rows = []
     for outcome in outcomes:
         state = outcome.state
@@ -562,6 +582,8 @@ def _results_markdown(
 
 
 def _artifact_hashes(output_directory: Path) -> dict[str, str]:
+    """Hash each published file except the manifest that stores the hashes."""
+
     return {
         str(path.relative_to(output_directory)): _sha256(path)
         for path in sorted(output_directory.rglob("*"))
@@ -612,6 +634,8 @@ def _write_demo_index(
         "Highest-ranked eligible decline scores; stable ID tie-break."
     ),
 ) -> None:
+    """Write batch result indexes, provenance references, and the strict manifest."""
+
     reports = [
         json.loads(
             (
@@ -694,7 +718,7 @@ def _write_demo_index(
 def _build_synthetic_demo_contents(
     output_directory: Path,
     *,
-    customers: int = MIN_DEMO_CUSTOMERS,
+    customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
 ) -> DemoBuildSummary:
     """Generate deterministic no-credential reports plus failure/partial examples."""
@@ -842,7 +866,7 @@ def _publish_staged_directory(staging: Path, destination: Path) -> None:
 def build_synthetic_demo(
     output_directory: Path,
     *,
-    customers: int = MIN_DEMO_CUSTOMERS,
+    customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
 ) -> DemoBuildSummary:
     """Build an exact synthetic artifact tree in staging, then publish it."""
@@ -878,7 +902,7 @@ def _build_official_demo_contents(
     prepared_dir: Path,
     output_directory: Path,
     *,
-    customers: int = MIN_DEMO_CUSTOMERS,
+    customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Select the official top households and optionally run the live backend."""
@@ -986,6 +1010,8 @@ def _build_official_demo_contents(
 
 
 def _has_preserved_run_artifacts(directory: Path) -> bool:
+    """Return whether a directory already contains a report or replayable trace."""
+
     if not directory.exists():
         return False
     return any(directory.rglob("trace.jsonl")) or any(directory.rglob("report.json"))
@@ -1019,7 +1045,7 @@ def build_official_demo(
     prepared_dir: Path,
     output_directory: Path,
     *,
-    customers: int = MIN_DEMO_CUSTOMERS,
+    customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Build official status artifacts without overwriting any prior run audit."""
@@ -1069,6 +1095,8 @@ def build_official_demo(
 def _build_official_type_a_contents(
     prepared_dir: Path, output_directory: Path
 ) -> DemoBuildSummary:
+    """Build the official scripted case that exposes the Type A identity gap."""
+
     settings = load_settings()
     output_directory.mkdir(parents=True, exist_ok=True)
     _write_ownership_marker(output_directory)

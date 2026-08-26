@@ -113,6 +113,8 @@ class ReportEvidenceData(BaseModel):
 
     @model_validator(mode="after")
     def freeze_dimensions(self) -> Self:
+        """Freeze evidence dimensions after the report record is validated."""
+
         object.__setattr__(self, "dimensions", frozen_mapping(self.dimensions))
         return self
 
@@ -134,6 +136,8 @@ class DriverReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_evidence_accounting(self) -> Self:
+        """Require unique, disjoint support and an explicit counterevidence review."""
+
         if len(self.supporting_evidence_ids) != len(set(self.supporting_evidence_ids)):
             raise ValueError("Driver support references must be unique")
         if len(self.counterevidence_ids) != len(set(self.counterevidence_ids)):
@@ -171,6 +175,8 @@ class CohortComparisonReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_distribution(self) -> Self:
+        """Require target exclusion and full distribution when context is usable."""
+
         if len(self.evidence_ids) != len(set(self.evidence_ids)):
             raise ValueError("Comparison evidence references must be unique")
         if not self.target_excluded:
@@ -228,6 +234,8 @@ class CategoryContextReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_category_context(self) -> Self:
+        """Validate category evidence ownership, exclusion, and availability fields."""
+
         for values in (self.evidence_ids, self.classification_evidence_ids):
             if len(values) != len(set(values)):
                 raise ValueError("Category context evidence references must be unique")
@@ -290,6 +298,8 @@ class InterpretationLimitsReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_limits(self) -> Self:
+        """Reject blank statements in every interpretation-boundary section."""
+
         if any(
             not item.strip()
             for values in (
@@ -315,6 +325,8 @@ class ConfidenceAdjustmentReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_evidence_ids(self) -> Self:
+        """Keep evidence references for a confidence adjustment unique."""
+
         if len(self.evidence_ids) != len(set(self.evidence_ids)):
             raise ValueError("Confidence adjustment evidence IDs must be unique")
         return self
@@ -385,6 +397,8 @@ class ReportData(BaseModel):
 
     @model_validator(mode="after")
     def validate_terminal_report(self) -> Self:
+        """Reconcile status, evidence, context, confidence, and action policy."""
+
         if (
             self.decline.run_id != self.run_id
             or self.decline.household_id != self.household_id
@@ -659,6 +673,8 @@ class ReportData(BaseModel):
         context = self.population_context
 
         def selected(ids: tuple[str, ...]) -> tuple[ReportEvidenceData, ...]:
+            """Resolve context IDs from this report's complete evidence ledger."""
+
             if not set(ids).issubset(ledger):
                 raise ValueError("Population context cites evidence outside the ledger")
             return tuple(ledger[item] for item in ids)
@@ -951,6 +967,8 @@ class TraceEventData(BaseModel):
 
     @model_validator(mode="after")
     def freeze_details(self) -> Self:
+        """Freeze sanitized trace details so a rendered event cannot be mutated."""
+
         object.__setattr__(self, "details", frozen_mapping(self.details))
         return self
 

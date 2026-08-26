@@ -61,6 +61,8 @@ class VerificationIssueCode(StrEnum):
 
 
 class VerificationIssue(BaseModel):
+    """A machine-readable verification failure with a reviewer-readable message."""
+
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     code: VerificationIssueCode
@@ -125,6 +127,8 @@ class VerificationResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_verdict(self) -> Self:
+        """Require every passing verdict to be issue-free and carry a final result."""
+
         if self.passed != (not self.issues and self.final is not None):
             raise ValueError("Verification verdict fields are inconsistent")
         return self
@@ -310,16 +314,22 @@ def _append_issue(
     code: VerificationIssueCode,
     message: str,
 ) -> None:
+    """Append an issue unless the same code and message are already present."""
+
     candidate = VerificationIssue(code=code, message=message)
     if candidate not in issues:
         issues.append(candidate)
 
 
 def _deduplicate(values: list[str]) -> tuple[str, ...]:
+    """Return nonempty strings once each in their first-seen order."""
+
     return tuple(dict.fromkeys(value for value in values if value))
 
 
 def _free_text(proposal: FinishProposal) -> tuple[str, ...]:
+    """Collect all model-authored proposal text that requires safety scanning."""
+
     return (
         *(driver.summary for driver in proposal.driver_summary),
         *(
@@ -337,6 +347,8 @@ def _free_text(proposal: FinishProposal) -> tuple[str, ...]:
 def _rule_satisfied(
     rule: EvidencePrerequisite, records: tuple[EvidenceRecord, ...]
 ) -> bool:
+    """Check whether records meet one prerequisite's metric, count, and tool rules."""
+
     permitted = [
         record for record in records if record.source_tool in rule.source_tools
     ]
@@ -360,6 +372,8 @@ def _rule_satisfied(
 def _action_supported(
     action: ActionDefinition, records: tuple[EvidenceRecord, ...]
 ) -> bool:
+    """Return whether the records satisfy any prerequisite for an action."""
+
     return any(_rule_satisfied(rule, records) for rule in action.evidence_prerequisites)
 
 
@@ -470,6 +484,8 @@ def required_context_counterevidence_ids(
     def canonical_material_id(
         records: Sequence[EvidenceRecord],
     ) -> str | None:
+        """Select the preferred broad, then mixed, context evidence identifier."""
+
         for classification in material_values:
             for record in records:
                 if record.text_value == classification:
@@ -536,6 +552,8 @@ def _opposes_evidence_predicate(
 def _confidence_cap(
     records: tuple[EvidenceRecord, ...], limitations: tuple[str, ...]
 ) -> ResolvedConfidence:
+    """Derive the confidence ceiling from support diversity and limitations."""
+
     if not records:
         return ResolvedConfidence.INSUFFICIENT
     if (
@@ -550,6 +568,8 @@ def _confidence_cap(
 def _lower_confidence_cap(
     left: ResolvedConfidence, right: ResolvedConfidence
 ) -> ResolvedConfidence:
+    """Return the lower of two resolved confidence levels."""
+
     return left if _CONFIDENCE_ORDER[left] <= _CONFIDENCE_ORDER[right] else right
 
 
@@ -557,6 +577,8 @@ def _context_assessment(
     records: tuple[EvidenceRecord, ...],
     issues: list[VerificationIssue],
 ) -> tuple[ContextClassification, tuple[str, ...], tuple[str, ...]]:
+    """Validate and conservatively resolve run-wide population context evidence."""
+
     context_records = tuple(
         record for record in records if record.metric == _CONTEXT_CLASSIFICATION_METRIC
     )
@@ -611,6 +633,8 @@ def _context_confidence_adjustments(
     classification: ContextClassification,
     evidence_ids: tuple[str, ...],
 ) -> tuple[ConfidenceAdjustment, ...]:
+    """Translate population context into deterministic confidence ceilings."""
+
     if classification is ContextClassification.CUSTOMER_SPECIFIC:
         return ()
     if classification is ContextClassification.BROAD_CONTEXT:
@@ -651,6 +675,8 @@ def _category_context_adjustments(
     full_ledger_records: tuple[EvidenceRecord, ...],
     issues: list[VerificationIssue],
 ) -> tuple[tuple[ConfidenceAdjustment, ...], tuple[str, ...]]:
+    """Resolve confidence limits for context covering cited category losses."""
+
     if action.action_id is not ActionId.CATEGORY_WINBACK:
         return (), ()
 
@@ -758,6 +784,8 @@ def _category_context_adjustments(
 def _cap_confidence(
     proposed: ConfidenceLevel, cap: ResolvedConfidence
 ) -> tuple[ResolvedConfidence, bool]:
+    """Clamp proposed confidence to its ceiling and report whether it was lowered."""
+
     proposed_resolved = _PROPOSED_TO_RESOLVED[proposed]
     if _CONFIDENCE_ORDER[proposed_resolved] <= _CONFIDENCE_ORDER[cap]:
         return proposed_resolved, False
@@ -815,6 +843,8 @@ def _resolved_drivers(
     supporting_records: tuple[EvidenceRecord, ...],
     proposal: FinishProposal,
 ) -> tuple[DriverClaim, ...]:
+    """Build a report-safe driver from action evidence linked by proposed drivers."""
+
     matching_records = _action_matching_records(action, supporting_records)
     if not matching_records:
         return ()
@@ -872,6 +902,8 @@ def _resolved_drivers(
 
 
 def _resolved_rationale(action_id: ActionId) -> str:
+    """Return the fixed report-safe rationale for a selected action."""
+
     if action_id is ActionId.INSUFFICIENT_EVIDENCE:
         return "Available verified evidence does not support a customer action."
     return (
@@ -884,6 +916,8 @@ class FinalVerifier:
     """Reject unsupported model claims and resolve a governed final decision."""
 
     def __init__(self, catalog: ActionCatalog) -> None:
+        """Create a verifier governed by the supplied action catalog."""
+
         self._catalog = catalog
 
     def verify(
@@ -893,6 +927,12 @@ class FinalVerifier:
         *,
         allow_safe_fallback: bool = False,
     ) -> VerificationResult:
+        """Validate a proposal and resolve its evidence-owned final decision.
+
+        ``allow_safe_fallback`` permits an insufficient-evidence action even when
+        the ledger supports a more specific catalog action.
+        """
+
         issues: list[VerificationIssue] = []
         ledger = {record.evidence_id: record for record in state.evidence_ledger}
         referenced_ids = (
@@ -1352,6 +1392,8 @@ class FinalVerifier:
     def _verify_tool_invariants(
         state: InvestigationState, issues: list[VerificationIssue]
     ) -> None:
+        """Add issues when successful tool diagnostics violate core invariants."""
+
         for history in state.tool_history:
             if history.final_status not in SUCCESS_STATUSES:
                 continue

@@ -1,3 +1,5 @@
+/** Tests deterministic report formatting, trace labeling, and limitation helpers. */
+
 import { describe, expect, it } from "vitest";
 
 import type { EvidenceRecord, ReportData } from "../types";
@@ -11,6 +13,7 @@ import {
   weeklyTrend,
 } from "./report";
 
+/** Builds a valid evidence record fixture with focused field overrides. */
 function evidence(overrides: Partial<EvidenceRecord>): EvidenceRecord {
   return {
     evidence_id: "ev-1",
@@ -33,6 +36,7 @@ function evidence(overrides: Partial<EvidenceRecord>): EvidenceRecord {
   };
 }
 
+/** Builds the smallest valid report fixture around a supplied evidence ledger. */
 function report(records: EvidenceRecord[]): ReportData {
   return {
     schema_version: 2,

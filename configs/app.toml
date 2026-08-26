@@ -1,3 +1,4 @@
+# Hold non-secret product, data-window, detector, and agent defaults.
 [application]
 name = "WhyBack"
 agent_name = "WhyBack Investigator"

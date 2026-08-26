@@ -38,6 +38,8 @@ TABLE_FILES: Mapping[str, str] = {
 
 
 def _quote_path(path: Path) -> str:
+    """Resolve a path and escape apostrophes for a DuckDB SQL string literal."""
+
     return str(path.resolve()).replace("'", "''")
 
 
@@ -51,6 +53,8 @@ class DataRepository:
         required_tables: Iterable[str] = TABLE_FILES,
         validate_manifest: bool = True,
     ) -> None:
+        """Validate prepared inputs and expose the requested Parquet files as views."""
+
         self.prepared_dir = prepared_dir
         tables = tuple(required_tables)
         self._required_tables = tables
@@ -76,6 +80,8 @@ class DataRepository:
             raise
 
     def _validated_manifest(self, tables: tuple[str, ...]) -> DataManifest:
+        """Verify identity, transform version, declarations, and table hashes."""
+
         manifest_path = self.prepared_dir / "manifest.json"
         if not manifest_path.is_file():
             raise PreparedDataError(
@@ -200,10 +206,16 @@ class DataRepository:
         self._connection.interrupt()
 
     def close(self) -> None:
+        """Close this repository's DuckDB connection."""
+
         self._connection.close()
 
     def __enter__(self) -> DataRepository:
+        """Return this open repository when entering a context manager."""
+
         return self
 
     def __exit__(self, *_: object) -> None:
+        """Close the repository when its context exits."""
+
         self.close()

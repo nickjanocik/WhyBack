@@ -24,7 +24,7 @@ from whyback.tools.contracts import ToolDefinition, ToolName
 
 @dataclass(frozen=True, slots=True)
 class ScriptedCall:
-    """Observable input boundary captured without hidden reasoning."""
+    """Record the visible inputs supplied for one scripted decision."""
 
     decision_number: int
     allowed_tools: tuple[ToolName, ...]
@@ -42,6 +42,8 @@ class ScriptedBackend:
         *,
         model_name: str = "scripted/whyback-v1",
     ) -> None:
+        """Store an immutable decision script and reset its playback position."""
+
         self._decisions = tuple(decisions)
         self._model_name = model_name
         self._position = 0
@@ -49,6 +51,8 @@ class ScriptedBackend:
 
     @property
     def model_name(self) -> str:
+        """Return the scripted backend name recorded in run provenance."""
+
         return self._model_name
 
     def decide_next_step(
@@ -58,6 +62,8 @@ class ScriptedBackend:
         *,
         repair_issues: tuple[str, ...] = (),
     ) -> BackendDecision:
+        """Validate and return the next predeclared decision in sequence."""
+
         if self._position >= len(self._decisions):
             raise ModelBackendError("ScriptedBackend exhausted its decision script")
         self.calls.append(

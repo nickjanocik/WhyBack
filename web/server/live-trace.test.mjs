@@ -1,3 +1,5 @@
+/** Tests safe incremental trace reading and the bounded live-job state machine. */
+
 import assert from "node:assert/strict";
 import {
   appendFile,
@@ -17,6 +19,7 @@ import {
   createLiveTraceReader,
 } from "./live-trace.mjs";
 
+/** Builds one source-shaped audit event with predictable defaults. */
 function auditEvent({
   event = "run_started",
   householdId = "7",
@@ -33,16 +36,19 @@ function auditEvent({
   };
 }
 
+/** Serializes audit fixtures as newline-terminated JSONL records. */
 function asJsonl(...events) {
   return `${events.map((event) => JSON.stringify(event)).join("\n")}\n`;
 }
 
+/** Creates a temporary repository root and registers cleanup with the test. */
 async function makeRoot(context) {
   const root = await mkdtemp(path.join(os.tmpdir(), "whyback-live-trace-test-"));
   context.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
 
+/** Creates an owned staging tree that the live reader is allowed to inspect. */
 async function makeStaging(root, name = ".dashboard.staging-current") {
   const staging = path.join(root, "artifacts", "local", name);
   await mkdir(staging, { recursive: true });
@@ -57,6 +63,7 @@ async function makeStaging(root, name = ".dashboard.staging-current") {
   return staging;
 }
 
+/** Creates the legacy published dashboard tree used by final-read tests. */
 async function makePublished(root) {
   const published = path.join(root, "artifacts", "local", "dashboard");
   await mkdir(published, { recursive: true });
@@ -71,6 +78,7 @@ async function makePublished(root) {
   return published;
 }
 
+/** Writes one household trace beneath a supplied artifact root. */
 async function writeCustomerTrace(root, householdId, content) {
   const directory = path.join(root, `customer_${householdId}`);
   await mkdir(directory, { recursive: true });
@@ -79,6 +87,7 @@ async function writeCustomerTrace(root, householdId, content) {
   return tracePath;
 }
 
+/** Waits briefly for an asynchronous manager job to reach a terminal test state. */
 async function waitForStatus(manager, jobId, expected) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const current = manager.status(jobId);
@@ -88,6 +97,7 @@ async function waitForStatus(manager, jobId, expected) {
   assert.fail(`Live trace job did not reach ${expected}.`);
 }
 
+/** Returns a promise whose resolve and reject controls remain available to the test. */
 function deferred() {
   let resolve;
   let reject;

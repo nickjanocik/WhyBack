@@ -115,6 +115,8 @@ _WEEKLY_SERIES_SQL = """
 
 @dataclass(frozen=True, slots=True)
 class _WindowMetrics:
+    """Calculated engagement measures for one baseline or recent window."""
+
     retailer_sales_value: float
     trips: int
     active_weeks: int
@@ -126,6 +128,8 @@ class _WindowMetrics:
     weekly_retailer_sales_value_slope: float | None
 
     def as_summary(self) -> dict[str, JsonValue]:
+        """Return the window measures in the compact model-summary shape."""
+
         return {
             "retailer_sales_value": self.retailer_sales_value,
             "trips": self.trips,
@@ -156,6 +160,8 @@ def _failed_result(
     rows_examined: int = 0,
     household_known: bool | None = None,
 ) -> ToolResult:
+    """Build a typed, evidence-free trend failure with replay provenance."""
+
     summary: dict[str, JsonValue] = {"reason": reason}
     if household_known is not None:
         summary["household_known"] = household_known
@@ -178,6 +184,8 @@ def _failed_result(
 
 
 def _comparison(baseline: float | int | None, recent: float | int | None) -> JsonValue:
+    """Describe absolute and relative movement between two optional values."""
+
     absolute_change: float | None = None
     relative_change: float | None = None
     if baseline is not None and recent is not None:
@@ -196,6 +204,8 @@ def _comparison(baseline: float | int | None, recent: float | int | None) -> Jso
 def _window_has_partial_week(
     context: ToolExecutionContext, start: int, end: int
 ) -> bool:
+    """Return whether an official-data window includes short week 1 or 53."""
+
     return context.source_commit == SOURCE_COMMIT and (
         start <= 1 <= end or start <= 53 <= end
     )

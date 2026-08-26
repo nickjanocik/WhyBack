@@ -1,3 +1,5 @@
+/** Collects explicit confirmation and a bounded household count for live Gemini work. */
+
 import { LoaderCircle, Play, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +16,9 @@ interface RunDemoDialogProps {
   onRun: (customers: number) => Promise<void>;
 }
 
+const DEFAULT_DEMO_CUSTOMERS = 5;
+
+/** Renders the live-run confirmation dialog without collecting credentials in React. */
 export function RunDemoDialog({
   open,
   running,
@@ -24,16 +29,23 @@ export function RunDemoDialog({
   onRun,
 }: RunDemoDialogProps) {
   const reduceMotion = useReducedMotion();
-  const [customers, setCustomers] = useState(customerLimits.minimum);
+  const [customers, setCustomers] = useState(
+    Math.min(
+      customerLimits.maximum,
+      Math.max(customerLimits.minimum, DEFAULT_DEMO_CUSTOMERS),
+    ),
+  );
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   const runningRef = useRef(running);
 
+  // Keep current close and running values available to the stable keyboard handler.
   useEffect(() => {
     onCloseRef.current = onClose;
     runningRef.current = running;
   }, [onClose, running]);
 
+  // Make the workspace inert, trap focus, and restore prior focus when the dialog closes.
   useEffect(() => {
     if (!open) return;
     const previousFocus = document.activeElement instanceof HTMLElement
@@ -43,6 +55,7 @@ export function RunDemoDialog({
     appContent?.setAttribute("inert", "");
     const focusFrame = window.requestAnimationFrame(() => dialogRef.current?.focus());
 
+    /** Closes an idle dialog on Escape and wraps Tab focus inside the modal. */
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape" && !runningRef.current) {
         event.preventDefault();
@@ -162,9 +175,10 @@ export function RunDemoDialog({
   );
 }
 
+/** Builds concise assignment and operational batch choices inside server limits. */
 function batchSizeOptions({ minimum, maximum }: DemoCustomerLimits): number[] {
-  const options = [];
-  for (let count = minimum; count < maximum; count += 5) options.push(count);
-  if (options.at(-1) !== maximum) options.push(maximum);
-  return options;
+  const assignmentSizes = [minimum, 4, DEFAULT_DEMO_CUSTOMERS, 10, 15, 20, maximum];
+  return [...new Set(assignmentSizes)].filter(
+    (count) => count >= minimum && count <= maximum,
+  );
 }

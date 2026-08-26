@@ -1,3 +1,5 @@
+"""Tests for WhyBack's actions behavior."""
+
 from pathlib import Path
 
 import pytest
@@ -13,6 +15,8 @@ from whyback.agent.actions import (
 
 
 def _catalog_document() -> dict[str, object]:
+    """Return a mutable action-catalog document for validation tests."""
+
     with Path("configs/actions.yaml").open(encoding="utf-8") as handle:
         document = yaml.safe_load(handle)
     assert isinstance(document, dict)
@@ -20,6 +24,8 @@ def _catalog_document() -> dict[str, object]:
 
 
 def test_checked_in_catalog_is_the_exact_human_review_allowlist() -> None:
+    """Verify that checked in catalog is the exact human review allowlist."""
+
     catalog = load_action_catalog()
 
     assert catalog.catalog_version == 1
@@ -31,6 +37,8 @@ def test_checked_in_catalog_is_the_exact_human_review_allowlist() -> None:
 
 
 def test_supported_actions_have_evidence_rules_and_insufficient_is_fallback() -> None:
+    """Verify supported-action evidence rules and the insufficient fallback."""
+
     catalog = load_action_catalog()
 
     for action in catalog.actions:
@@ -44,6 +52,8 @@ def test_supported_actions_have_evidence_rules_and_insufficient_is_fallback() ->
 
 
 def test_catalog_and_nested_models_are_immutable() -> None:
+    """Verify that catalog and nested models are immutable."""
+
     catalog = load_action_catalog()
 
     with pytest.raises(ValidationError):
@@ -55,6 +65,8 @@ def test_catalog_and_nested_models_are_immutable() -> None:
 
 
 def test_get_rejects_action_outside_allowlist() -> None:
+    """Verify that get rejects action outside allowlist."""
+
     catalog = load_action_catalog()
 
     assert catalog.get("MONITOR").action_id is ActionId.MONITOR
@@ -66,6 +78,8 @@ def test_get_rejects_action_outside_allowlist() -> None:
 def test_loader_fails_closed_when_ids_are_not_exact(
     tmp_path: Path, mutation: str
 ) -> None:
+    """Verify that loader fails closed when ids are not exact."""
+
     document = _catalog_document()
     actions = document["actions"]
     assert isinstance(actions, list)
@@ -87,6 +101,8 @@ def test_loader_fails_closed_when_ids_are_not_exact(
 
 
 def test_loader_rejects_extra_fields_and_non_mapping_roots(tmp_path: Path) -> None:
+    """Verify that loader rejects extra fields and non mapping roots."""
+
     document = _catalog_document()
     document["unreviewed_policy"] = True
     extra_path = tmp_path / "extra.yaml"

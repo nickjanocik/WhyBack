@@ -62,6 +62,8 @@ _BASKETS_SQL = """
 
 @dataclass(frozen=True, slots=True)
 class _Basket:
+    """One distinct checkout with the fields needed for basket analysis."""
+
     basket_id: str
     store_id: str
     week: int
@@ -74,6 +76,8 @@ class _Basket:
 
 @dataclass(frozen=True, slots=True)
 class _BasketMetrics:
+    """Window-level basket size, cadence, product, and store measures."""
+
     basket_count: int
     active_weeks: int
     baskets_per_calendar_week: float
@@ -91,6 +95,8 @@ class _BasketMetrics:
     consecutive_store_switch_rate: float | None
 
     def as_summary(self) -> dict[str, JsonValue]:
+        """Return the basket measures in the compact model-summary shape."""
+
         return {
             "basket_count": self.basket_count,
             "active_weeks": self.active_weeks,
@@ -121,12 +127,16 @@ class _BasketMetrics:
 
 
 def _mean(values: list[float]) -> float | None:
+    """Return the arithmetic mean, or none when no observations exist."""
+
     return sum(values) / len(values) if values else None
 
 
 def _calculate_metrics(
     baskets: list[_Basket], *, window_week_count: int
 ) -> _BasketMetrics:
+    """Aggregate distinct baskets into size, cadence, and store behavior metrics."""
+
     value = [basket.retailer_sales_value for basket in baskets]
     quantity = [basket.recorded_quantity for basket in baskets]
     products = [float(basket.distinct_products) for basket in baskets]
@@ -184,6 +194,8 @@ def _failed_result(
     rows_examined: int = 0,
     household_known: bool | None = None,
 ) -> ToolResult:
+    """Build a typed, evidence-free basket failure with replay provenance."""
+
     summary: dict[str, JsonValue] = {"reason": reason}
     if household_known is not None:
         summary["household_known"] = household_known
@@ -208,12 +220,16 @@ def _failed_result(
 def _window_has_partial_week(
     context: ToolExecutionContext, start: int, end: int
 ) -> bool:
+    """Return whether an official-data window includes short week 1 or 53."""
+
     return context.source_commit == SOURCE_COMMIT and (
         start <= 1 <= end or start <= 53 <= end
     )
 
 
 def _comparison(baseline: float | int | None, recent: float | int | None) -> JsonValue:
+    """Describe absolute and relative movement between two optional values."""
+
     change: float | None = None
     relative: float | None = None
     if baseline is not None and recent is not None:

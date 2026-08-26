@@ -1,5 +1,7 @@
 /// <reference types="vitest/config" />
 
+/** Configures the local Vite frontend, test environment, and bridge proxy. */
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 

@@ -1,3 +1,5 @@
+/** Draws an accessible weekly retailer-sales trend with keyboard-independent values. */
+
 import { useId, useMemo, useRef, useState } from "react";
 
 import { formatCurrency } from "../lib/report";
@@ -12,11 +14,13 @@ const WIDTH = 760;
 const HEIGHT = 252;
 const PADDING = { top: 18, right: 20, bottom: 34, left: 48 };
 
+/** Renders trend geometry, window boundary, hover details, and an exact text alternative. */
 export function TrendChart({ points, recentStartWeek }: TrendChartProps) {
   const gradientId = useId().replaceAll(":", "");
   const titleId = `${gradientId}-title`;
   const svgRef = useRef<SVGSVGElement>(null);
   const [hovered, setHovered] = useState<number | null>(null);
+  // Recompute SVG coordinates only when the authoritative weekly series changes.
   const geometry = useMemo(() => buildGeometry(points), [points]);
 
   if (points.length < 2 || !geometry) {
@@ -33,6 +37,7 @@ export function TrendChart({ points, recentStartWeek }: TrendChartProps) {
     .map((point) => `Week ${point.week}: ${formatCurrency(point.value)}`)
     .join("; ")}. The recent window begins at week ${recentStartWeek}.`;
 
+  /** Selects the plotted point nearest the pointer without changing the source series. */
   function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
     const bounds = svgRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -128,6 +133,7 @@ export function TrendChart({ points, recentStartWeek }: TrendChartProps) {
   );
 }
 
+/** Converts weekly values into bounded SVG coordinates, paths, and y-axis ticks. */
 function buildGeometry(points: TrendPoint[]) {
   if (points.length < 2) return null;
   const minWeek = Math.min(...points.map((point) => point.week));
@@ -135,8 +141,10 @@ function buildGeometry(points: TrendPoint[]) {
   const maxValue = Math.max(...points.map((point) => point.value), 1);
   const chartWidth = WIDTH - PADDING.left - PADDING.right;
   const chartHeight = HEIGHT - PADDING.top - PADDING.bottom;
+  /** Maps a source week into the chart's horizontal plotting area. */
   const xFor = (week: number) =>
     PADDING.left + ((week - minWeek) / Math.max(1, maxWeek - minWeek)) * chartWidth;
+  /** Maps a retailer sales value into the chart's inverted vertical plotting area. */
   const yFor = (value: number) => PADDING.top + (1 - value / maxValue) * chartHeight;
   const coordinates = points.map((point) => ({
     point,

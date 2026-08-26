@@ -13,7 +13,11 @@ from rich.table import Table
 
 from whyback import __version__
 from whyback.config import load_settings
-from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
+from whyback.demo_limits import (
+    DEFAULT_DEMO_CUSTOMERS,
+    MAX_DEMO_CUSTOMERS,
+    MIN_DEMO_CUSTOMERS,
+)
 
 app = typer.Typer(
     name="whyback",
@@ -26,6 +30,8 @@ console = Console()
 
 
 def _version_callback(value: bool) -> None:
+    """Print the installed WhyBack version and stop eager CLI parsing."""
+
     if value:
         console.print(f"WhyBack {__version__}")
         raise typer.Exit
@@ -326,7 +332,7 @@ def demo(
                 f"({MIN_DEMO_CUSTOMERS}-{MAX_DEMO_CUSTOMERS})."
             ),
         ),
-    ] = MIN_DEMO_CUSTOMERS,
+    ] = DEFAULT_DEMO_CUSTOMERS,
     backend: Annotated[
         str,
         typer.Option(help="scripted uses synthetic data; gemini uses official data."),

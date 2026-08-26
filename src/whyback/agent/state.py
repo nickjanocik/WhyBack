@@ -105,6 +105,8 @@ class ToolHistoryEntry(BaseModel):
 
     @model_validator(mode="after")
     def freeze_history_mappings(self) -> Self:
+        """Deep-freeze nested history mappings so prior state cannot be mutated."""
+
         for field in (
             "normalized_arguments",
             "model_summary",
@@ -137,12 +139,16 @@ class DriverClaim(BaseModel):
     @field_validator("supporting_evidence_ids", "counterevidence_ids")
     @classmethod
     def unique_support(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        """Reject duplicate evidence references within either driver evidence set."""
+
         if len(value) != len(set(value)):
             raise ValueError("Driver evidence references must be unique")
         return value
 
     @model_validator(mode="after")
     def require_counterevidence_consideration(self) -> Self:
+        """Require each driver to account for counterevidence without overlap."""
+
         if (
             not self.counterevidence_ids
             and self.no_material_counterevidence_reason is None
@@ -176,12 +182,16 @@ class FinishProposal(BaseModel):
     @field_validator("supporting_evidence_ids", "counterevidence_ids")
     @classmethod
     def unique_evidence_references(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        """Reject duplicate references in each proposal-level evidence set."""
+
         if len(value) != len(set(value)):
             raise ValueError("Evidence references must be unique")
         return value
 
     @model_validator(mode="after")
     def require_driver_evidence_accounting(self) -> Self:
+        """Require drivers to account for every proposal-level evidence reference."""
+
         proposal_support = set(self.supporting_evidence_ids)
         proposal_counterevidence = set(self.counterevidence_ids)
         assigned_support: set[str] = set()
@@ -219,6 +229,8 @@ class ToolDecision(BaseModel):
 
     @model_validator(mode="after")
     def freeze_arguments(self) -> Self:
+        """Deep-freeze model-supplied arguments before storing the decision."""
+
         object.__setattr__(self, "arguments", frozen_mapping(self.arguments))
         return self
 
@@ -270,6 +282,8 @@ class InvestigationState(BaseModel):
         max_model_decisions: int = 6,
         run_id: UUID | None = None,
     ) -> InvestigationState:
+        """Create the initial immutable state and analysis window for one customer."""
+
         if max_tool_executions < 1 or max_model_decisions < 1:
             raise ValueError("Investigation budgets must be positive")
         return cls(

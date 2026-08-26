@@ -33,14 +33,23 @@ from whyback.tools.contracts import ToolDefinition, ToolName
 
 
 class _InteractionsResource(Protocol):
-    def create(self, **kwargs: Any) -> Any: ...
+    """Describe the Gemini client resource that creates an interaction."""
+
+    def create(self, **kwargs: Any) -> Any:
+        """Send one interaction request and return the provider response."""
+
+        ...
 
 
 class _GeminiClient(Protocol):
+    """Describe the portion of the Gemini client used by this adapter."""
+
     interactions: _InteractionsResource
 
 
 class _FunctionCall(Protocol):
+    """Describe the provider fields read from a Gemini function-call step."""
+
     id: object
     name: object
     arguments: object
@@ -50,6 +59,8 @@ ThinkingLevel = Literal["low", "medium", "high"]
 
 
 class _ToolPayload(BaseModel):
+    """Validate a model request to execute one analytical tool."""
+
     model_config = ConfigDict(
         frozen=True,
         extra="forbid",
@@ -62,6 +73,8 @@ class _ToolPayload(BaseModel):
 
 
 class _FinishPayload(BaseModel):
+    """Validate a model request to finish the current investigation."""
+
     model_config = ConfigDict(
         frozen=True,
         extra="forbid",
@@ -84,6 +97,8 @@ def _inline_local_references(schema: Mapping[str, Any]) -> dict[str, Any]:
     definitions = raw_definitions if isinstance(raw_definitions, Mapping) else {}
 
     def expand(value: object, active: frozenset[str]) -> object:
+        """Replace local schema references recursively while rejecting cycles."""
+
         if isinstance(value, Mapping):
             raw_ref = value.get("$ref")
             ref_prefix = next(
@@ -159,13 +174,23 @@ def _interaction_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
     return _closed_schema(_inline_local_references(schema))
 
 
+def _without_model_description(schema: Mapping[str, Any]) -> dict[str, Any]:
+    """Copy a model schema without Pydantic's class-docstring description."""
+
+    result = dict(schema)
+    result.pop("description", None)
+    return result
+
+
 def _analytical_function(definition: ToolDefinition) -> interactions.Function:
-    payload_schema = _ToolPayload.model_json_schema()
+    """Convert one analytical tool definition into a strict Gemini function."""
+
+    payload_schema = _without_model_description(_ToolPayload.model_json_schema())
     arguments = cast(dict[str, Any], payload_schema["properties"])["arguments"]
     if not isinstance(arguments, dict):
         raise ValueError("Tool payload schema did not contain an arguments object")
     arguments.clear()
-    arguments.update(definition.input_schema)
+    arguments.update(_without_model_description(definition.input_schema))
     return interactions.Function(
         type="function",
         name=definition.name.value,
@@ -175,6 +200,8 @@ def _analytical_function(definition: ToolDefinition) -> interactions.Function:
 
 
 def _finish_function() -> interactions.Function:
+    """Build the strict Gemini function used to submit a final proposal."""
+
     return interactions.Function(
         type="function",
         name="finish_investigation",
@@ -183,11 +210,15 @@ def _finish_function() -> interactions.Function:
             "explicit insufficient-evidence result. Reference ledger evidence IDs and "
             "state limitations; use qualitative prose without raw numerical claims."
         ),
-        parameters=_interaction_schema(_FinishPayload.model_json_schema()),
+        parameters=_interaction_schema(
+            _without_model_description(_FinishPayload.model_json_schema())
+        ),
     )
 
 
 def _nonnegative_token_count(usage: object, field: str) -> int:
+    """Read a nonnegative provider token count, treating a missing count as zero."""
+
     raw = getattr(usage, field, None) if usage is not None else None
     if raw is None:
         return 0
@@ -208,6 +239,8 @@ class GeminiFunctionCallingBackend:
         timeout_seconds: float = 60.0,
         action_catalog: ActionCatalog | None = None,
     ) -> None:
+        """Configure strict Gemini requests and create a client when needed."""
+
         if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be a positive finite number")
         self._model_name = model or os.getenv("RETENTION_MODEL", "gemini-3.7-flash")
@@ -235,6 +268,8 @@ class GeminiFunctionCallingBackend:
 
     @property
     def model_name(self) -> str:
+        """Return the Gemini model name recorded in run provenance."""
+
         return self._model_name
 
     def decide_next_step(
@@ -244,6 +279,8 @@ class GeminiFunctionCallingBackend:
         *,
         repair_issues: tuple[str, ...] = (),
     ) -> BackendDecision:
+        """Request and validate exactly one tool call or finish decision."""
+
         declarations = [_analytical_function(tool) for tool in tools]
         declarations.append(_finish_function())
         allowed_names = [
@@ -347,6 +384,8 @@ class GeminiFunctionCallingBackend:
 
     @staticmethod
     def _extract_one_call(response: object) -> _FunctionCall:
+        """Return the sole function call from a valid action-required response."""
+
         if getattr(response, "errors", None):
             raise MalformedModelResponse("Interaction contained provider errors")
         if getattr(response, "status", None) != "requires_action":
@@ -374,6 +413,8 @@ class GeminiFunctionCallingBackend:
         *,
         offered_tools: Mapping[ToolName, ToolDefinition],
     ) -> ModelDecision:
+        """Convert a validated provider call into an application-owned decision."""
+
         if name == "finish_investigation":
             payload = _FinishPayload.model_validate(raw)
             return FinishDecision(

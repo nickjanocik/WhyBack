@@ -1,3 +1,5 @@
+/** Coordinates artifact browsing, live-run status, and the dashboard's three views. */
+
 import {
   Activity,
   CircleCheck,
@@ -53,11 +55,13 @@ const emptyLiveStatus: DemoStatusResponse = {
   collectionId: null,
 };
 
+/** Reads the optional view query parameter while falling back to the investigation. */
 function initialView(): View {
   const candidate = new URLSearchParams(window.location.search).get("view");
   return candidate === "evidence" || candidate === "audit" ? candidate : "overview";
 }
 
+/** Renders the complete WhyBack reviewer workspace and owns its application state. */
 export default function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [collectionId, setCollectionId] = useState("");
@@ -88,6 +92,7 @@ export default function App() {
     (item) => item.householdId === householdId,
   )?.generatedAt;
 
+  /** Selects the preferred usable collection and resets the household workspace around it. */
   const initializeWorkspace = useCallback((nextWorkspace: Workspace, preferredCollection?: string) => {
     setLoading(true);
     setWorkspace(nextWorkspace);
@@ -107,6 +112,7 @@ export default function App() {
     setError(null);
   }, []);
 
+  // Load the artifact catalog once and cancel the request if React unmounts the app.
   useEffect(() => {
     const controller = new AbortController();
     getWorkspace(controller.signal)
@@ -120,6 +126,7 @@ export default function App() {
     return () => controller.abort();
   }, [initializeWorkspace]);
 
+  // Recover the bridge's latest in-memory job so a page refresh does not hide active work.
   useEffect(() => {
     const controller = new AbortController();
     getDemoStatus(null, 0, controller.signal)
@@ -145,12 +152,14 @@ export default function App() {
     return () => controller.abort();
   }, []);
 
+  // Poll only the active job and merge cursor deltas without replaying older events.
   useEffect(() => {
     if (liveStatus.status !== "running" || !liveStatus.jobId) return;
     const controller = new AbortController();
     const jobId = liveStatus.jobId;
     let timer: number | undefined;
 
+    /** Fetches the next live-status delta and schedules another bounded poll if needed. */
     async function poll() {
       try {
         const status = await getDemoStatus(
@@ -193,6 +202,7 @@ export default function App() {
     };
   }, [liveStatus.jobId, liveStatus.status]);
 
+  // Refresh sealed artifacts after completion, retrying brief publication races a few times.
   useEffect(() => {
     if (
       liveStatus.status !== "completed" ||
@@ -233,6 +243,7 @@ export default function App() {
     workspaceRefreshAttempt,
   ]);
 
+  // Load the selected household's report and trace whenever its artifact identity changes.
   useEffect(() => {
     if (!collectionId || !householdId) return;
     const controller = new AbortController();
@@ -250,12 +261,14 @@ export default function App() {
     return () => controller.abort();
   }, [collectionId, householdId, selectedGeneratedAt]);
 
+  // Remove transient completion notices after enough time for assistive technology to read them.
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 4_500);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  /** Switches collections and selects the first household in canonical report order. */
   function changeCollection(nextId: string) {
     const next = workspace?.collections.find((item) => item.id === nextId);
     if (!next) return;
@@ -267,11 +280,13 @@ export default function App() {
     changeView("overview");
   }
 
+  /** Opens the evidence view with one cited ledger record selected. */
   function selectEvidence(evidenceId: string) {
     setSelectedEvidenceId(evidenceId);
     changeView("evidence");
   }
 
+  /** Changes the visible panel and mirrors non-default views in the URL. */
   function changeView(nextView: View) {
     setView(nextView);
     const url = new URL(window.location.href);
@@ -280,6 +295,7 @@ export default function App() {
     window.history.replaceState(null, "", url);
   }
 
+  /** Starts a live batch and opens its audit drawer without waiting for completion. */
   async function handleRunDemo(customers: number) {
     setDemoStarting(true);
     setDemoError(null);
@@ -299,6 +315,7 @@ export default function App() {
     }
   }
 
+  /** Opens the sealed result collection, refreshing workspace metadata when necessary. */
   async function handleOpenLiveResults() {
     setLiveOpen(false);
     if (
@@ -378,6 +395,7 @@ export default function App() {
             householdId={householdId}
             onCollectionChange={changeCollection}
             onHouseholdChange={(value) => {
+              // Closing the mobile rail returns focus to its trigger after selection.
               const returnFocusToMenu = railOpen;
               setLoading(true);
               setError(null);
@@ -464,6 +482,7 @@ export default function App() {
   );
 }
 
+/** Shows the shared accessible placeholder while a report request is pending. */
 function LoadingState() {
   return (
     <div className="loading-state" role="status" aria-live="polite" aria-label="Loading investigation">
@@ -473,12 +492,14 @@ function LoadingState() {
   );
 }
 
+/** Shows a terminal workspace-loading error with an explicit retry action. */
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="error-state" role="alert"><CircleAlert size={28} /><h1>Investigation unavailable</h1><p>{message}</p><button type="button" onClick={onRetry}><RefreshCw size={15} /> Try again</button></div>
   );
 }
 
+/** Merges cursor-based event deltas while keeping only the server's bounded capacity. */
 function mergeLiveStatus(
   current: DemoStatusResponse,
   update: DemoStatusResponse,

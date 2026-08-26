@@ -1,3 +1,5 @@
+"""Tests for WhyBack's scripted plans behavior."""
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -13,6 +15,8 @@ RUN_ID = UUID("12345678-1234-5678-1234-567812345678")
 
 
 def test_tool_call_id_is_stable_and_one_indexed() -> None:
+    """Verify that tool call id is stable and one indexed."""
+
     assert make_tool_call_id(RUN_ID, 2, ToolName.BASKET_BEHAVIOR) == (
         "call-1234567812-02-basket_behavior"
     )
@@ -55,6 +59,8 @@ def test_tool_call_id_is_stable_and_one_indexed() -> None:
 def test_scripted_plans_are_explicit_and_end_with_safe_repair(
     plan: ScriptedPlan, expected_tools: list[ToolName]
 ) -> None:
+    """Verify that scripted plans are explicit and end with safe repair."""
+
     decisions = build_scripted_plan(
         plan=plan,
         run_id=RUN_ID,

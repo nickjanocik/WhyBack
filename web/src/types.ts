@@ -1,3 +1,5 @@
+/** Describes the validated report, workspace, API, and live-trace data shown by React. */
+
 export type RunStatus = "completed" | "insufficient_evidence" | "failed";
 export type EvidenceRole = "supporting" | "counterevidence" | "context";
 

@@ -34,10 +34,13 @@ class BackendDecision(BaseModel):
 
 
 class ModelBackend(Protocol):
-    """Portability seam; application state remains authoritative."""
+    """Describe the interface every live or scripted model backend must provide."""
 
     @property
-    def model_name(self) -> str: ...
+    def model_name(self) -> str:
+        """Return the stable model name recorded in run provenance."""
+
+        ...
 
     def decide_next_step(
         self,
@@ -45,4 +48,7 @@ class ModelBackend(Protocol):
         tools: tuple[ToolDefinition, ...],
         *,
         repair_issues: tuple[str, ...] = (),
-    ) -> BackendDecision: ...
+    ) -> BackendDecision:
+        """Choose one offered tool or propose a final answer from compact state."""
+
+        ...

@@ -27,6 +27,8 @@ class AuditJsonlWriter:
         flush: bool = True,
         fsync: bool = False,
     ) -> None:
+        """Open ``path`` for append-only writes with the requested durability policy."""
+
         self.path = path
         self.flush_each_event = flush
         self.fsync_each_event = fsync
@@ -40,6 +42,8 @@ class AuditJsonlWriter:
 
     @property
     def closed(self) -> bool:
+        """Report whether the underlying audit stream has been closed."""
+
         return self._stream.closed
 
     def append(self, event: AuditEvent) -> None:
@@ -71,6 +75,8 @@ class AuditJsonlWriter:
             self._stream.close()
 
     def __enter__(self) -> AuditJsonlWriter:
+        """Return this writer when it is used as a context manager."""
+
         return self
 
     def __exit__(
@@ -79,6 +85,8 @@ class AuditJsonlWriter:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        """Close the writer when its context exits, including after an exception."""
+
         self.close()
 
 

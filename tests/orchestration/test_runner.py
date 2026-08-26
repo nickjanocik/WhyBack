@@ -1,3 +1,5 @@
+"""Tests for WhyBack's runner behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -44,6 +46,8 @@ TRIP_EVIDENCE_ID = f"ev_{TREND_CALL_ID}_002"
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="1",
         baseline_start_week=1,
@@ -70,6 +74,8 @@ def _tool(
     *,
     arguments: dict[str, JsonValue] | None = None,
 ) -> ToolDecision:
+    """Create a deterministic analytical tool double for this test."""
+
     return ToolDecision(
         investigation_question="Did visit frequency change?",
         selected_tool=name,
@@ -83,6 +89,8 @@ def _finish(
     evidence_ids: tuple[str, ...] = (TRIP_EVIDENCE_ID,),
     action: ActionId = ActionId.VISIT_FREQUENCY_REACTIVATION,
 ) -> FinishDecision:
+    """Create a finish decision with test-controlled evidence references."""
+
     drivers = (
         (
             DriverClaim(
@@ -125,6 +133,8 @@ def _run(
     fault_injector: DemoFaultInjector | None = None,
     audit_writer: AuditJsonlWriter | None = None,
 ):
+    """Create the run value used by these tests."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         return InvestigationRunner(
@@ -141,6 +151,8 @@ def _run(
 def test_frequency_path_executes_selected_tool_then_verified_finish(
     tmp_path: Path,
 ) -> None:
+    """Verify that frequency path executes selected tool then verified finish."""
+
     backend = ScriptedBackend([_tool(), _finish()])
 
     outcome = _run(tmp_path, backend)
@@ -159,6 +171,8 @@ def test_frequency_path_executes_selected_tool_then_verified_finish(
 def test_context_confidence_adjustment_is_recorded_in_audit(
     tmp_path: Path,
 ) -> None:
+    """Verify that context confidence adjustment is recorded in audit."""
+
     trace_path = tmp_path / "context.trace.jsonl"
     backend = ScriptedBackend([_tool(), _finish()])
     with AuditJsonlWriter(trace_path) as writer:
@@ -182,6 +196,8 @@ def test_context_confidence_adjustment_is_recorded_in_audit(
 
 
 def test_exact_duplicate_is_refused_without_second_execution(tmp_path: Path) -> None:
+    """Verify that exact duplicate is refused without second execution."""
+
     backend = ScriptedBackend([_tool(), _tool(), _finish()])
 
     outcome = _run(tmp_path, backend)
@@ -197,6 +213,8 @@ def test_exact_duplicate_is_refused_without_second_execution(tmp_path: Path) -> 
 def test_invalid_household_argument_fails_closed_without_evidence(
     tmp_path: Path,
 ) -> None:
+    """Verify that invalid household argument fails closed without evidence."""
+
     backend = ScriptedBackend(
         [
             _tool(arguments={"household_id": "2"}),
@@ -213,6 +231,8 @@ def test_invalid_household_argument_fails_closed_without_evidence(
 
 
 def test_verifier_allows_exactly_one_structured_repair(tmp_path: Path) -> None:
+    """Verify that verifier allows exactly one structured repair."""
+
     invalid = _finish(evidence_ids=("missing",), action=ActionId.MONITOR)
     repaired = _finish(evidence_ids=(), action=ActionId.INSUFFICIENT_EVIDENCE)
     backend = ScriptedBackend([invalid, repaired])
@@ -228,6 +248,8 @@ def test_verifier_allows_exactly_one_structured_repair(tmp_path: Path) -> None:
 def test_repair_cannot_upgrade_observational_evidence_to_causal(
     tmp_path: Path,
 ) -> None:
+    """Verify that repair cannot upgrade observational evidence to causal."""
+
     valid_finish = _finish()
     assert valid_finish.final.driver_summary
     causal_driver = valid_finish.final.driver_summary[0].model_copy(
@@ -259,6 +281,8 @@ def test_repair_cannot_upgrade_observational_evidence_to_causal(
 def test_model_turn_budget_stops_a_loop_and_returns_safe_fallback(
     tmp_path: Path,
 ) -> None:
+    """Verify that model turn budget stops a loop and returns safe fallback."""
+
     backend = ScriptedBackend([_tool(), _tool(ToolName.BASKET_BEHAVIOR)])
     config = AgentConfig(max_model_decisions=2)
 
@@ -273,6 +297,8 @@ def test_model_turn_budget_stops_a_loop_and_returns_safe_fallback(
 def test_retryable_failure_retries_once_then_marks_tool_unavailable(
     tmp_path: Path,
 ) -> None:
+    """Verify that retryable failure retries once then marks tool unavailable."""
+
     calls = 0
 
     def always_retryable(
@@ -280,6 +306,8 @@ def test_retryable_failure_retries_once_then_marks_tool_unavailable(
         context: ToolExecutionContext,
         repository: DataRepository,
     ) -> ToolResult:
+        """Return a retryable failure for every simulated tool attempt."""
+
         del parameters, repository
         nonlocal calls
         calls += 1
@@ -321,6 +349,8 @@ def test_retryable_failure_retries_once_then_marks_tool_unavailable(
 def test_real_timeout_uses_an_isolated_connection_before_retry(
     tmp_path: Path,
 ) -> None:
+    """Verify that real timeout uses an isolated connection before retry."""
+
     release_first_attempt = Event()
     call_lock = Lock()
     calls = 0
@@ -331,6 +361,8 @@ def test_real_timeout_uses_an_isolated_connection_before_retry(
         context: ToolExecutionContext,
         repository: DataRepository,
     ) -> ToolResult:
+        """Block the first attempt, then run the real tool on retry."""
+
         nonlocal calls
         with call_lock:
             calls += 1
@@ -383,6 +415,8 @@ def test_real_timeout_uses_an_isolated_connection_before_retry(
 def test_timeout_once_retries_then_uses_real_promotion_evidence(
     tmp_path: Path,
 ) -> None:
+    """Verify that timeout once retries then uses real promotion evidence."""
+
     promotion_evidence_id = "ev_call-0000000000-02-promotion_response_001"
     finish = FinishDecision(
         investigation_question="Is promotion evidence sufficient to finish?",
@@ -435,6 +469,8 @@ def test_timeout_once_retries_then_uses_real_promotion_evidence(
 def test_persistent_timeout_is_traced_and_other_evidence_finishes(
     tmp_path: Path,
 ) -> None:
+    """Verify that persistent timeout is traced and other evidence finishes."""
+
     trace_path = tmp_path / "trace.jsonl"
     trend_evidence_id = "ev_call-0000000000-03-customer_trend_002"
     backend = ScriptedBackend(
@@ -479,6 +515,8 @@ def test_persistent_timeout_is_traced_and_other_evidence_finishes(
 def test_tool_exception_secrets_are_redacted_before_state_storage(
     tmp_path: Path,
 ) -> None:
+    """Verify that tool exception secrets are redacted before state storage."""
+
     secret = "".join(("sk-", "1234567890abcdefghijklmnop"))
 
     def raises_secret(
@@ -486,6 +524,8 @@ def test_tool_exception_secrets_are_redacted_before_state_storage(
         context: ToolExecutionContext,
         repository: DataRepository,
     ) -> ToolResult:
+        """Raise an error containing a fake secret to test redaction."""
+
         del parameters, context, repository
         raise RuntimeError(f"provider rejected {secret}")
 
@@ -515,9 +555,13 @@ def test_repository_fork_failure_becomes_a_typed_terminal_tool_result(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify that repository fork failure becomes a typed terminal tool result."""
+
     trace_path = tmp_path / "trace.jsonl"
 
     def fail_fork(_repository: DataRepository) -> DataRepository:
+        """Simulate a repository fork failure for the runner test."""
+
         raise RuntimeError("connection setup failed")
 
     monkeypatch.setattr(DataRepository, "fork", fail_fork)
@@ -536,6 +580,8 @@ def test_repository_fork_failure_becomes_a_typed_terminal_tool_result(
 def test_invalid_tool_arguments_are_not_written_raw_to_the_trace(
     tmp_path: Path,
 ) -> None:
+    """Verify that invalid tool arguments are not written raw to the trace."""
+
     trace_path = tmp_path / "trace.jsonl"
     backend = ScriptedBackend(
         [
@@ -557,6 +603,8 @@ def test_invalid_tool_arguments_are_not_written_raw_to_the_trace(
 
 
 def test_causal_model_decision_prose_is_not_stored_or_traced(tmp_path: Path) -> None:
+    """Verify that causal model decision prose is not stored or traced."""
+
     trace_path = tmp_path / "trace.jsonl"
     unsafe_tool_decision = ToolDecision(
         investigation_question="The decline stemmed from fewer visits.",

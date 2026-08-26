@@ -23,6 +23,8 @@ class EvidenceLedger(BaseModel):
 
     @model_validator(mode="after")
     def require_unique_ids(self) -> Self:
+        """Reject a ledger containing the same evidence identifier twice."""
+
         identifiers = [record.evidence_id for record in self.records]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("Evidence IDs must be unique within a ledger")
@@ -30,6 +32,8 @@ class EvidenceLedger(BaseModel):
 
     @property
     def by_id(self) -> dict[str, EvidenceRecord]:
+        """Return the ledger records keyed by their unique evidence IDs."""
+
         return {record.evidence_id: record for record in self.records}
 
     def add_tool_result(

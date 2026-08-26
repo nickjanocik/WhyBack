@@ -21,6 +21,8 @@ from whyback.methodology import ClaimType, ContextPolicy
 
 
 class ToolName(StrEnum):
+    """Public names of the six analytical functions available to a model."""
+
     CUSTOMER_TREND = "customer_trend"
     CATEGORY_DECOMPOSITION = "category_decomposition"
     BASKET_BEHAVIOR = "basket_behavior"
@@ -30,6 +32,8 @@ class ToolName(StrEnum):
 
 
 class ToolStatus(StrEnum):
+    """Closed outcome vocabulary shared by every analytical tool."""
+
     OK = "ok"
     PARTIAL = "partial"
     MISSING_DATA = "missing_data"
@@ -50,6 +54,8 @@ class AnalysisWindow(BaseModel):
 
     @model_validator(mode="after")
     def validate_order(self) -> AnalysisWindow:
+        """Require positive, ordered, non-overlapping baseline and recent windows."""
+
         if not (
             self.baseline_start
             <= self.baseline_end
@@ -69,26 +75,38 @@ class HouseholdToolInput(BaseModel):
 
 
 class CustomerTrendInput(HouseholdToolInput):
+    """Request trend analysis for the active household."""
+
     pass
 
 
 class CategoryDecompositionInput(HouseholdToolInput):
+    """Request the largest category movements for the active household."""
+
     top_n: int = Field(default=8, ge=1, le=20)
 
 
 class BasketBehaviorInput(HouseholdToolInput):
+    """Request basket structure and visit-cadence analysis for the household."""
+
     pass
 
 
 class PromotionResponseInput(HouseholdToolInput):
+    """Request promotion-associated purchasing and category movements."""
+
     top_n_categories: int = Field(default=5, ge=1, le=10)
 
 
 class CouponCampaignHistoryInput(HouseholdToolInput):
+    """Request known campaign, redemption, and transaction-coupon history."""
+
     pass
 
 
 class PeerComparisonInput(HouseholdToolInput):
+    """Request population context and a bounded behavioral-peer cohort."""
+
     peer_count: int = Field(default=50, ge=5, le=100)
 
 
@@ -108,6 +126,8 @@ class ToolExecutionContext(BaseModel):
 
     @model_validator(mode="after")
     def freeze_source_hashes(self) -> Self:
+        """Freeze dataset hashes supplied by authoritative run context."""
+
         object.__setattr__(self, "source_hashes", frozen_mapping(self.source_hashes))
         return self
 
@@ -136,6 +156,8 @@ class EvidenceRecord(BaseModel):
 
     @model_validator(mode="after")
     def require_computed_value(self) -> EvidenceRecord:
+        """Require a computed value and freeze its identifying dimensions."""
+
         if all(
             value is None
             for value in (
@@ -168,6 +190,8 @@ class ToolProvenance(BaseModel):
 
     @model_validator(mode="after")
     def freeze_mappings(self) -> Self:
+        """Freeze replay mappings after provenance validation completes."""
+
         for field in ("source_hashes", "normalized_parameters", "diagnostics"):
             object.__setattr__(self, field, frozen_mapping(getattr(self, field)))
         return self
@@ -192,6 +216,8 @@ class ToolResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_status_contract(self) -> ToolResult:
+        """Enforce evidence, limitation, retry, and ownership rules for a result."""
+
         if self.status not in SUCCESS_STATUSES and self.evidence:
             raise ValueError(
                 "Failed, missing, or invalid tool results cannot carry evidence"

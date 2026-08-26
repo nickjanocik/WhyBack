@@ -131,16 +131,22 @@ def _normalize_key(key: str) -> str:
 
 
 def _is_secret_key(key: str) -> bool:
+    """Return whether a normalized detail key commonly names a credential."""
+
     normalized = _normalize_key(key)
     return normalized in _SECRET_KEYS or normalized.endswith(_SECRET_SUFFIXES)
 
 
 def _is_hidden_reasoning_key(key: str) -> bool:
+    """Return whether a normalized detail key names private model reasoning."""
+
     normalized = _normalize_key(key)
     return normalized in _HIDDEN_REASONING_KEYS
 
 
 def _looks_like_secret_value(value: str) -> bool:
+    """Detect recognizable credential formats embedded in a string value."""
+
     return any(
         pattern.search(value) is not None for pattern in _SENSITIVE_VALUE_PATTERNS
     )
@@ -152,6 +158,8 @@ def _sanitize_value(
     path: str,
     secret_handling: SecretHandling,
 ) -> JsonValue:
+    """Recursively convert one value to safe JSON or reject unsafe audit content."""
+
     if value is None or isinstance(value, (bool, int)):
         return value
     if isinstance(value, float):
@@ -254,6 +262,8 @@ class AuditEvent(BaseModel):
     @field_validator("timestamp")
     @classmethod
     def require_utc(cls, value: datetime) -> datetime:
+        """Require an aware timestamp and normalize non-UTC offsets to UTC."""
+
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("Audit timestamps must be timezone-aware UTC values")
         if value.utcoffset() != timedelta(0):
@@ -263,11 +273,15 @@ class AuditEvent(BaseModel):
     @field_validator("details", mode="before")
     @classmethod
     def sanitize_event_details(cls, value: object) -> dict[str, JsonValue]:
+        """Require mapping-shaped details and sanitize them before validation."""
+
         if not isinstance(value, Mapping):
             raise ValueError("Audit details must be a mapping")
         return sanitize_details(value)
 
     @model_validator(mode="after")
     def freeze_event_details(self) -> Self:
+        """Deep-freeze validated details so an emitted event cannot be mutated."""
+
         object.__setattr__(self, "details", frozen_mapping(self.details))
         return self

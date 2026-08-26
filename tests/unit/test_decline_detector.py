@@ -1,3 +1,5 @@
+"""Tests for WhyBack's decline detector behavior."""
+
 from __future__ import annotations
 
 import math
@@ -19,6 +21,8 @@ from whyback.detection.decline import (
 
 
 def _repository(tmp_path: Path, rows: list[dict[str, object]]) -> DataRepository:
+    """Create an in-memory analytical repository for this test."""
+
     pd.DataFrame(rows).to_parquet(tmp_path / "household_week.parquet", index=False)
     return DataRepository(
         tmp_path,
@@ -28,6 +32,8 @@ def _repository(tmp_path: Path, rows: list[dict[str, object]]) -> DataRepository
 
 
 def test_window_boundaries_are_inclusive_and_nonoverlapping() -> None:
+    """Verify that window boundaries are inclusive and nonoverlapping."""
+
     window = WindowSpec.from_max_week(53)
 
     assert window.baseline_start == 38
@@ -37,11 +43,15 @@ def test_window_boundaries_are_inclusive_and_nonoverlapping() -> None:
 
 
 def test_too_few_observed_weeks_is_explicit() -> None:
+    """Verify that too few observed weeks is explicit."""
+
     with pytest.raises(InsufficientWindowError, match="at least 16"):
         WindowSpec.from_max_week(15)
 
 
 def test_hand_calculated_decline_score() -> None:
+    """Verify that hand calculated decline score."""
+
     drops = calculate_decline_score(
         baseline_sales=80.0,
         recent_sales=40.0,
@@ -59,15 +69,21 @@ def test_hand_calculated_decline_score() -> None:
     [(10.0, 20.0, 0.0), (10.0, -5.0, 1.0), (10.0, 0.0, 1.0)],
 )
 def test_drop_is_clipped(baseline: float, recent: float, expected: float) -> None:
+    """Verify that drop is clipped."""
+
     assert clipped_drop(baseline, recent) == expected
 
 
 def test_nonpositive_baseline_is_rejected() -> None:
+    """Verify that nonpositive baseline is rejected."""
+
     with pytest.raises(ValueError, match="positive baseline"):
         clipped_drop(0.0, 0.0)
 
 
 def test_detector_enforces_eligibility_and_stable_ranking(tmp_path: Path) -> None:
+    """Verify that detector enforces eligibility and stable ranking."""
+
     rows: list[dict[str, object]] = []
     for week in range(38, 46):
         rows.extend(
@@ -134,6 +150,8 @@ def test_detector_enforces_eligibility_and_stable_ranking(tmp_path: Path) -> Non
 
 
 def test_sensitivity_uses_same_eligible_population(tmp_path: Path) -> None:
+    """Verify that sensitivity uses same eligible population."""
+
     rows = []
     for week in range(38, 46):
         rows.append(

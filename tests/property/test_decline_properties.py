@@ -1,3 +1,5 @@
+"""Tests for WhyBack's decline properties behavior."""
+
 from __future__ import annotations
 
 from hypothesis import given
@@ -22,6 +24,8 @@ def test_decline_score_is_always_bounded(
     baseline_weeks: int,
     recent_weeks: int,
 ) -> None:
+    """Verify that decline score is always bounded."""
+
     *_, score = calculate_decline_score(
         baseline_sales=baseline_sales,
         recent_sales=recent_sales,

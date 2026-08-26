@@ -98,6 +98,8 @@ _TOTALS_AND_MAPPING_SQL = """
 
 @dataclass(frozen=True, slots=True)
 class _CategoryRow:
+    """Target-household movement and share measures for one product category."""
+
     department: str
     product_category: str
     baseline_value: float
@@ -110,6 +112,8 @@ class _CategoryRow:
     loss_contribution_share: float | None
 
     def as_summary(self) -> JsonValue:
+        """Return this category's measures in the model-summary shape."""
+
         return json_value(
             {
                 "department": self.department,
@@ -128,6 +132,8 @@ class _CategoryRow:
 
 @dataclass(frozen=True, slots=True)
 class _CategoryContext:
+    """Target-excluded population context for one selected loss category."""
+
     category: _CategoryRow
     comparison_count: int
     median_change: float | None
@@ -137,6 +143,8 @@ class _CategoryContext:
     limitations: tuple[str, ...]
 
     def as_summary(self) -> JsonValue:
+        """Return the category comparison and classification for model state."""
+
         return json_value(
             {
                 "department": self.category.department,
@@ -157,6 +165,8 @@ class _CategoryContext:
 
 
 def _category_context_sql(category_count: int) -> str:
+    """Build parameterized SQL for the requested number of selected categories."""
+
     if category_count < 1:
         raise ValueError("Category context requires at least one selected category")
     selected_values = ", ".join("(?, ?)" for _ in range(category_count))
@@ -220,6 +230,8 @@ def _category_context_sql(category_count: int) -> str:
 def _category_context_dimensions(
     context: ToolExecutionContext, row: _CategoryRow
 ) -> dict[str, str]:
+    """Describe the category cohort, windows, and sign convention on evidence."""
+
     window = context.window
     return {
         "department": row.department,
@@ -249,6 +261,8 @@ def _failed_result(
     rows_examined: int = 0,
     household_known: bool | None = None,
 ) -> ToolResult:
+    """Build a typed, evidence-free category failure with replay provenance."""
+
     summary: dict[str, JsonValue] = {"reason": reason}
     if household_known is not None:
         summary["household_known"] = household_known
@@ -273,6 +287,8 @@ def _failed_result(
 def _window_has_partial_week(
     context: ToolExecutionContext, start: int, end: int
 ) -> bool:
+    """Return whether an official-data window includes short week 1 or 53."""
+
     return context.source_commit == SOURCE_COMMIT and (
         start <= 1 <= end or start <= 53 <= end
     )

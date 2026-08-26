@@ -158,9 +158,13 @@ class ArtifactVerificationResult:
 
     @property
     def passed(self) -> bool:
+        """Return whether verification found no artifact issues."""
+
         return not self.issues
 
     def as_json(self) -> dict[str, object]:
+        """Return a JSON-ready summary of files, modes, and issues."""
+
         return {
             "schema_version": 1,
             "root": self.root,
@@ -176,7 +180,7 @@ class ArtifactVerificationResult:
 
 @dataclass(frozen=True, slots=True)
 class TraceValidation:
-    """Validated trace facts used for cross-artifact reconciliation."""
+    """Store trace facts that will be compared with reports and manifests."""
 
     mode: ExecutionMode | None
     identity: ArtifactIdentity | None
@@ -229,6 +233,8 @@ def sha256_file(path: Path) -> str:
 
 
 def _relative(path: Path, root: Path) -> str:
+    """Render a path relative to the artifact root when possible."""
+
     try:
         return path.relative_to(root).as_posix()
     except ValueError:
@@ -236,10 +242,14 @@ def _relative(path: Path, root: Path) -> str:
 
 
 def _issue(path: Path, root: Path, code: str, message: str) -> VerificationIssue:
+    """Create a stable verification issue tied to an artifact-relative path."""
+
     return VerificationIssue(_relative(path, root), code, message)
 
 
 def _load_json(path: Path, root: Path) -> tuple[object | None, list[VerificationIssue]]:
+    """Parse a JSON file or return a structured malformed-JSON issue."""
+
     try:
         return json.loads(path.read_text(encoding="utf-8")), []
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
@@ -249,6 +259,8 @@ def _load_json(path: Path, root: Path) -> tuple[object | None, list[Verification
 
 
 def _looks_like_report(path: Path, value: object) -> bool:
+    """Recognize report JSON by its filename or required top-level fields."""
+
     if path.name in _REPORT_NAMES or path.name.endswith("_customer_report.json"):
         return True
     return isinstance(value, Mapping) and {
@@ -261,6 +273,8 @@ def _looks_like_report(path: Path, value: object) -> bool:
 def _validate_report(
     path: Path, root: Path, value: object
 ) -> tuple[ReportData | None, list[VerificationIssue]]:
+    """Validate a report's schema, branding, review policy, and evidence links."""
+
     issues: list[VerificationIssue] = []
     try:
         report = ReportData.model_validate(value)
@@ -354,6 +368,8 @@ def _validate_exact_render(
     mismatch_code: str,
     label: str,
 ) -> list[VerificationIssue]:
+    """Require a text artifact to match its deterministic rendering exactly."""
+
     if not path.is_file():
         return [_issue(path, root, missing_code, f"The matching {label} is absent")]
     try:
@@ -373,6 +389,8 @@ def _validate_exact_render(
 
 
 def _trace_execution_mode(events: Sequence[AuditEvent]) -> ExecutionMode | None:
+    """Infer scripted or live execution from the trace's recorded model name."""
+
     if not events:
         return None
     model = events[0].details.get("model")
@@ -394,11 +412,15 @@ def _model_execution_for_backend(backend: object, execution_mode: object) -> str
 
 
 def _integer_detail(event: AuditEvent, key: str) -> int | None:
+    """Read an integer event detail while rejecting booleans and other types."""
+
     value = event.details.get(key)
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def _string_detail(event: AuditEvent, key: str) -> str | None:
+    """Read a nonempty string event detail or return no value."""
+
     value = event.details.get(key)
     return value if isinstance(value, str) and value else None
 
@@ -408,6 +430,8 @@ def _tool_result_from_event(
     root: Path,
     event: AuditEvent,
 ) -> tuple[ToolResult | None, list[VerificationIssue]]:
+    """Validate an embedded tool result and reconcile it with its outer event."""
+
     raw_result = event.details.get("tool_result")
     if not isinstance(raw_result, Mapping):
         return None, [
@@ -483,6 +507,8 @@ def _tool_result_from_event(
 
 
 def _evidence_added_matches(event: AuditEvent, evidence: EvidenceRecord) -> bool:
+    """Return whether an evidence-added event exactly describes one record."""
+
     return all(
         (
             event.details.get("evidence_id") == evidence.evidence_id,
@@ -498,6 +524,8 @@ def _validate_trace(
     path: Path,
     root: Path,
 ) -> TraceValidation:
+    """Validate trace order and rebuild its identity, tool results, and evidence."""
+
     try:
         events = read_audit_events(path)
     except (OSError, ValueError) as error:
@@ -1309,12 +1337,16 @@ def _validate_trace(
 
 
 def _mode(value: object) -> ExecutionMode | None:
+    """Return a supported execution mode or no value for invalid input."""
+
     return (
         cast(ExecutionMode, value) if value in {"scripted", "live", "skipped"} else None
     )
 
 
 def _manifest_records(value: Mapping[str, object]) -> object | None:
+    """Return file records from either supported artifact-manifest field name."""
+
     if "artifacts" in value:
         return value["artifacts"]
     if "files" in value:
@@ -1323,6 +1355,8 @@ def _manifest_records(value: Mapping[str, object]) -> object | None:
 
 
 def _safe_manifest_path(root: Path, manifest: Path, relative: str) -> Path | None:
+    """Resolve a manifest path only when it remains inside the artifact root."""
+
     candidate = (manifest.parent / relative).resolve()
     resolved_root = root.resolve()
     if candidate == resolved_root or resolved_root not in candidate.parents:
@@ -1336,6 +1370,8 @@ def _validate_hash_record(
     relative_path: object,
     expected_hash: object,
 ) -> list[VerificationIssue]:
+    """Validate one declared file path, digest, presence, and byte hash."""
+
     if not isinstance(relative_path, str) or not relative_path:
         return [
             _issue(
@@ -1388,6 +1424,8 @@ def _validate_hash_record(
 
 
 def _validate_manifest(path: Path, root: Path, value: object) -> ManifestValidation:
+    """Validate manifest modes, declared files, hashes, and artifact coverage."""
+
     if not isinstance(value, Mapping):
         return ManifestValidation(
             frozenset(),
@@ -1599,11 +1637,15 @@ def _validate_manifest(path: Path, root: Path, value: object) -> ManifestValidat
 def _accepted_evidence_ids(
     events: Sequence[AuditEvent],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Recover accepted support and counterevidence IDs from the final pass event."""
+
     for event in reversed(events):
         if event.event is not AuditEventName.VERIFICATION_PASSED:
             continue
 
         def identifiers(raw: object) -> tuple[str, ...]:
+            """Keep only string identifiers from a recorded JSON list."""
+
             if not isinstance(raw, list):
                 return ()
             return tuple(item for item in raw if isinstance(item, str))
@@ -1747,6 +1789,8 @@ def _verification_issue_strings(event: AuditEvent) -> tuple[str, ...]:
 
 
 def _terminal_trace_reason(events: Sequence[AuditEvent]) -> str | None:
+    """Read the public fallback or failure reason from the terminal event."""
+
     if not events:
         return None
     completion = events[-1]
@@ -1806,6 +1850,8 @@ def _expected_report_evidence(
     supporting_ids: frozenset[str],
     counterevidence_ids: frozenset[str],
 ) -> ReportEvidenceData:
+    """Convert trace evidence into its expected report role and source status."""
+
     role = (
         "supporting"
         if record.evidence_id in supporting_ids
@@ -1827,6 +1873,8 @@ def _expected_report_evidence(
 def _expected_investigation_records(
     events: Sequence[AuditEvent],
 ) -> tuple[tuple[InvestigationStepData, ...], tuple[ToolWarningData, ...]]:
+    """Reconstruct report investigation steps and warnings from trace events."""
+
     steps: list[InvestigationStepData] = []
     warnings: list[ToolWarningData] = []
     decision_number = 0
@@ -1947,6 +1995,8 @@ def _validate_report_trace_pair(
     report: ReportData,
     trace: TraceValidation,
 ) -> list[VerificationIssue]:
+    """Reconcile every report-owned fact with its authoritative trace evidence."""
+
     issues: list[VerificationIssue] = []
     confidence_policy = None
     expected_steps, expected_warnings = _expected_investigation_records(trace.events)
@@ -2546,6 +2596,8 @@ def _validate_report_trace_pair(
             )
 
             def rule_satisfied(rule_index: int) -> bool:
+                """Check whether support records satisfy one catalog prerequisite."""
+
                 rule = definition.evidence_prerequisites[rule_index]
                 matching = tuple(
                     record
@@ -2664,6 +2716,8 @@ def _manifest_id_list(
     data: Mapping[str, object],
     key: str,
 ) -> tuple[tuple[str, ...], list[VerificationIssue]]:
+    """Parse one manifest household list and report invalid or duplicate IDs."""
+
     raw = data.get(key)
     if not isinstance(raw, list) or any(
         not isinstance(item, str) or not item for item in raw
@@ -2695,6 +2749,8 @@ def _validate_manifest_households(
     data: Mapping[str, object],
     reports_by_path: Mapping[Path, ReportData],
 ) -> list[VerificationIssue]:
+    """Reconcile selected household statuses, directories, and report owners."""
+
     keys = (
         "selected_household_ids",
         "completed_household_ids",
@@ -2834,6 +2890,8 @@ def _render_results_markdown(
     data: Mapping[str, object],
     reports: Sequence[ReportData],
 ) -> str | None:
+    """Render the exact reviewer-facing results index for a supported demo."""
+
     backend = data.get("backend")
     dataset_kind = data.get("dataset_kind")
     if backend not in {"scripted", "gemini", "openai"} or dataset_kind not in {
@@ -2900,6 +2958,8 @@ def _validate_results_index(
     data: Mapping[str, object],
     reports_by_path: Mapping[Path, ReportData],
 ) -> list[VerificationIssue]:
+    """Rebuild and compare the ordered JSON and Markdown results indexes."""
+
     if manifest_path.parent / "report.json" in reports_by_path:
         return []
     raw_selected = data.get("selected_household_ids")
@@ -2964,6 +3024,8 @@ def _validate_source_manifest(
     reports_by_path: Mapping[Path, ReportData],
     traces_by_path: Mapping[Path, TraceValidation],
 ) -> list[VerificationIssue]:
+    """Validate embedded data provenance and reconcile all published source hashes."""
+
     data = validation.data
     if data is None:
         return []
@@ -3136,6 +3198,8 @@ def _validate_provenance(
     trace: TraceValidation,
     manifests: Sequence[tuple[Path, ManifestValidation]],
 ) -> list[VerificationIssue]:
+    """Reconcile report provenance with its trace and containing manifests."""
+
     dumped = report.model_dump(mode="json")
     raw_provenance = dumped.get("provenance")
     if not isinstance(raw_provenance, Mapping):
@@ -3656,6 +3720,8 @@ def verify_artifact_tree(
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for artifact verification options."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "artifact_root",

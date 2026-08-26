@@ -1,3 +1,4 @@
+# Define the only human-reviewed actions the verifier may permit.
 catalog_version: 1
 actions:
   - action_id: CATEGORY_WINBACK

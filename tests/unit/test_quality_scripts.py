@@ -1,3 +1,5 @@
+"""Tests for WhyBack's quality scripts behavior."""
+
 from __future__ import annotations
 
 import hashlib
@@ -48,6 +50,8 @@ RUN_ID = UUID("00000000-0000-4000-8000-000000000077")
 
 
 def _write_gate_project(root: Path) -> None:
+    """Write gate project for this test."""
+
     (root / "src" / "whyback").mkdir(parents=True)
     (root / "src" / "whyback" / "__init__.py").write_text("\n", encoding="utf-8")
     (root / "configs").mkdir()
@@ -81,6 +85,8 @@ def test_model_metadata_requires_a_non_space_gemini_key(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify that model metadata requires a non space gemini key."""
+
     _write_gate_project(tmp_path)
     monkeypatch.setenv("GEMINI_API_KEY", "  \t")
 
@@ -98,6 +104,8 @@ def test_model_metadata_requires_a_non_space_gemini_key(
 
 
 def _report() -> dict[str, object]:
+    """Create a strict report document for artifact-verification tests."""
+
     population_context = build_population_context(())
     interpretation_limits = build_interpretation_limits(
         (), population_context.context_classification
@@ -169,6 +177,8 @@ def _report() -> dict[str, object]:
 
 
 def _detector_snapshot() -> dict[str, object]:
+    """Create a detector snapshot for artifact-verification tests."""
+
     decline = _report()["decline"]
     assert isinstance(decline, dict)
     return {
@@ -179,6 +189,8 @@ def _detector_snapshot() -> dict[str, object]:
 
 
 def _write_trace(path: Path, *, model: str = "scripted/whyback-v1") -> None:
+    """Write trace for this test."""
+
     started = datetime(2026, 1, 1, tzinfo=UTC)
     events = (
         AuditEvent(
@@ -219,6 +231,8 @@ def _write_trace(path: Path, *, model: str = "scripted/whyback-v1") -> None:
 
 
 def _write_exact_report_bundle(report_path: Path, value: dict[str, object]) -> None:
+    """Write exact report bundle for this test."""
+
     report = ReportData.model_validate(value)
     report_path.write_text(
         f"{json.dumps(report.model_dump(mode='json'), indent=2, sort_keys=True)}\n",
@@ -233,12 +247,16 @@ def _write_exact_report_bundle(report_path: Path, value: dict[str, object]) -> N
 
 
 def _write_exact_trace_view(trace_path: Path) -> None:
+    """Write exact trace view for this test."""
+
     trace_path.with_suffix(".html").write_text(
         render_trace_html(read_audit_events(trace_path)), encoding="utf-8"
     )
 
 
 def _rehash_manifest(root: Path, manifest_name: str = "artifact_manifest.json") -> None:
+    """Recompute hashes for manifest for this test."""
+
     manifest_path = root / manifest_name
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["files"] = {
@@ -250,6 +268,8 @@ def _rehash_manifest(root: Path, manifest_name: str = "artifact_manifest.json") 
 
 
 def _write_results_files(root: Path) -> None:
+    """Write results files for this test."""
+
     manifest = json.loads((root / "artifact_manifest.json").read_text(encoding="utf-8"))
     terminal = set(manifest["completed_household_ids"]) | set(
         manifest["failed_household_ids"]
@@ -320,6 +340,8 @@ def _write_results_files(root: Path) -> None:
 
 
 def _write_valid_artifacts(root: Path) -> None:
+    """Write valid artifacts for this test."""
+
     run_dir = root / "customer_77"
     run_dir.mkdir(parents=True)
     report_path = run_dir / "report.json"
@@ -358,6 +380,8 @@ def _write_valid_artifacts(root: Path) -> None:
 
 
 def _write_standalone_artifacts(root: Path) -> None:
+    """Write standalone artifacts for this test."""
+
     root.mkdir(parents=True, exist_ok=True)
     report_path = root / "report.json"
     trace_path = root / "trace.jsonl"
@@ -389,6 +413,8 @@ def _write_standalone_artifacts(root: Path) -> None:
 
 
 def _write_audit_events(path: Path, events: tuple[AuditEvent, ...]) -> None:
+    """Write audit events for this test."""
+
     path.write_text(
         "".join(f"{event.model_dump_json()}\n" for event in events),
         encoding="utf-8",
@@ -397,6 +423,8 @@ def _write_audit_events(path: Path, events: tuple[AuditEvent, ...]) -> None:
 
 
 def _write_evidence_artifacts(root: Path) -> None:
+    """Write evidence artifacts for this test."""
+
     _write_valid_artifacts(root)
     source_hashes = {"transactions": "b" * 64}
     query_hash = "a" * 64
@@ -568,6 +596,8 @@ def _write_evidence_artifacts(root: Path) -> None:
 
 
 def _write_live_artifacts(root: Path) -> None:
+    """Write live artifacts for this test."""
+
     _write_valid_artifacts(root)
     report = _report()
     provenance = report["provenance"]
@@ -731,6 +761,8 @@ def _write_live_artifacts(root: Path) -> None:
 
 
 def _write_official_provenance_artifacts(root: Path) -> None:
+    """Write official provenance artifacts for this test."""
+
     _write_valid_artifacts(root)
     data_manifest = DataManifest(
         preparation_timestamp=datetime(2026, 1, 1, tzinfo=UTC),
@@ -810,6 +842,8 @@ def _write_official_provenance_artifacts(root: Path) -> None:
 
 
 def _rewrite_trace_rows(trace_path: Path, rows: list[dict[str, object]]) -> None:
+    """Rewrite trace rows for this test."""
+
     trace_path.write_text(
         "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows),
         encoding="utf-8",
@@ -820,6 +854,8 @@ def _rewrite_trace_rows(trace_path: Path, rows: list[dict[str, object]]) -> None
 def test_source_tree_hash_is_stable_and_excludes_generated_artifacts(
     tmp_path: Path,
 ) -> None:
+    """Verify that source tree hash is stable and excludes generated artifacts."""
+
     _write_gate_project(tmp_path)
     first = source_tree_hash(tmp_path)
     generated = tmp_path / "artifacts" / "tests"
@@ -853,6 +889,8 @@ def test_source_tree_hash_is_stable_and_excludes_generated_artifacts(
 def test_test_output_validation_requires_branch_coverage_and_threshold(
     tmp_path: Path,
 ) -> None:
+    """Verify that test output validation requires branch coverage and threshold."""
+
     paths = GatePaths.under(tmp_path)
     paths.directory.mkdir(parents=True)
     paths.junit_xml.write_text(
@@ -878,6 +916,8 @@ def test_test_output_validation_requires_branch_coverage_and_threshold(
 def test_eval_discovery_uses_only_the_conventional_normalized_fixture(
     tmp_path: Path,
 ) -> None:
+    """Verify that eval discovery uses only the conventional normalized fixture."""
+
     (tmp_path / "artifacts" / "demo" / "evals").mkdir(parents=True)
     unrelated = tmp_path / "artifacts" / "demo" / "evaluation_report.json"
     unrelated.write_text("{}\n", encoding="utf-8")
@@ -891,6 +931,8 @@ def test_eval_discovery_uses_only_the_conventional_normalized_fixture(
 def test_artifact_verifier_accepts_hashed_scripted_bundle_and_explicit_skip(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify a hashed scripted bundle with an explicit live skip."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
 
@@ -904,6 +946,8 @@ def test_artifact_verifier_accepts_hashed_scripted_bundle_and_explicit_skip(
 def test_artifact_verifier_accepts_strict_standalone_run_profile(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier accepts strict standalone run profile."""
+
     _write_standalone_artifacts(tmp_path)
 
     result = verify_artifact_tree(tmp_path)
@@ -913,6 +957,8 @@ def test_artifact_verifier_accepts_strict_standalone_run_profile(
 
 
 def test_artifact_verifier_allows_the_server_verification_seal(tmp_path: Path) -> None:
+    """Verify that artifact verifier allows the server verification seal."""
+
     _write_valid_artifacts(tmp_path)
     (tmp_path / ".whyback-live-verification.json").write_text(
         '{"status":"verified_live_gemini"}\n', encoding="utf-8"
@@ -926,6 +972,8 @@ def test_artifact_verifier_allows_the_server_verification_seal(tmp_path: Path) -
 def test_artifact_verifier_reconciles_complete_detector_and_failure_reason(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconciles complete detector and failure reason."""
+
     _write_valid_artifacts(tmp_path)
     report_path = tmp_path / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -944,6 +992,8 @@ def test_artifact_verifier_reconciles_complete_detector_and_failure_reason(
 def test_artifact_verifier_fails_closed_for_tampering_and_malformed_trace(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify that artifact verifier fails closed for tampering and malformed trace."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
     (tmp_path / "customer_77" / "report.json").write_text("{}\n", encoding="utf-8")
@@ -963,6 +1013,8 @@ def test_artifact_verifier_fails_closed_for_tampering_and_malformed_trace(
 def test_artifact_verifier_rejects_live_label_backed_by_scripted_trace(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify that artifact verifier rejects live label backed by scripted trace."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_valid_artifacts(tmp_path)
     manifest_path = tmp_path / "artifact_manifest.json"
@@ -980,6 +1032,8 @@ def test_artifact_verifier_rejects_live_label_backed_by_scripted_trace(
 def test_artifact_verifier_accepts_honest_skip_only_tree_with_explicit_flag(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify an honest skip-only tree when the caller permits it."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     status_path = tmp_path / "live_model_status.json"
     status_path.write_text(
@@ -1013,6 +1067,8 @@ def test_artifact_verifier_accepts_honest_skip_only_tree_with_explicit_flag(
 def test_artifact_verifier_reconstructs_report_evidence_from_tool_results(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconstructs report evidence from tool results."""
+
     _write_evidence_artifacts(tmp_path)
     initial = verify_artifact_tree(tmp_path, allow_live_skipped=True)
     assert initial.passed, initial.issues
@@ -1031,6 +1087,8 @@ def test_artifact_verifier_reconstructs_report_evidence_from_tool_results(
 def test_artifact_verifier_validates_strict_tool_result_and_attempt_budget(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier validates strict tool result and attempt budget."""
+
     _write_evidence_artifacts(tmp_path)
     trace_path = tmp_path / "customer_77" / "trace.jsonl"
     rows = [
@@ -1052,6 +1110,8 @@ def test_artifact_verifier_validates_strict_tool_result_and_attempt_budget(
 def test_artifact_verifier_exactly_rerenders_and_rejects_unhashed_extras(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier exactly rerenders and rejects unhashed extras."""
+
     _write_valid_artifacts(tmp_path)
     markdown = tmp_path / "customer_77" / "report.md"
     markdown.write_text(
@@ -1069,6 +1129,8 @@ def test_artifact_verifier_exactly_rerenders_and_rejects_unhashed_extras(
 
 
 def test_artifact_verifier_rejects_symlinks_even_when_hashed(tmp_path: Path) -> None:
+    """Verify that artifact verifier rejects symlinks even when hashed."""
+
     _write_valid_artifacts(tmp_path)
     link = tmp_path / "customer_77" / "report-link.json"
     link.symlink_to("report.json")
@@ -1082,6 +1144,8 @@ def test_artifact_verifier_rejects_symlinks_even_when_hashed(tmp_path: Path) -> 
 def test_artifact_verifier_reconciles_results_json_and_markdown(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconciles results json and markdown."""
+
     _write_valid_artifacts(tmp_path)
     (tmp_path / "results.json").write_text("[]\n", encoding="utf-8")
     (tmp_path / "RESULTS.md").write_text("stale summary\n", encoding="utf-8")
@@ -1096,6 +1160,8 @@ def test_artifact_verifier_reconciles_results_json_and_markdown(
 def test_artifact_verifier_rejects_stale_customer_directories_and_duplicate_ids(
     tmp_path: Path,
 ) -> None:
+    """Verify rejection of stale directories and duplicate customer IDs."""
+
     _write_valid_artifacts(tmp_path)
     shutil.copytree(tmp_path / "customer_77", tmp_path / "customer_88")
     _rehash_manifest(tmp_path)
@@ -1110,6 +1176,8 @@ def test_artifact_verifier_rejects_stale_customer_directories_and_duplicate_ids(
 def test_artifact_verifier_rejects_orphan_report(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier rejects orphan report."""
+
     _write_valid_artifacts(tmp_path)
     (tmp_path / "customer_77" / "trace.jsonl").unlink()
     _rehash_manifest(tmp_path)
@@ -1121,6 +1189,8 @@ def test_artifact_verifier_rejects_orphan_report(
 def test_completed_trace_requires_passing_verdict_and_matching_confidence(
     tmp_path: Path,
 ) -> None:
+    """Verify that completed trace requires passing verdict and matching confidence."""
+
     _write_live_artifacts(tmp_path)
     trace_path = tmp_path / "customer_77" / "trace.jsonl"
     rows = [
@@ -1151,6 +1221,8 @@ def test_completed_trace_requires_passing_verdict_and_matching_confidence(
 def test_artifact_verifier_reconciles_context_confidence_adjustments(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconciles context confidence adjustments."""
+
     _write_live_artifacts(tmp_path)
     report_path = tmp_path / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -1167,6 +1239,8 @@ def test_artifact_verifier_reconciles_context_confidence_adjustments(
 def test_artifact_verifier_recomputes_coordinated_confidence_tampering(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier recomputes coordinated confidence tampering."""
+
     _write_live_artifacts(tmp_path)
     report_path = tmp_path / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -1193,6 +1267,8 @@ def test_artifact_verifier_recomputes_coordinated_confidence_tampering(
 def test_artifact_verifier_reconstructs_methodology_sections_from_trace(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconstructs methodology sections from trace."""
+
     context_root = tmp_path / "context"
     _write_live_artifacts(context_root)
     context_report_path = context_root / "customer_77" / "report.json"
@@ -1229,6 +1305,8 @@ def test_artifact_verifier_reconstructs_methodology_sections_from_trace(
 def test_artifact_verifier_rejects_coordinated_public_issue_tampering(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier rejects coordinated public issue tampering."""
+
     _write_live_artifacts(tmp_path)
     report_path = tmp_path / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -1250,6 +1328,8 @@ def test_artifact_verifier_rejects_coordinated_public_issue_tampering(
 def test_artifact_verifier_rejects_unsafe_model_prose_in_rendered_trace(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier rejects unsafe model prose in rendered trace."""
+
     _write_live_artifacts(tmp_path)
     trace_path = tmp_path / "customer_77" / "trace.jsonl"
     rows = [
@@ -1274,6 +1354,8 @@ def test_artifact_verifier_rejects_unsafe_model_prose_in_rendered_trace(
 def test_live_history_and_skip_are_credential_independent(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify that live history and skip are credential independent."""
+
     _write_live_artifacts(tmp_path)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     without_current_key = verify_artifact_tree(tmp_path, allow_live_skipped=True)
@@ -1288,6 +1370,8 @@ def test_live_history_and_skip_are_credential_independent(
 def test_artifact_verifier_preserves_legacy_openai_live_provenance(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier preserves legacy openai live provenance."""
+
     _write_live_artifacts(tmp_path)
     report_path = tmp_path / "customer_77" / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -1327,6 +1411,8 @@ def test_artifact_verifier_preserves_legacy_openai_live_provenance(
 def test_artifact_verifier_rejects_provider_id_from_the_wrong_backend(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier rejects provider id from the wrong backend."""
+
     _write_live_artifacts(tmp_path)
     trace_path = tmp_path / "customer_77" / "trace.jsonl"
     rows = [
@@ -1345,6 +1431,8 @@ def test_artifact_verifier_rejects_provider_id_from_the_wrong_backend(
 def test_artifact_verifier_reconciles_embedded_official_data_provenance(
     tmp_path: Path,
 ) -> None:
+    """Verify that artifact verifier reconciles embedded official data provenance."""
+
     _write_official_provenance_artifacts(tmp_path)
     initial = verify_artifact_tree(tmp_path, allow_live_skipped=True)
     assert initial.passed, initial.issues
@@ -1363,11 +1451,17 @@ def test_artifact_verifier_reconciles_embedded_official_data_provenance(
 
 
 class FakeRunner:
+    """Test double that provides FakeRunner behavior."""
+
     def __init__(self, *, fail_sync: bool = False) -> None:
+        """Initialize this test double with its controlled behavior."""
+
         self.fail_sync = fail_sync
         self.commands: list[tuple[str, ...]] = []
 
     def __call__(self, command: tuple[str, ...], cwd: Path) -> ProcessResult:
+        """Run the fake command and return its configured result."""
+
         self.commands.append(command)
         if command == ("git", "rev-parse", "HEAD"):
             return ProcessResult(0, "deadbeef\n", "")
@@ -1395,6 +1489,8 @@ class FakeRunner:
 
 
 def test_quality_gate_parser_allows_skip_by_default_and_can_require_live() -> None:
+    """Verify that quality gate parser allows skip by default and can require live."""
+
     parser = quality_gate._parser()
 
     assert parser.parse_args([]).allow_live_skipped is True
@@ -1405,6 +1501,8 @@ def test_quality_gate_parser_allows_skip_by_default_and_can_require_live() -> No
 def test_quality_gate_retains_preliminary_failure_and_runs_later_steps(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Verify that quality gate retains preliminary failure and runs later steps."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     _write_gate_project(tmp_path)
     runner = FakeRunner(fail_sync=True)
@@ -1431,6 +1529,8 @@ def test_quality_gate_retains_preliminary_failure_and_runs_later_steps(
     assert GatePaths.under(tmp_path).audit_json.is_file()
     assert GatePaths.under(tmp_path).audit_markdown.is_file()
     assert ("uv", "run", "pyright") in runner.commands
+    assert ("npm", "--prefix", "web", "ci", "--ignore-scripts") in runner.commands
+    assert ("npm", "--prefix", "web", "run", "check") in runner.commands
 
     second_exit, second_audit = run_quality_gate(
         tmp_path,
@@ -1449,6 +1549,8 @@ def test_quality_gate_retains_preliminary_failure_and_runs_later_steps(
 def test_quality_gate_fails_when_required_eval_input_is_missing(
     tmp_path: Path,
 ) -> None:
+    """Verify that quality gate fails when required eval input is missing."""
+
     _write_gate_project(tmp_path)
     (tmp_path / "artifacts" / "demo" / "evals" / "normalized_runs.json").unlink()
     fixed_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
@@ -1471,6 +1573,8 @@ def test_quality_gate_fails_when_required_eval_input_is_missing(
 def test_quality_gate_checkpoints_never_claim_completion(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Verify that quality gate checkpoints never claim completion."""
+
     _write_gate_project(tmp_path)
     captured: list[dict[str, object]] = []
     monkeypatch.setattr(
@@ -1501,6 +1605,8 @@ def test_quality_gate_checkpoints_never_claim_completion(
 
 
 def test_quality_gate_clears_stale_per_invocation_outputs(tmp_path: Path) -> None:
+    """Verify that quality gate clears stale per invocation outputs."""
+
     _write_gate_project(tmp_path)
     paths = GatePaths.under(tmp_path)
     paths.directory.mkdir(parents=True, exist_ok=True)
@@ -1534,6 +1640,8 @@ def test_quality_gate_clears_stale_per_invocation_outputs(tmp_path: Path) -> Non
 
 
 def test_malformed_prior_audit_retains_only_error_and_digest(tmp_path: Path) -> None:
+    """Verify that malformed prior audit retains only error and digest."""
+
     _write_gate_project(tmp_path)
     paths = GatePaths.under(tmp_path)
     paths.directory.mkdir(parents=True, exist_ok=True)

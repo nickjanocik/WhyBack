@@ -1,3 +1,5 @@
+"""Tests for WhyBack's agent backends behavior."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -24,11 +26,13 @@ from whyback.agent.state import (
 )
 from whyback.detection.decline import DeclineSnapshot
 from whyback.methodology import ClaimType
-from whyback.tools.contracts import ToolName
+from whyback.tools.contracts import ToolDefinition, ToolName
 from whyback.tools.registry import ToolRegistry
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="42",
         baseline_start_week=38,
@@ -52,6 +56,8 @@ def _snapshot() -> DeclineSnapshot:
 
 
 def _state() -> InvestigationState:
+    """Create an application-owned investigation state for this test."""
+
     return InvestigationState.start(
         _snapshot(),
         run_id=UUID("00000000-0000-0000-0000-000000000042"),
@@ -59,6 +65,8 @@ def _state() -> InvestigationState:
 
 
 def _tool_decision() -> ToolDecision:
+    """Create a typed analytical-tool decision for this test."""
+
     return ToolDecision(
         investigation_question="Did trip frequency fall?",
         selected_tool=ToolName.CUSTOMER_TREND,
@@ -68,6 +76,8 @@ def _tool_decision() -> ToolDecision:
 
 
 def _finish_decision() -> FinishDecision:
+    """Create a finish decision for backend contract tests."""
+
     return FinishDecision(
         investigation_question="Is the evidence sufficient to finish?",
         decision_summary="Submit a cautious evidence-grounded conclusion.",
@@ -97,21 +107,33 @@ def _finish_decision() -> FinishDecision:
 
 
 class _FakeInteractions:
+    """Test double that provides FakeInteractions behavior."""
+
     def __init__(self, response: object) -> None:
+        """Initialize this test double with its controlled behavior."""
+
         self.response = response
         self.kwargs: dict[str, Any] = {}
 
     def create(self, **kwargs: Any) -> object:
+        """Return the controlled provider response used by this test."""
+
         self.kwargs = kwargs
         return self.response
 
 
 class _FakeClient:
+    """Test double that provides FakeClient behavior."""
+
     def __init__(self, response: object) -> None:
+        """Initialize this test double with its controlled behavior."""
+
         self.interactions = _FakeInteractions(response)
 
 
 def _response(name: str, arguments: object) -> SimpleNamespace:
+    """Create a controlled Gemini Interactions response."""
+
     call = SimpleNamespace(
         type="function_call",
         name=name,
@@ -134,6 +156,8 @@ def _response(name: str, arguments: object) -> SimpleNamespace:
 
 
 def test_investigation_state_is_frozen_and_budget_bounded() -> None:
+    """Verify that investigation state is frozen and budget bounded."""
+
     state = _state()
 
     assert state.window.model_dump() == {
@@ -150,6 +174,8 @@ def test_investigation_state_is_frozen_and_budget_bounded() -> None:
 
 
 def test_finish_proposal_rejects_duplicate_evidence_references() -> None:
+    """Verify that finish proposal rejects duplicate evidence references."""
+
     with pytest.raises(ValidationError, match="unique"):
         FinishProposal(
             driver_summary=(
@@ -174,6 +200,8 @@ def test_finish_proposal_rejects_duplicate_evidence_references() -> None:
 
 
 def test_scripted_backend_exposes_offered_tools_and_exhaustion() -> None:
+    """Verify that scripted backend exposes offered tools and exhaustion."""
+
     backend = ScriptedBackend([_tool_decision()])
     definitions = ToolRegistry().definitions((ToolName.CUSTOMER_TREND,))
 
@@ -187,6 +215,8 @@ def test_scripted_backend_exposes_offered_tools_and_exhaustion() -> None:
 
 
 def test_scripted_backend_rejects_malformed_decision() -> None:
+    """Verify that scripted backend rejects malformed decision."""
+
     backend = ScriptedBackend([{"kind": "tool", "selected_tool": "customer_trend"}])
 
     with pytest.raises(MalformedModelResponse, match="invalid"):
@@ -194,6 +224,8 @@ def test_scripted_backend_rejects_malformed_decision() -> None:
 
 
 def test_gemini_backend_sends_one_strict_function_decision() -> None:
+    """Verify that gemini backend sends one strict function decision."""
+
     response = _response(
         "customer_trend",
         {
@@ -247,7 +279,62 @@ def test_gemini_backend_sends_one_strict_function_decision() -> None:
     assert '"$ref"' not in serialized_finish_schema
 
 
+def test_gemini_function_schemas_ignore_model_docstrings_only() -> None:
+    """Keep Python model docs out of Gemini schemas without losing field guidance."""
+
+    definition = ToolDefinition(
+        name=ToolName.CUSTOMER_TREND,
+        description="Use the customer trend tool.",
+        input_schema={
+            "type": "object",
+            "description": "This class documentation is for Python readers.",
+            "properties": {
+                "household_id": {
+                    "type": "string",
+                    "description": "The active household identifier.",
+                }
+            },
+            "required": ["household_id"],
+            "additionalProperties": False,
+        },
+    )
+
+    response = _response(
+        "customer_trend",
+        {
+            "investigation_question": "Did trip frequency fall?",
+            "decision_summary": "Inspect frequency and value trajectory.",
+            "arguments": {"household_id": "42"},
+        },
+    )
+    client = _FakeClient(response)
+    backend = GeminiFunctionCallingBackend(client=client)
+
+    backend.decide_next_step(_state(), (definition,))
+
+    functions = client.interactions.kwargs["tools"]
+    analytical = next(item for item in functions if item.name == "customer_trend")
+    finish = next(item for item in functions if item.name == "finish_investigation")
+    parameters = analytical.parameters
+    arguments = parameters["properties"]["arguments"]
+    finish_parameters = finish.parameters
+
+    assert "description" not in parameters
+    assert "description" not in arguments
+    assert (
+        arguments["properties"]["household_id"]["description"]
+        == "The active household identifier."
+    )
+    assert "description" not in finish_parameters
+    assert (
+        finish_parameters["properties"]["final"]["description"]
+        == "Qualitative model proposal whose evidence references are verified in code."
+    )
+
+
 def test_gemini_backend_parses_finish_action() -> None:
+    """Verify that gemini backend parses finish action."""
+
     payload = {
         "investigation_question": _finish_decision().investigation_question,
         "decision_summary": _finish_decision().decision_summary,
@@ -264,6 +351,8 @@ def test_gemini_backend_parses_finish_action() -> None:
 
 
 def test_gemini_backend_uses_function_call_id_for_stateless_response() -> None:
+    """Verify that gemini backend uses function call id for stateless response."""
+
     response = _response(
         "customer_trend",
         {
@@ -282,6 +371,8 @@ def test_gemini_backend_uses_function_call_id_for_stateless_response() -> None:
 
 
 def test_gemini_backend_rejects_multiple_function_calls() -> None:
+    """Verify that gemini backend rejects multiple function calls."""
+
     response = _response("customer_trend", {})
     response.steps.append(response.steps[0])
     backend = GeminiFunctionCallingBackend(client=_FakeClient(response))
@@ -291,6 +382,8 @@ def test_gemini_backend_rejects_multiple_function_calls() -> None:
 
 
 def test_gemini_backend_rejects_unoffered_function() -> None:
+    """Verify that gemini backend rejects unoffered function."""
+
     response = _response(
         "customer_trend",
         {
@@ -306,6 +399,8 @@ def test_gemini_backend_rejects_unoffered_function() -> None:
 
 
 def test_gemini_backend_rejects_incomplete_response() -> None:
+    """Verify that gemini backend rejects incomplete response."""
+
     response = _response("customer_trend", {})
     response.status = "incomplete"
     backend = GeminiFunctionCallingBackend(client=_FakeClient(response))
@@ -344,6 +439,8 @@ def test_gemini_backend_rejects_incomplete_response() -> None:
 def test_gemini_backend_wraps_malformed_provider_metadata(
     mutation: Any, message: str
 ) -> None:
+    """Verify that gemini backend wraps malformed provider metadata."""
+
     response = _response(
         "customer_trend",
         {
@@ -360,6 +457,8 @@ def test_gemini_backend_wraps_malformed_provider_metadata(
 
 
 def test_gemini_backend_rejects_arguments_outside_the_offered_schema() -> None:
+    """Verify that gemini backend rejects arguments outside the offered schema."""
+
     response = _response(
         "customer_trend",
         {
@@ -375,6 +474,8 @@ def test_gemini_backend_rejects_arguments_outside_the_offered_schema() -> None:
 
 
 def test_gemini_backend_does_not_echo_invalid_provider_payload() -> None:
+    """Verify that gemini backend does not echo invalid provider payload."""
+
     private_content = "synthetic-private-content"
     response = _response(
         "customer_trend",
@@ -395,10 +496,16 @@ def test_gemini_backend_does_not_echo_invalid_provider_payload() -> None:
 
 
 def test_gemini_backend_sanitizes_provider_request_errors() -> None:
+    """Verify that gemini backend sanitizes provider request errors."""
+
     sensitive_marker = "synthetic-sensitive-provider-marker"
 
     class _RaisingInteractions:
+        """Test double that provides RaisingInteractions behavior."""
+
         def create(self, **kwargs: Any) -> object:
+            """Return the controlled provider response used by this test."""
+
             del kwargs
             raise RuntimeError(f"provider rejected {sensitive_marker}")
 
@@ -415,6 +522,8 @@ def test_gemini_backend_sanitizes_provider_request_errors() -> None:
 def test_gemini_backend_requires_a_key_when_no_client_is_injected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify that gemini backend requires a key when no client is injected."""
+
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 
     with pytest.raises(MissingModelCredential, match="GEMINI_API_KEY"):
@@ -424,9 +533,13 @@ def test_gemini_backend_requires_a_key_when_no_client_is_injected(
 def test_gemini_backend_passes_gemini_key_explicitly_and_disables_retries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify that gemini backend passes gemini key explicitly and disables retries."""
+
     captured: dict[str, Any] = {}
 
     def fake_client(**kwargs: Any) -> _FakeClient:
+        """Return the fake Gemini client used by this test."""
+
         captured.update(kwargs)
         return _FakeClient(_response("customer_trend", {}))
 

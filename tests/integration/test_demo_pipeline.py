@@ -1,3 +1,5 @@
+"""Tests for WhyBack's demo pipeline behavior."""
+
 from __future__ import annotations
 
 import json
@@ -13,11 +15,17 @@ from whyback.demo import (
     build_official_demo,
     build_synthetic_demo,
 )
-from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
+from whyback.demo_limits import (
+    DEFAULT_DEMO_CUSTOMERS,
+    MAX_DEMO_CUSTOMERS,
+    MIN_DEMO_CUSTOMERS,
+)
 from whyback.observability import read_audit_events
 
 
 def _normalized_trace(path: Path) -> dict[str, object]:
+    """Normalize unstable trace fields for a deterministic comparison."""
+
     normalized: list[dict[str, Any]] = []
     for event in read_audit_events(path):
         details = event.details
@@ -62,11 +70,13 @@ def _normalized_trace(path: Path) -> dict[str, object]:
 def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     tmp_path: Path,
 ) -> None:
-    summary = build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
+    """Verify that synthetic demo reaches verified reports and safe failure."""
+
+    summary = build_synthetic_demo(tmp_path, customers=DEFAULT_DEMO_CUSTOMERS)
 
     assert summary.selected_household_ids == ("101", "102", "103", "104", "105")
     assert summary.completed_household_ids == ("101", "102", "103", "104", "105")
-    assert summary.report_count == MIN_DEMO_CUSTOMERS
+    assert summary.report_count == DEFAULT_DEMO_CUSTOMERS
     standard = json.loads(
         (tmp_path / "customer_101" / "report.json").read_text(encoding="utf-8")
     )
@@ -117,6 +127,8 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
 
 
 def test_synthetic_demo_supports_the_full_customer_maximum(tmp_path: Path) -> None:
+    """Verify that synthetic demo supports the full customer maximum."""
+
     summary = build_synthetic_demo(tmp_path, customers=MAX_DEMO_CUSTOMERS)
     expected_ids = tuple(str(identifier) for identifier in range(101, 125))
 
@@ -129,7 +141,23 @@ def test_synthetic_demo_supports_the_full_customer_maximum(tmp_path: Path) -> No
     )
 
 
+@pytest.mark.parametrize("customers", [MIN_DEMO_CUSTOMERS, 4])
+def test_synthetic_demo_supports_assignment_sized_batches(
+    tmp_path: Path, customers: int
+) -> None:
+    """Verify that both assignment-requested small batch sizes can run."""
+
+    summary = build_synthetic_demo(tmp_path, customers=customers)
+
+    assert summary.report_count == customers
+    assert summary.selected_household_ids == tuple(
+        str(identifier) for identifier in range(101, 101 + customers)
+    )
+
+
 def test_persistent_failure_trace_matches_normalized_golden(tmp_path: Path) -> None:
+    """Verify that persistent failure trace matches normalized golden."""
+
     build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
     actual = _normalized_trace(tmp_path / "failure_example" / "trace.jsonl")
     golden = json.loads(
@@ -140,10 +168,12 @@ def test_persistent_failure_trace_matches_normalized_golden(tmp_path: Path) -> N
 
 
 def test_synthetic_demo_rerun_replaces_the_exact_owned_tree(tmp_path: Path) -> None:
-    build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS + 1)
+    """Verify that synthetic demo rerun replaces the exact owned tree."""
+
+    build_synthetic_demo(tmp_path, customers=DEFAULT_DEMO_CUSTOMERS + 1)
     assert (tmp_path / "customer_106").is_dir()
 
-    summary = build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
+    summary = build_synthetic_demo(tmp_path, customers=DEFAULT_DEMO_CUSTOMERS)
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
 
     assert summary.selected_household_ids == ("101", "102", "103", "104", "105")
@@ -154,6 +184,8 @@ def test_synthetic_demo_rerun_replaces_the_exact_owned_tree(tmp_path: Path) -> N
 def test_synthetic_demo_refuses_to_replace_an_unowned_directory(
     tmp_path: Path,
 ) -> None:
+    """Verify that synthetic demo refuses to replace an unowned directory."""
+
     destination = tmp_path / "valuable"
     destination.mkdir()
     note = destination / "keep.txt"
@@ -170,12 +202,14 @@ def test_demo_boundaries_fail_before_creating_output(
     tmp_path: Path,
     customers: int,
 ) -> None:
+    """Verify that demo boundaries fail before creating output."""
+
     synthetic_output = tmp_path / "synthetic"
     official_output = tmp_path / "official"
 
-    with pytest.raises(ValueError, match="between 5 and 24"):
+    with pytest.raises(ValueError, match="between 3 and 24"):
         build_synthetic_demo(synthetic_output, customers=customers)
-    with pytest.raises(ValueError, match="between 5 and 24"):
+    with pytest.raises(ValueError, match="between 3 and 24"):
         build_official_demo(
             tmp_path / "missing-prepared-data",
             official_output,
@@ -189,6 +223,8 @@ def test_demo_boundaries_fail_before_creating_output(
 def test_live_official_transition_exactly_replaces_an_owned_skipped_tree(
     tmp_path: Path,
 ) -> None:
+    """Verify that live official transition exactly replaces an owned skipped tree."""
+
     destination = tmp_path / "official"
     destination.mkdir()
     (destination / ".whyback-owned-artifact-root.json").write_text(
@@ -223,12 +259,16 @@ def test_gemini_key_presence_requires_non_space_text(
     value: str,
     expected: bool,
 ) -> None:
+    """Verify that gemini key presence requires non space text."""
+
     monkeypatch.setenv("GEMINI_API_KEY", value)
 
     assert _gemini_api_key_present() is expected
 
 
 def test_live_official_transition_preserves_prior_run_artifacts(tmp_path: Path) -> None:
+    """Verify that live official transition preserves prior run artifacts."""
+
     destination = tmp_path / "official"
     customer = destination / "customer_181"
     customer.mkdir(parents=True)

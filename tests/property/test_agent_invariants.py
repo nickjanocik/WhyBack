@@ -1,3 +1,5 @@
+"""Tests for WhyBack's agent invariants behavior."""
+
 from __future__ import annotations
 
 from collections.abc import Generator
@@ -66,6 +68,8 @@ ANALYSIS_WINDOW = AnalysisWindow(
 def _repository(
     frames: dict[str, pd.DataFrame],
 ) -> Generator[DataRepository, None, None]:
+    """Create an in-memory analytical repository for this test."""
+
     with TemporaryDirectory(prefix="whyback-property-") as directory:
         prepared_dir = Path(directory)
         prepare_frames_for_tests(frames, prepared_dir)
@@ -79,6 +83,8 @@ def _context(
     household_id: str = "1",
     window: AnalysisWindow = ANALYSIS_WINDOW,
 ) -> ToolExecutionContext:
+    """Create the context value used by these tests."""
+
     return ToolExecutionContext(
         run_id=RUN_ID,
         tool_call_id=call_id,
@@ -88,6 +94,8 @@ def _context(
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="1",
         baseline_start_week=1,
@@ -110,6 +118,8 @@ def _snapshot() -> DeclineSnapshot:
 
 
 def _tool_decision(tool_name: ToolName) -> ToolDecision:
+    """Create a typed analytical-tool decision for this test."""
+
     return ToolDecision(
         investigation_question="Which deterministic signal should be checked?",
         selected_tool=tool_name,
@@ -119,6 +129,8 @@ def _tool_decision(tool_name: ToolName) -> ToolDecision:
 
 
 def _insufficient_finish() -> FinishDecision:
+    """Create an explicit insufficient-evidence finish decision."""
+
     return FinishDecision(
         investigation_question="Is there sufficient evidence to act?",
         decision_summary="Finish safely without selecting a customer action.",
@@ -141,12 +153,16 @@ def _verification_state(
     record: EvidenceRecord,
     history: ToolHistoryEntry,
 ) -> InvestigationState:
+    """Create investigation state suitable for verifier property tests."""
+
     return InvestigationState.start(_snapshot(), run_id=RUN_ID).model_copy(
         update={"evidence_ledger": (record,), "tool_history": (history,)}
     )
 
 
 def _monitor_proposal(*evidence_ids: str) -> FinishProposal:
+    """Create a monitor action proposal grounded in test evidence."""
+
     return FinishProposal(
         driver_summary=(
             DriverClaim(
@@ -183,6 +199,8 @@ def _monitor_proposal(*evidence_ids: str) -> FinishProposal:
 def test_category_totals_reconcile_for_varied_window_values(
     baseline_values: list[int], recent_values: list[int]
 ) -> None:
+    """Verify that category totals reconcile for varied window values."""
+
     frames = minimal_source_frames()
     rows: list[dict[str, object]] = []
     for week, values in ((1, baseline_values), (2, recent_values)):
@@ -230,6 +248,8 @@ def test_category_totals_reconcile_for_varied_window_values(
 def test_promotion_duplicates_never_multiply_economic_values(
     duplicate_count: int, promoted_sales: int
 ) -> None:
+    """Verify that promotion duplicates never multiply economic values."""
+
     frames = minimal_source_frames()
     frames["transactions"].loc[0, "sales_value"] = float(promoted_sales)
     promotion = frames["promotions"].iloc[[0]].copy()
@@ -269,6 +289,8 @@ def test_promotion_duplicates_never_multiply_economic_values(
 
 
 def _peer_frames() -> dict[str, pd.DataFrame]:
+    """Create source frames for target-excluded peer comparisons."""
+
     frames = minimal_source_frames()
     rows: list[dict[str, object]] = []
     for household in range(1, 8):
@@ -316,6 +338,8 @@ def _peer_frames() -> dict[str, pd.DataFrame]:
 @settings(max_examples=7, deadline=None)
 @given(target_household=st.integers(min_value=1, max_value=7))
 def test_peer_selection_excludes_every_possible_target(target_household: int) -> None:
+    """Verify that peer selection excludes every possible target."""
+
     target = str(target_household)
     window = AnalysisWindow(
         baseline_start=1,
@@ -349,6 +373,8 @@ def test_peer_selection_excludes_every_possible_target(target_household: int) ->
 def test_unrelated_households_cannot_change_target_direct_metrics(
     extra_values: list[int],
 ) -> None:
+    """Verify that unrelated households cannot change target direct metrics."""
+
     base_frames = minimal_source_frames()
     enriched_frames = minimal_source_frames()
     extra_rows = []
@@ -376,6 +402,8 @@ def test_unrelated_households_cannot_change_target_direct_metrics(
     def direct_summaries(
         frames: dict[str, pd.DataFrame],
     ) -> tuple[dict[str, JsonValue], ...]:
+        """Run the direct metrics and return their comparable summaries."""
+
         with _repository(frames) as repository:
             return (
                 customer_trend(
@@ -410,6 +438,8 @@ def test_unrelated_households_cannot_change_target_direct_metrics(
 def test_missing_and_one_sided_windows_have_explicit_statuses(
     tool_name: ToolName,
 ) -> None:
+    """Verify that missing and one sided windows have explicit statuses."""
+
     registry = ToolRegistry()
     no_rows_window = AnalysisWindow(
         baseline_start=3,
@@ -439,6 +469,8 @@ def test_missing_and_one_sided_windows_have_explicit_statuses(
 
 
 def test_evidence_identifiers_are_unique_across_successful_tool_calls() -> None:
+    """Verify that evidence identifiers are unique across successful tool calls."""
+
     with _repository(minimal_source_frames()) as repository:
         results = (
             customer_trend(
@@ -480,6 +512,8 @@ def test_budgets_never_go_negative_and_duplicate_signatures_execute_once(
     budget: int,
     selected_tools: list[ToolName],
 ) -> None:
+    """Verify that budgets never go negative and duplicate signatures execute once."""
+
     decisions = [
         _tool_decision(ToolName.CUSTOMER_TREND),
         *(_tool_decision(name) for name in selected_tools),
@@ -538,6 +572,8 @@ def test_verifier_rejects_unknown_and_failed_source_evidence(
     unknown_suffix: str,
     failed_status: ToolStatus,
 ) -> None:
+    """Verify that verifier rejects unknown and failed source evidence."""
+
     evidence_id = "ev-failed"
     record = EvidenceRecord(
         evidence_id=evidence_id,
@@ -597,6 +633,8 @@ def test_verifier_rejects_unknown_and_failed_source_evidence(
 def test_valid_partial_limitations_are_propagated_without_loss(
     limitations: list[str],
 ) -> None:
+    """Verify that valid partial limitations are propagated without loss."""
+
     evidence_id = "ev-partial"
     record = EvidenceRecord(
         evidence_id=evidence_id,

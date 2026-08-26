@@ -1,3 +1,5 @@
+/** Serves the localhost dashboard, safe artifacts, and bounded live Gemini jobs. */
+
 import { spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
 import { createReadStream } from "node:fs";
@@ -45,6 +47,7 @@ const contentTypes = {
   ".svg": "image/svg+xml",
 };
 
+/** Applies the browser security policy shared by static files and API responses. */
 function securityHeaders(response, api = false) {
   response.setHeader("X-Content-Type-Options", "nosniff");
   response.setHeader("Referrer-Policy", "no-referrer");
@@ -59,6 +62,7 @@ function securityHeaders(response, api = false) {
   if (api) response.setHeader("Cache-Control", "no-store");
 }
 
+/** Rejects mutation requests that are not same-origin JSON. */
 export function mutationHeaderError(headers) {
   const contentType = String(headers["content-type"] || "").toLowerCase();
   if (!contentType.startsWith("application/json")) {
@@ -80,6 +84,7 @@ export function mutationHeaderError(headers) {
     : null;
 }
 
+/** Allows only localhost host headers before any route is processed. */
 export function hostHeaderAllowed(value) {
   if (!value) return false;
   try {
@@ -90,6 +95,7 @@ export function hostHeaderAllowed(value) {
   }
 }
 
+/** Sends one no-store JSON response with the standard security headers. */
 function sendJson(response, statusCode, value) {
   const payload = `${JSON.stringify(value)}\n`;
   response.statusCode = statusCode;
@@ -98,10 +104,12 @@ function sendJson(response, statusCode, value) {
   response.end(payload);
 }
 
+/** Sends a public API error using the normal JSON response boundary. */
 function sendError(response, statusCode, message) {
   sendJson(response, statusCode, { error: message });
 }
 
+/** Reads a small JSON body and rejects oversized or malformed input. */
 async function readJsonBody(request) {
   const chunks = [];
   let total = 0;
@@ -123,11 +131,13 @@ async function readJsonBody(request) {
   }
 }
 
+/** Returns a bounded public model label without exposing any credential. */
 export function configuredGeminiModel(environment = process.env) {
   const configured = String(environment.RETENTION_MODEL || "").trim();
   return configured ? configured.slice(0, 128) : DEFAULT_GEMINI_MODEL;
 }
 
+/** Accepts a live timeout only when it falls inside the operational bounds. */
 export function liveRunTimeoutMs(environment = process.env) {
   const configured = Number(environment.WHYBACK_LIVE_TIMEOUT_MS);
   return Number.isInteger(configured) &&
@@ -137,6 +147,7 @@ export function liveRunTimeoutMs(environment = process.env) {
     : DEFAULT_LIVE_TIMEOUT_MS;
 }
 
+/** Accepts only a real file when verifying subprocess output. */
 async function isRealFile(filePath) {
   try {
     const details = await lstat(filePath);
@@ -147,6 +158,7 @@ async function isRealFile(filePath) {
   }
 }
 
+/** Reports secret-free Gemini readiness after credential and official-data checks. */
 export async function liveRunCapability({
   root = repositoryRoot,
   environment = process.env,
@@ -178,6 +190,7 @@ export async function liveRunCapability({
   };
 }
 
+/** Builds the fixed argv used for every browser-triggered Gemini batch. */
 export function liveDemoArguments(customers, relativeOutputPath) {
   return [
     "run",
@@ -192,6 +205,7 @@ export function liveDemoArguments(customers, relativeOutputPath) {
   ];
 }
 
+/** Assigns one unique owned collection and public command description to a job. */
 export function describeLiveRun(
   customers,
   jobId,
@@ -210,10 +224,12 @@ export function describeLiveRun(
   };
 }
 
+/** Identifies record-shaped manifest data before field validation. */
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** Checks that a manifest reconciles every requested household to a terminal live result. */
 export function liveManifestIsVerified(manifest, customers) {
   if (
     !isPlainObject(manifest) ||
@@ -261,6 +277,7 @@ export function liveManifestIsVerified(manifest, customers) {
   );
 }
 
+/** Confirms that the child wrote required files beneath its exact owned directory. */
 async function verifyLiveOutput(descriptor, customers) {
   try {
     const ownedDirectory = await resolveOwnedLiveRunDirectory(
@@ -291,8 +308,10 @@ async function verifyLiveOutput(descriptor, customers) {
 const activeLiveProcesses = new Set();
 const activeProcessWaiters = new Set();
 
+/** Registers a child until close so concurrency and shutdown gates stay accurate. */
 function trackLiveProcess(child) {
   activeLiveProcesses.add(child);
+  /** Removes one closed child and releases waiters when no live process remains. */
   const remove = () => {
     activeLiveProcesses.delete(child);
     if (activeLiveProcesses.size === 0) {
@@ -304,10 +323,12 @@ function trackLiveProcess(child) {
   return remove;
 }
 
+/** Waits up to a fixed deadline for every tracked child to emit close. */
 function waitForActiveProcesses(timeoutMs) {
   if (activeLiveProcesses.size === 0) return Promise.resolve(true);
   return new Promise((resolve) => {
     let settled = false;
+    /** Completes this waiter as soon as the active-process set becomes empty. */
     const onEmpty = () => {
       if (settled) return;
       settled = true;
@@ -325,6 +346,7 @@ function waitForActiveProcesses(timeoutMs) {
   });
 }
 
+/** Signals the whole detached process group, with a direct-child fallback. */
 function terminateProcessTree(child, signal) {
   let groupError = null;
   if (process.platform !== "win32" && Number.isInteger(child.pid)) {
@@ -343,6 +365,7 @@ function terminateProcessTree(child, signal) {
   if (groupError) throw groupError;
 }
 
+/** Gracefully stops active children, then makes one bounded forceful pass. */
 export async function stopActiveLiveProcesses({
   graceMs = 5_000,
   forceMs = 1_000,
@@ -365,6 +388,7 @@ export async function stopActiveLiveProcesses({
   return waitForActiveProcesses(forceMs);
 }
 
+/** Runs a fixed argv child with timeout, shutdown, and close-event guarantees. */
 function runBoundedChild({
   args,
   canStartProcess,
@@ -376,6 +400,7 @@ function runBoundedChild({
   timeoutMs,
   workingDirectory,
 }) {
+  // The close event, rather than exit or error alone, owns final process release.
   return new Promise((resolve, reject) => {
     if (!canStartProcess()) {
       reject(
@@ -397,6 +422,7 @@ function runBoundedChild({
     let processError = false;
     let forceTimer = null;
     let settled = false;
+    /** Rejects the subprocess promise once while later close events finish cleanup. */
     const rejectOnce = (error) => {
       if (settled) return;
       settled = true;
@@ -450,6 +476,7 @@ function runBoundedChild({
   });
 }
 
+/** Runs the official-data validator without passing the Gemini credential. */
 export async function preparedDataIsValidated({
   root = repositoryRoot,
   environment = process.env,
@@ -477,6 +504,7 @@ export async function preparedDataIsValidated({
   }
 }
 
+/** Executes, independently verifies, and seals one live Gemini artifact collection. */
 export async function runLiveDemo(
   customers,
   descriptor,
@@ -533,6 +561,7 @@ export async function runLiveDemo(
   return { command: `uv ${descriptor.args.join(" ")}` };
 }
 
+// The singleton manager serializes paid work and carries only public run metadata.
 const demoManager = createDemoRunManager({
   repositoryRoot,
   backend: "gemini",
@@ -544,6 +573,7 @@ const demoManager = createDemoRunManager({
     }),
 });
 
+/** Starts a job only after the current server readiness check has passed. */
 export function startLiveRun(manager, customers, capability) {
   if (!capability.ready) {
     const error = new Error(
@@ -555,6 +585,7 @@ export function startLiveRun(manager, customers, capability) {
   return manager.start(customers);
 }
 
+/** Allows the browser to submit exactly one field: the bounded customer count. */
 export function liveRunRequestError(body) {
   if (
     !isPlainObject(body) ||
@@ -566,6 +597,7 @@ export function liveRunRequestError(body) {
   return demoCustomerCountError(body.customers);
 }
 
+/** Streams one already-resolved file with its safe content type and headers. */
 async function serveFile(response, filePath, contentType) {
   const details = await stat(filePath);
   response.statusCode = 200;
@@ -578,6 +610,7 @@ async function serveFile(response, filePath, contentType) {
   createReadStream(filePath).pipe(response);
 }
 
+/** Routes the small read API and the single guarded live-run mutation. */
 async function handleApi(request, response, url) {
   if (request.method === "GET" && url.pathname === "/api/workspace") {
     const [workspace, liveRun] = await Promise.all([
@@ -678,6 +711,7 @@ async function handleApi(request, response, url) {
   }
 }
 
+/** Enforces localhost access before serving API routes or built frontend assets. */
 async function handleRequest(request, response) {
   try {
     if (!hostHeaderAllowed(request.headers.host)) {
@@ -729,6 +763,7 @@ async function handleRequest(request, response) {
   }
 }
 
+/** Creates an idempotent shutdown that drains both the listener and live children. */
 export function createDashboardShutdown({
   server,
   beginShutdown = () => {},
@@ -737,9 +772,11 @@ export function createDashboardShutdown({
   retryDelayMs = 1_000,
 }) {
   let shutdownPromise = null;
+  /** Begins shutdown once and returns the same completion promise to every caller. */
   return function shutdown() {
     if (shutdownPromise) return shutdownPromise;
     beginShutdown();
+    // Process termination and listener closure proceed together, then receive a final drain.
     shutdownPromise = (async () => {
       const serverClosed = new Promise((resolve) => {
         try {
@@ -749,6 +786,7 @@ export function createDashboardShutdown({
         }
       });
       let warned = false;
+      /** Repeats bounded process shutdown until the active set is truly empty. */
       async function drainProcesses() {
         let processesStopped = false;
         while (!processesStopped) {
@@ -778,6 +816,7 @@ export function createDashboardShutdown({
   };
 }
 
+/** Starts the bridge on its fixed localhost interface and installs safe signal cleanup. */
 export function startServer() {
   dashboardShuttingDown = false;
   const server = createServer(handleRequest);
@@ -787,7 +826,9 @@ export function startServer() {
       dashboardShuttingDown = true;
     },
   });
+  /** Starts graceful cleanup for an interactive interrupt. */
   const onInterrupt = () => void shutdown();
+  /** Starts the same cleanup when a supervisor requests termination. */
   const onTerminate = () => void shutdown();
   process.on("SIGINT", onInterrupt);
   process.on("SIGTERM", onTerminate);
@@ -799,6 +840,7 @@ export function startServer() {
   return server;
 }
 
+// Start automatically only when this server module is the direct entry point.
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   startServer();
 }

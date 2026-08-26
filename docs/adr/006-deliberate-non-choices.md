@@ -1,7 +1,7 @@
 # ADR 006 — Deliberate non-choices
 
 - **Status:** Accepted
-- **Date:** 2026-08-24
+- **Date:** 2026-08-25
 
 ## Context
 
@@ -25,8 +25,9 @@ The submission does not use:
   action;
 - automatic customer outreach—recommendations require human review, consent,
   and controlled measurement; or
-- a heavy web frontend—static HTML reports and trace viewers satisfy local
-  review without a deployed service.
+- a write-enabled operational frontend—the localhost React dashboard reads the
+  same sanitized artifacts as the static viewers and has no analytical,
+  approval, outreach, or CRM mutation authority.
 
 LangChain and LangGraph are likewise unnecessary for this explicit loop.
 
@@ -36,5 +37,8 @@ LangChain and LangGraph are likewise unnecessary for this explicit loop.
   calculations, governance, and failures visible.
 - The system does not claim predictive sophistication or automated campaign
   execution.
+- The reviewer interface adds usability without moving calculations, state,
+  evidence, or policy out of Python; static reports remain independently
+  portable and authoritative.
 - Future additions must address a measured operational need while preserving
   evidence, bounds, verification, and human approval.

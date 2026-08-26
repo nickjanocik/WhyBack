@@ -77,6 +77,8 @@ def _safe_model_prose(text: str, *, fallback: str) -> str:
 
 
 def _stable_signature(name: ToolName, arguments: dict[str, JsonValue]) -> str:
+    """Hash a tool name and normalized arguments for duplicate detection."""
+
     serialized = json.dumps(arguments, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(f"{name.value}:{serialized}".encode()).hexdigest()
 
@@ -90,6 +92,8 @@ def make_tool_call_id(run_id: UUID, call_index: int, name: ToolName) -> str:
 
 
 def _append_unique[T](values: tuple[T, ...], item: T) -> tuple[T, ...]:
+    """Append an item only when the tuple does not already contain it."""
+
     return values if item in values else (*values, item)
 
 
@@ -101,6 +105,8 @@ def _tool_failure(
     limitation: str,
     parameters: dict[str, JsonValue],
 ) -> ToolResult:
+    """Build an evidence-free typed failure with replayable provenance."""
+
     return ToolResult(
         tool_call_id=context.tool_call_id,
         tool_name=name,
@@ -136,6 +142,8 @@ class InvestigationRunner:
         audit_writer: AuditJsonlWriter | None = None,
         event_clock: Callable[[], datetime] | None = None,
     ) -> None:
+        """Connect the model, tools, verifier, data, limits, and optional audit sink."""
+
         self._backend = backend
         self._registry = registry
         self._repository = repository
@@ -156,6 +164,8 @@ class InvestigationRunner:
         event: AuditEventName,
         details: dict[str, object] | None = None,
     ) -> None:
+        """Append one sanitized audit event when an audit writer is configured."""
+
         if self._audit_writer is None:
             return
         self._audit_writer.append(
@@ -174,6 +184,8 @@ class InvestigationRunner:
         *,
         run_id: UUID | None = None,
     ) -> InvestigationOutcome:
+        """Run bounded model turns until verification passes or a safe fallback ends."""
+
         state = InvestigationState.start(
             detector_snapshot,
             max_tool_executions=self._config.max_tool_executions,
@@ -452,6 +464,8 @@ class InvestigationRunner:
     def _handle_tool_decision(
         self, state: InvestigationState, decision: ToolDecision
     ) -> InvestigationState:
+        """Validate, deduplicate, execute, retry, and record one selected tool."""
+
         decision_number = state.model_usage.decisions
         if state.remaining_tool_budget == 0:
             return state.model_copy(
@@ -719,6 +733,8 @@ class InvestigationRunner:
         context: ToolExecutionContext,
         normalized: dict[str, JsonValue],
     ) -> ToolResult:
+        """Run a tool on an isolated data connection within the configured timeout."""
+
         # DuckDB connections are not shared across the timeout boundary. A timed-out
         # worker may take a moment to observe cancellation; isolating each attempt
         # prevents it from racing the immediate retry or the owner connection close.
@@ -737,6 +753,8 @@ class InvestigationRunner:
             )
 
         def execute() -> ToolResult:
+            """Dispatch the tool and always close its isolated data connection."""
+
             try:
                 return self._registry.execute(
                     name,
@@ -787,6 +805,8 @@ class InvestigationRunner:
         *,
         prior_verification: VerificationResult | None = None,
     ) -> InvestigationOutcome:
+        """Verify and return the governed insufficient-evidence fallback outcome."""
+
         proposal = FinishProposal(
             driver_summary=(),
             proposed_confidence=ConfidenceLevel.LOW,

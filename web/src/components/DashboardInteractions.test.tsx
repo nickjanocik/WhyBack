@@ -1,3 +1,5 @@
+/** Exercises dashboard navigation, live-run controls, accessibility, and report states. */
+
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -76,7 +78,7 @@ const collections: ArtifactCollection[] = [
   },
 ];
 
-const demoCustomerLimits = { minimum: 5, maximum: 24 };
+const demoCustomerLimits = { minimum: 3, maximum: 24 };
 const readyLiveRun: LiveRunConfiguration = {
   backend: "gemini",
   model: "gemini-2.5-flash",
@@ -166,7 +168,8 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByRole("button", { name: "4" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "3" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "4" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "24" }));
     expect(screen.getByRole("button", { name: "24" })).toHaveAttribute("aria-pressed", "true");
     await user.click(screen.getByRole("button", { name: /start live run/i }));

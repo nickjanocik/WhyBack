@@ -1,3 +1,4 @@
+# Give contributors short, documented aliases for the repository quality commands.
 .DEFAULT_GOAL := help
 
 .PHONY: help sync format lint type test quality

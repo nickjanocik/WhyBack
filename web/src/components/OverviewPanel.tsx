@@ -1,3 +1,5 @@
+/** Summarizes decline evidence, likely drivers, population context, and governed action. */
+
 import {
   ArrowDownRight,
   ArrowRight,
@@ -30,6 +32,7 @@ interface OverviewPanelProps {
   onEvidenceSelect: (evidenceId: string) => void;
 }
 
+/** Renders the main investigation narrative using only verified report fields. */
 export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) {
   const decline = report.decline;
   const trend = weeklyTrend(report);
@@ -196,6 +199,7 @@ export function OverviewPanel({ report, onEvidenceSelect }: OverviewPanelProps) 
   );
 }
 
+/** Converts a terminal report status into a consistent visual label. */
 function StatusPill({ status }: { status: ReportData["run_status"] }) {
   const completed = status === "completed";
   return (
@@ -206,6 +210,7 @@ function StatusPill({ status }: { status: ReportData["run_status"] }) {
   );
 }
 
+/** Compares one baseline and recent detector metric in a compact card. */
 function MetricCard({
   label,
   baseline,
@@ -235,6 +240,7 @@ function MetricCard({
   );
 }
 
+/** Displays the verifier-permitted action and mandatory human-review boundary. */
 function ActionCard({
   report,
   onEvidenceSelect,
@@ -308,6 +314,7 @@ function ActionCard({
   );
 }
 
+/** Shows target-excluded population, peer, and protected category context. */
 function PopulationCard({
   report,
   onEvidenceSelect,
@@ -376,6 +383,7 @@ function PopulationCard({
   );
 }
 
+/** Displays one cohort comparison without implying a causal conclusion. */
 function CohortStat({
   label,
   cohort,
@@ -402,6 +410,7 @@ function CohortStat({
   );
 }
 
+/** Resolves an evidence ID to its human-readable metric label. */
 function evidenceMetric(report: ReportData, evidenceId: string): string {
   const record: EvidenceRecord | undefined = report.evidence_ledger.find(
     (item) => item.evidence_id === evidenceId,

@@ -1,9 +1,10 @@
 # WhyBack Investigator
 
 This directory contains the internal, localhost-only review interface for
-WhyBack. The React app reads the versioned `report.json` and append-only
-`trace.jsonl` artifacts produced by the Python system. It does not calculate
-evidence, author recommendations, or execute customer actions.
+WhyBack. The Node bridge reads the versioned `report.json` and append-only
+`trace.jsonl` artifacts produced by Python, validates their paths, sanitizes the
+audit details, and serves typed JSON to React. Neither layer calculates
+evidence, authors recommendations, or executes customer actions.
 
 ## Useful features
 
@@ -24,7 +25,9 @@ evidence, author recommendations, or execute customer actions.
 
 ## Run in development
 
-From the repository root, prepare the Python environment first:
+Python 3.12 with `uv` and Node.js are required. CI uses Node 24; the current
+Vite toolchain supports Node `^20.19.0` or `>=22.12.0`. From the repository
+root, prepare the locked Python and web environments:
 
 ```bash
 uv sync --frozen --extra dev
@@ -53,19 +56,22 @@ The web launcher is Gemini-only. It executes a fixed command through an
 argument array, never a shell string or a browser-selected backend:
 
 ```bash
-uv run whyback demo --customers <5-24> --backend gemini \
+uv run whyback demo --customers <3-24> --backend gemini \
   --output-dir artifacts/local/live-runs/live-<job-id>
 ```
 
-The range is inclusive: five is the minimum and 24 is the configured maximum.
-Every household can make up to six real model decisions, so larger batches take
-longer and can consume more provider quota.
+The supported range is inclusive from three through 24 households. The dialog
+defaults to five, matching the assignment demonstration size. Every household
+can make up to six real model decisions, so larger batches take longer and can
+consume more provider quota.
 
 Before startup, put a rotated credential in the ignored repository-root `.env`
 or export it in the server environment:
 
 ```dotenv
 GEMINI_API_KEY=your-rotated-key
+RETENTION_MODEL=gemini-3.7-flash
+RETENTION_THINKING_LEVEL=medium
 ```
 
 `npm run dev`, `npm run server`, and `npm run preview` load that file only into
@@ -75,6 +81,18 @@ response, a displayed command, or an audit event. Before enabling the control,
 the bridge runs `whyback data validate --official` to verify the prepared-data
 identity, schemas, transform version, files, and hashes. If either boundary is
 unavailable, the run endpoint fails closed; there is no scripted fallback.
+`RETENTION_MODEL` changes the server-selected Gemini model, and
+`RETENTION_THINKING_LEVEL` accepts `low`, `medium`, or `high`; neither can be
+selected by browser input.
+
+The bridge exposes three read-only artifact endpoints:
+
+- `GET /api/workspace` returns available fixed and sealed live collections,
+  their report summaries, live-run readiness, and any collection warnings.
+- `GET /api/investigation?collection=<id>&household=<id>` returns one report and
+  its sanitized replay trace after validating both identifiers.
+- `GET /api/artifact?collection=<id>&household=<id>&file=<name>` streams only an
+  allow-listed rendered report or trace.
 
 The run API is asynchronous:
 
@@ -85,8 +103,10 @@ The run API is asynchronous:
   state and only the audited events recorded after the supplied cursor. The
   browser polls this endpoint while the job is running.
 - The live-activity drawer labels events by household and shows investigation
-  questions, selected tools, public decision summaries, tool status, evidence
-  writes, retries, verification, and the terminal run state.
+  questions, selected tools, public decision summaries, tool status, retries,
+  verification, and the terminal run state. Evidence-write events are hidden by
+  default and appear only when the reviewer enables the **Evidence writes**
+  switch.
 - The event buffer retains up to 5,000 sanitized audit events. The response
   reports if older events were dropped, and the completed investigation remains
   available in the normal audit view.
@@ -109,6 +129,9 @@ raw process output.
   The default deadline is four hours; `WHYBACK_LIVE_TIMEOUT_MS` can set a value
   from one minute through six hours. Stopping the bridge terminates and waits for
   any active live process before it exits.
+- `WHYBACK_DASHBOARD_PORT` changes the built bridge's default `4173` listener.
+  The development Vite proxy targets `4173`, so keep that default for
+  `npm run dev` unless the proxy configuration is changed too.
 - There is no endpoint for data download/preparation, outreach, CRM mutation,
   or action execution. Recommended actions always remain subject to human
   review.

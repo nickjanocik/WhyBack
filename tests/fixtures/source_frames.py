@@ -1,9 +1,13 @@
+"""Reusable source-shaped data frames for deterministic tests."""
+
 from __future__ import annotations
 
 import pandas as pd
 
 
 def minimal_source_frames() -> dict[str, pd.DataFrame]:
+    """Create the minimal source frames value used by these tests."""
+
     transactions = pd.DataFrame(
         [
             {

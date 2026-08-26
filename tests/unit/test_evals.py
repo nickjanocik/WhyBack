@@ -1,3 +1,5 @@
+"""Tests for WhyBack's evals behavior."""
+
 from __future__ import annotations
 
 import hashlib
@@ -70,6 +72,8 @@ def _good_summary(
     action: ActionId | None = None,
     population_percentile_available: bool = False,
 ) -> NormalizedRunSummary:
+    """Create one normalized run summary that satisfies its scenario."""
+
     evidence_id = f"ev_{scenario_id}"
     return NormalizedRunSummary(
         scenario_id=scenario_id,
@@ -100,6 +104,8 @@ def _good_summary(
 
 
 def _baseline_summaries() -> tuple[NormalizedRunSummary, ...]:
+    """Build the complete set of baseline evaluation summaries."""
+
     type_a_limitation = "Exact Type A delivered coupon identities are unavailable."
     return (
         _good_summary("frequency_decline", selected=(ToolName.CUSTOMER_TREND,)),
@@ -189,6 +195,8 @@ def _baseline_summaries() -> tuple[NormalizedRunSummary, ...]:
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="7",
         baseline_start_week=38,
@@ -211,6 +219,8 @@ def _snapshot() -> DeclineSnapshot:
 
 
 def test_catalog_has_exact_ids_archetypes_and_special_contracts() -> None:
+    """Verify that catalog has exact ids archetypes and special contracts."""
+
     catalog = load_scenario_catalog()
 
     assert tuple(item.scenario_id for item in catalog.scenarios) == (
@@ -250,6 +260,8 @@ def test_catalog_has_exact_ids_archetypes_and_special_contracts() -> None:
 
 
 def test_all_baseline_archetypes_produce_perfect_behavior_metrics() -> None:
+    """Verify that all baseline archetypes produce perfect behavior metrics."""
+
     report = evaluate_runs(_baseline_summaries())
 
     assert report.missing_scenario_ids == ()
@@ -288,6 +300,8 @@ def test_all_baseline_archetypes_produce_perfect_behavior_metrics() -> None:
 
 
 def test_failures_are_counted_without_a_prose_judge() -> None:
+    """Verify that failures are counted without a prose judge."""
+
     summary = NormalizedRunSummary(
         scenario_id="frequency_decline",
         selected_tools=(
@@ -317,6 +331,8 @@ def test_failures_are_counted_without_a_prose_judge() -> None:
 
 
 def test_required_partial_limitation_must_be_observed_and_propagated() -> None:
+    """Verify that required partial limitation must be observed and propagated."""
+
     summary = _good_summary(
         "type_a_coupon_exposure_gap",
         selected=(ToolName.COUPON_CAMPAIGN_HISTORY,),
@@ -386,6 +402,8 @@ def test_methodology_contracts_score_typed_observables_not_prose(
     update: dict[str, object],
     failed_check: str,
 ) -> None:
+    """Verify that methodology contracts score typed observables not prose."""
+
     summary = next(
         item for item in _baseline_summaries() if item.scenario_id == scenario_id
     ).model_copy(update=update)
@@ -397,6 +415,8 @@ def test_methodology_contracts_score_typed_observables_not_prose(
 
 
 def test_state_and_outcome_inputs_normalize_without_executing_analytics() -> None:
+    """Verify that state and outcome inputs normalize without executing analytics."""
+
     proposal = FinishProposal(
         driver_summary=(),
         proposed_confidence=ConfidenceLevel.LOW,
@@ -438,6 +458,8 @@ def test_state_and_outcome_inputs_normalize_without_executing_analytics() -> Non
 
 
 def test_synthetic_materializer_matches_public_typed_normalization() -> None:
+    """Verify that synthetic materializer matches public typed normalization."""
+
     duplicate = ToolHistoryEntry(
         decision_number=1,
         tool_name=ToolName.CUSTOMER_TREND,
@@ -470,6 +492,8 @@ def test_synthetic_materializer_matches_public_typed_normalization() -> None:
 
 
 def test_json_boundary_and_markdown_are_deterministic(tmp_path: Path) -> None:
+    """Verify that json boundary and markdown are deterministic."""
+
     summary = _baseline_summaries()[0]
     input_path = tmp_path / "normalized.json"
     input_path.write_text(
@@ -489,6 +513,8 @@ def test_json_boundary_and_markdown_are_deterministic(tmp_path: Path) -> None:
 
 
 def test_markdown_scenario_columns_render_their_named_checks() -> None:
+    """Verify that markdown scenario columns render their named checks."""
+
     summary = _good_summary(
         "frequency_decline",
         selected=(ToolName.CUSTOMER_TREND,),
@@ -500,6 +526,8 @@ def test_markdown_scenario_columns_render_their_named_checks() -> None:
 
 
 def test_contracts_reject_extra_fields_and_wrong_catalog_ids() -> None:
+    """Verify that contracts reject extra fields and wrong catalog ids."""
+
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         NormalizedRunSummary.model_validate(
             {
@@ -534,6 +562,8 @@ def test_contracts_reject_extra_fields_and_wrong_catalog_ids() -> None:
 def test_cli_writes_exact_provenance_and_fails_an_incomplete_suite(
     tmp_path: Path,
 ) -> None:
+    """Verify that cli writes exact provenance and fails an incomplete suite."""
+
     summary = _baseline_summaries()[0]
     input_path = tmp_path / "normalized.json"
     output_path = tmp_path / "report.json"

@@ -66,6 +66,8 @@ class ReportBundlePaths:
 
 
 def _deduplicate(values: list[str]) -> tuple[str, ...]:
+    """Sanitize strings and retain each nonempty value only once in order."""
+
     return tuple(
         dict.fromkeys(sanitize_public_text(value) for value in values if value)
     )
@@ -85,6 +87,8 @@ def _qualitative(text: str, *, fallback: str) -> str:
 
 
 def _verified_final(outcome: InvestigationOutcome) -> VerifiedFinalDecision | None:
+    """Return the final decision only when deterministic verification passed."""
+
     verification = outcome.verification
     if verification is None or not verification.passed:
         return None
@@ -97,6 +101,8 @@ def _evidence_role(
     supporting_ids: frozenset[str],
     counterevidence_ids: frozenset[str],
 ) -> Literal["supporting", "counterevidence", "context"]:
+    """Classify an evidence ID by its verified role in the final report."""
+
     if evidence_id in supporting_ids:
         return "supporting"
     if evidence_id in counterevidence_ids:
@@ -111,6 +117,8 @@ def _report_evidence(
     supporting_ids: frozenset[str],
     counterevidence_ids: frozenset[str],
 ) -> ReportEvidenceData:
+    """Convert a ledger record into its immutable, source-status-aware report form."""
+
     return ReportEvidenceData(
         evidence_id=record.evidence_id,
         run_id=str(record.run_id),
@@ -140,10 +148,14 @@ def _report_evidence(
 def _first_metric(
     records: tuple[EvidenceRecord, ...], metric: str
 ) -> EvidenceRecord | None:
+    """Return the first evidence record for a named metric, if one exists."""
+
     return next((record for record in records if record.metric == metric), None)
 
 
 def _as_count(record: EvidenceRecord | None) -> int:
+    """Convert a nonnegative count-valued evidence record to an integer."""
+
     if record is None or record.value is None:
         return 0
     return max(0, int(record.value))
@@ -154,6 +166,8 @@ def _cohort_comparison(
     *,
     cohort: Literal["eligible_population", "behavioral_peers"],
 ) -> CohortComparisonReportData:
+    """Resolve one population or peer distribution from its bound evidence records."""
+
     if cohort == "eligible_population":
         names = {
             "count": "population_household_count",
@@ -236,6 +250,8 @@ def _cohort_comparison(
 def _category_context(
     records: tuple[EvidenceRecord, ...],
 ) -> tuple[CategoryContextReportData, ...]:
+    """Assemble selected-category context rows from classification-linked evidence."""
+
     classification_records = tuple(
         record
         for record in records
@@ -710,6 +726,8 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
 
 
 def _markdown_escape(value: object) -> str:
+    """Escape HTML and Markdown control characters in rendered report text."""
+
     text = html.escape(str(value), quote=False)
     for character in ("\\", "`", "*", "_", "[", "]", "|"):
         text = text.replace(character, f"\\{character}")
@@ -723,6 +741,8 @@ def _markdown_code(value: object) -> str:
 
 
 def _format_number(value: float | int | None) -> str:
+    """Format an optional numeric value compactly for a human-readable report."""
+
     if value is None:
         return "not available"
     if isinstance(value, int) or float(value).is_integer():
@@ -731,18 +751,26 @@ def _format_number(value: float | int | None) -> str:
 
 
 def _format_money(value: float | int | None) -> str:
+    """Format an optional retailer sales value as currency."""
+
     return "not available" if value is None else f"${value:,.2f}"
 
 
 def _format_percent(value: float | int | None) -> str:
+    """Format an optional fractional value as a percentage."""
+
     return "not available" if value is None else f"{value * 100:,.1f}%"
 
 
 def _humanize(value: object) -> str:
+    """Turn an enum or snake-case value into a display label."""
+
     return str(getattr(value, "value", value)).replace("_", " ").title()
 
 
 def _environment(*, autoescape: bool = False, trim_blocks: bool = True) -> Environment:
+    """Create the strict Jinja environment and register report-safe filters."""
+
     environment = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIRECTORY),
         autoescape=autoescape,

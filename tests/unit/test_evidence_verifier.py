@@ -1,3 +1,5 @@
+"""Tests for WhyBack's evidence verifier behavior."""
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -36,6 +38,8 @@ RUN_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _snapshot() -> DeclineSnapshot:
+    """Create a deterministic decline snapshot for this test."""
+
     return DeclineSnapshot(
         household_id="1",
         baseline_start_week=1,
@@ -70,6 +74,8 @@ def _evidence(
     value: float | None = None,
     dimensions: dict[str, str] | None = None,
 ) -> EvidenceRecord:
+    """Create a typed evidence record with test-controlled values."""
+
     return EvidenceRecord(
         evidence_id=evidence_id,
         run_id=RUN_ID,
@@ -96,6 +102,8 @@ def _history(
     limitations: tuple[str, ...] = (),
     diagnostics: dict[str, object] | None = None,
 ) -> ToolHistoryEntry:
+    """Create a successful tool-history entry for verifier tests."""
+
     return ToolHistoryEntry(
         decision_number=1,
         tool_name=tool,
@@ -125,6 +133,8 @@ def _context_evidence(
     evidence_id: str = "ev-context",
     call_id: str = "call-peer",
 ) -> EvidenceRecord:
+    """Create target-excluded population-context evidence for verification."""
+
     return EvidenceRecord(
         evidence_id=evidence_id,
         run_id=RUN_ID,
@@ -145,6 +155,8 @@ def _category_context_evidence(
     evidence_id: str = "ev-category-context",
     call_id: str = "call-category",
 ) -> EvidenceRecord:
+    """Create category-context evidence owned by the test run."""
+
     return EvidenceRecord(
         evidence_id=evidence_id,
         run_id=RUN_ID,
@@ -168,6 +180,8 @@ def _state(
     records: tuple[EvidenceRecord, ...],
     histories: tuple[ToolHistoryEntry, ...],
 ) -> InvestigationState:
+    """Create an application-owned investigation state for this test."""
+
     return InvestigationState.start(_snapshot(), run_id=RUN_ID).model_copy(
         update={"evidence_ledger": records, "tool_history": histories}
     )
@@ -181,6 +195,8 @@ def _proposal(
     confidence: ConfidenceLevel = ConfidenceLevel.HIGH,
     summary: str = "The observed change warrants cautious monitoring.",
 ) -> FinishProposal:
+    """Create a finish proposal with test-controlled evidence references."""
+
     drivers = (
         (
             DriverClaim(
@@ -214,6 +230,8 @@ def _proposal(
 
 
 def test_evidence_ledger_is_immutable_and_checks_ownership() -> None:
+    """Verify that evidence ledger is immutable and checks ownership."""
+
     record = _evidence("ev-1")
     result = ToolResult(
         tool_call_id="call-trend",
@@ -239,6 +257,8 @@ def test_evidence_ledger_is_immutable_and_checks_ownership() -> None:
 
 
 def test_driver_claim_requires_claim_type_and_counterevidence_consideration() -> None:
+    """Verify that driver claims type and consider counterevidence."""
+
     with pytest.raises(ValidationError, match="counterevidence"):
         DriverClaim(
             summary="A recorded pattern is associated with decline.",
@@ -249,6 +269,8 @@ def test_driver_claim_requires_claim_type_and_counterevidence_consideration() ->
 
 
 def test_verifier_caps_high_confidence_and_propagates_partial_limitation() -> None:
+    """Verify that verifier caps high confidence and propagates partial limitation."""
+
     limitation = "The recent window has no observed transactions."
     record = _evidence("ev-1")
     state = _state(
@@ -279,6 +301,8 @@ def test_verifier_caps_high_confidence_and_propagates_partial_limitation() -> No
 
 
 def test_high_confidence_requires_two_tools_without_limitations() -> None:
+    """Verify that high confidence requires two tools without limitations."""
+
     trend = _evidence("ev-trend")
     peer = _evidence(
         "ev-peer",
@@ -329,6 +353,8 @@ def test_high_confidence_requires_two_tools_without_limitations() -> None:
 
 
 def test_personalized_check_in_rejects_support_for_a_narrower_action() -> None:
+    """Verify that personalized check in rejects support for a narrower action."""
+
     trend = _evidence("ev-trend", metric="distinct_trips")
     basket = _evidence(
         "ev-basket",
@@ -370,6 +396,8 @@ def test_personalized_check_in_rejects_support_for_a_narrower_action() -> None:
 
 
 def test_insufficient_action_rejects_a_satisfiable_ledger() -> None:
+    """Verify that insufficient action rejects a satisfiable ledger."""
+
     state = _state(
         (_evidence("ev-1", metric="distinct_trips"),),
         (_history(),),
@@ -387,6 +415,8 @@ def test_insufficient_action_rejects_a_satisfiable_ledger() -> None:
 
 
 def test_missing_context_keeps_monitor_available_despite_narrower_policy() -> None:
+    """Verify that missing context keeps monitor available despite narrower policy."""
+
     state = _state(
         (_evidence("ev-1", metric="distinct_trips"),),
         (_history(),),
@@ -403,6 +433,8 @@ def test_missing_context_keeps_monitor_available_despite_narrower_policy() -> No
 
 
 def test_category_action_rejects_when_unknown_loss_dominates() -> None:
+    """Verify that category action rejects when unknown loss dominates."""
+
     known = _evidence(
         "ev-known",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -454,6 +486,8 @@ def test_category_action_rejects_when_unknown_loss_dominates() -> None:
 
 
 def test_broad_category_context_caps_category_driver_at_low() -> None:
+    """Verify that broad category context caps category driver at low."""
+
     category = _evidence(
         "ev-category",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -513,6 +547,8 @@ def test_broad_category_context_caps_category_driver_at_low() -> None:
 
 
 def test_conflicting_category_context_uses_conservative_low_cap() -> None:
+    """Verify that conflicting category context uses conservative low cap."""
+
     category = _evidence(
         "ev-category",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -577,6 +613,8 @@ def test_conflicting_category_context_uses_conservative_low_cap() -> None:
 
 
 def test_material_category_context_remains_citable_for_nine_categories() -> None:
+    """Verify that material category context remains citable for nine categories."""
+
     category_records = tuple(
         _evidence(
             f"ev-category-{index}",
@@ -636,6 +674,8 @@ def test_material_category_context_remains_citable_for_nine_categories() -> None
 
 
 def test_missing_category_context_caps_and_propagates_limitation() -> None:
+    """Verify that missing category context caps and propagates limitation."""
+
     category = _evidence(
         "ev-category",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -687,6 +727,8 @@ def test_missing_category_context_caps_and_propagates_limitation() -> None:
 
 
 def test_each_cited_category_requires_matching_context() -> None:
+    """Verify that each cited category requires matching context."""
+
     soup = _evidence(
         "ev-soup",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -752,6 +794,8 @@ def test_each_cited_category_requires_matching_context() -> None:
 
 
 def test_visit_action_rejects_unavailable_sparse_interval_evidence() -> None:
+    """Verify that visit action rejects unavailable sparse interval evidence."""
+
     interval = _evidence(
         "ev-interval",
         tool=ToolName.BASKET_BEHAVIOR,
@@ -813,6 +857,8 @@ def test_visit_action_rejects_unavailable_sparse_interval_evidence() -> None:
 def test_verifier_rejects_unsupported_claims(
     proposal: FinishProposal, code: VerificationIssueCode
 ) -> None:
+    """Verify that verifier rejects unsupported claims."""
+
     state = _state((_evidence("ev-1"),), (_history(),))
 
     verdict = FinalVerifier(load_action_catalog()).verify(state, proposal)
@@ -843,6 +889,8 @@ def test_verifier_rejects_unsupported_claims(
 def test_verifier_rejects_adversarial_causal_and_exposure_claims(
     summary: str,
 ) -> None:
+    """Verify that verifier rejects adversarial causal and exposure claims."""
+
     state = _state((_evidence("ev-1"),), (_history(),))
 
     verdict = FinalVerifier(load_action_catalog()).verify(
@@ -928,6 +976,8 @@ def test_causal_defense_distinguishes_denials_from_assertions(
     summary: str,
     expected_pass: bool,
 ) -> None:
+    """Verify that causal defense distinguishes denials from assertions."""
+
     verdict = FinalVerifier(load_action_catalog()).verify(
         _state((_evidence("ev-1"),), (_history(),)),
         _proposal(summary=summary),
@@ -941,6 +991,8 @@ def test_causal_defense_distinguishes_denials_from_assertions(
 
 
 def test_claim_type_cannot_exceed_evidence_support() -> None:
+    """Verify that claim type cannot exceed evidence support."""
+
     record = _evidence("ev-1").model_copy(
         update={"maximum_claim_type": ClaimType.DESCRIPTIVE}
     )
@@ -966,6 +1018,8 @@ def test_claim_type_cannot_exceed_evidence_support() -> None:
 
 
 def test_descriptive_claim_with_observational_evidence_passes() -> None:
+    """Verify that descriptive claim with observational evidence passes."""
+
     proposal = _proposal()
     descriptive = proposal.driver_summary[0].model_copy(
         update={"claim_type": ClaimType.DESCRIPTIVE}
@@ -981,6 +1035,8 @@ def test_descriptive_claim_with_observational_evidence_passes() -> None:
 
 
 def test_code_owned_driver_accepts_full_bounded_support_and_counter_sets() -> None:
+    """Verify that code owned driver accepts full bounded support and counter sets."""
+
     support = tuple(
         _evidence(
             f"ev-support-{index}",
@@ -1052,6 +1108,8 @@ def test_code_owned_driver_accepts_full_bounded_support_and_counter_sets() -> No
 
 
 def test_verifier_rejects_unrelated_counterevidence() -> None:
+    """Verify that verifier rejects unrelated counterevidence."""
+
     support = _evidence("ev-1")
     unrelated = _evidence(
         "ev-unrelated-counter",
@@ -1086,6 +1144,8 @@ def test_verifier_rejects_unrelated_counterevidence() -> None:
 
 
 def test_verifier_does_not_treat_malformed_adverse_record_as_counterevidence() -> None:
+    """Verify that malformed adverse records are not counterevidence."""
+
     support = _evidence(
         "ev-category-support",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -1147,6 +1207,8 @@ def test_verifier_does_not_treat_malformed_adverse_record_as_counterevidence() -
 
 
 def test_resolved_driver_keeps_only_its_own_counterevidence() -> None:
+    """Verify that resolved driver keeps only its own counterevidence."""
+
     cadence = _evidence(
         "ev-cadence",
         metric="distinct_trips",
@@ -1227,6 +1289,8 @@ def test_resolved_driver_keeps_only_its_own_counterevidence() -> None:
 
 
 def test_resolved_driver_never_upgrades_descriptive_context_evidence() -> None:
+    """Verify that resolved driver never upgrades descriptive context evidence."""
+
     peer = _evidence(
         "ev-1",
         tool=ToolName.PEER_COMPARISON,
@@ -1331,10 +1395,14 @@ def test_context_classification_uses_central_signed_change_policy(
     kwargs: dict[str, float | int],
     expected: ContextClassification,
 ) -> None:
+    """Verify that context classification uses central signed change policy."""
+
     assert classify_context(**kwargs, policy=ContextPolicy()) is expected  # type: ignore[arg-type]
 
 
 def test_verifier_rejects_omitted_material_broad_context() -> None:
+    """Verify that verifier rejects omitted material broad context."""
+
     context = _context_evidence(ContextClassification.BROAD_CONTEXT)
     state = _state(
         (_evidence("ev-1"), context),
@@ -1357,6 +1425,8 @@ def test_verifier_rejects_omitted_material_broad_context() -> None:
 
 
 def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
+    """Verify that broad context caps customer specific confidence at low."""
+
     context = _context_evidence(ContextClassification.BROAD_CONTEXT)
     state = _state(
         (_evidence("ev-1"), context),
@@ -1384,6 +1454,8 @@ def test_broad_context_caps_customer_specific_confidence_at_low() -> None:
 
 
 def test_conflicting_context_records_resolve_conservatively() -> None:
+    """Verify that conflicting context records resolve conservatively."""
+
     customer_specific = _context_evidence(
         ContextClassification.CUSTOMER_SPECIFIC,
         evidence_id="ev-context-customer",
@@ -1420,6 +1492,8 @@ def test_conflicting_context_records_resolve_conservatively() -> None:
 
 
 def test_context_classification_requires_expected_tool_and_exclusion_proof() -> None:
+    """Verify that context classification requires expected tool and exclusion proof."""
+
     invalid_context = _context_evidence(ContextClassification.BROAD_CONTEXT).model_copy(
         update={"source_tool": ToolName.CUSTOMER_TREND}
     )
@@ -1444,6 +1518,8 @@ def test_context_classification_requires_expected_tool_and_exclusion_proof() -> 
 
 
 def test_visit_action_rejects_stable_or_increasing_cadence() -> None:
+    """Verify that visit action rejects stable or increasing cadence."""
+
     increasing = _evidence(
         "ev-1",
         metric="distinct_trips",
@@ -1462,6 +1538,8 @@ def test_visit_action_rejects_stable_or_increasing_cadence() -> None:
 
 
 def test_category_action_rejects_an_unknown_or_growing_category() -> None:
+    """Verify that category action rejects an unknown or growing category."""
+
     unknown_loss = _evidence(
         "ev-1",
         tool=ToolName.CATEGORY_DECOMPOSITION,
@@ -1497,6 +1575,8 @@ def test_category_action_rejects_an_unknown_or_growing_category() -> None:
 
 
 def test_promotion_action_rejects_increasing_associated_value() -> None:
+    """Verify that promotion action rejects increasing associated value."""
+
     increasing = _evidence(
         "ev-1",
         tool=ToolName.PROMOTION_RESPONSE,
@@ -1529,6 +1609,8 @@ def test_promotion_action_rejects_increasing_associated_value() -> None:
 
 
 def test_verifier_publishes_catalog_grounded_driver_language() -> None:
+    """Verify that verifier publishes catalog grounded driver language."""
+
     state = _state((_evidence("ev-1"),), (_history(),))
     proposal = _proposal(summary="A health crisis is a plausible driver.")
 
@@ -1553,6 +1635,8 @@ def test_verifier_publishes_catalog_grounded_driver_language() -> None:
     ),
 )
 def test_verifier_rejects_spelled_out_quantitative_claims(summary: str) -> None:
+    """Verify that verifier rejects spelled out quantitative claims."""
+
     state = _state((_evidence("ev-1"),), (_history(),))
 
     verdict = FinalVerifier(load_action_catalog()).verify(
@@ -1567,6 +1651,8 @@ def test_verifier_rejects_spelled_out_quantitative_claims(summary: str) -> None:
 
 
 def test_verifier_rejects_wrong_owner_and_failed_source() -> None:
+    """Verify that verifier rejects wrong owner and failed source."""
+
     wrong_owner = _state(
         (_evidence("ev-1", household_id="other"),),
         (_history(status=ToolStatus.FATAL_ERROR),),
@@ -1620,6 +1706,8 @@ def test_verifier_rejects_wrong_owner_and_failed_source() -> None:
 def test_verifier_rechecks_analytical_invariants(
     history: ToolHistoryEntry, code: VerificationIssueCode
 ) -> None:
+    """Verify that verifier rechecks analytical invariants."""
+
     state = _state(
         (_evidence("ev-1"),),
         (_history(), history),
@@ -1632,6 +1720,8 @@ def test_verifier_rechecks_analytical_invariants(
 
 
 def test_insufficient_evidence_is_a_valid_no_action_fallback() -> None:
+    """Verify that insufficient evidence is a valid no action fallback."""
+
     proposal = _proposal(
         evidence_ids=(),
         action=ActionId.INSUFFICIENT_EVIDENCE,

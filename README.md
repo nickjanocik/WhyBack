@@ -25,19 +25,22 @@ flowchart LR
     H --> I[Deterministic verifier]
     I --> J[Human-reviewed Next Best Action]
     I --> K[JSON, Markdown, HTML + trace]
+    K --> L[Read-only local reviewer dashboard]
 ```
 
 ## Quickstart
 
 Python 3.12 and [`uv`](https://docs.astral.sh/uv/) are required. The default
-demo and test paths use the deterministic `ScriptedBackend`; no API key or full
-dataset is needed.
+five-customer demo and test paths use the deterministic `ScriptedBackend`; no
+API key or full dataset is needed. Batches from 3 through 24 customers are
+accepted, so the assignment's 3–4-customer exercise and stricter five-result
+deliverable are both supported.
 
 ```bash
-uv sync --frozen --all-extras
+uv sync --frozen --extra dev
 uv run whyback --help
-uv run whyback demo --customers 5
-uv run whyback verify-artifacts artifacts/demo
+uv run whyback demo --customers 5 --output-dir artifacts/local/demo
+uv run whyback verify-artifacts artifacts/local/demo
 uv run python scripts/run_quality_gate.py
 ```
 
@@ -48,6 +51,18 @@ network access):
 uv run whyback data prepare --full
 uv run whyback detect --top 20 --output-dir artifacts/local/detection
 ```
+
+The optional reviewer dashboard requires Node 24 and locked npm dependencies:
+
+```bash
+cd web
+npm ci --ignore-scripts
+npm run dev
+```
+
+Open <http://127.0.0.1:5163>. The React interface reads only the local Node
+bridge's sanitized artifact API; it does not calculate evidence or execute an
+action. See the [dashboard guide](web/README.md).
 
 **Representative executed result.** Against the full official source pinned at
 `5b5d061`, the detector anchored baseline weeks 38–45 and recent weeks 46–53.
@@ -64,9 +79,10 @@ The repository contains a reproducible official-data path, a transparent
 detector, six deterministic analytical tools, two model backends, a bounded
 investigation loop, evidence-ID grounding, deterministic verification, a
 governed action catalog, append-only JSONL auditing, offline report and trace
-renderers, deterministic behavioral evaluations, and a CI-oriented quality
-gate. The implementation favors explicit contracts and inspectable failure
-states over framework abstraction.
+renderers, a localhost-only read-only reviewer dashboard, deterministic
+behavioral evaluations, and an auditable Python-and-web quality gate. The
+implementation favors explicit contracts and inspectable failure states over
+framework abstraction.
 
 The full official Complete Journey files were downloaded and prepared locally:
 22,627,890 rows across eight pinned source files became ten canonical or derived
@@ -101,8 +117,9 @@ Git and run:
 ```bash
 export GEMINI_API_KEY="..."
 uv run whyback investigate --household-id 5 --backend gemini
-uv run whyback demo --customers 5 --backend gemini
-uv run whyback verify-artifacts artifacts/live
+uv run whyback demo --customers 5 --backend gemini \
+  --output-dir artifacts/local/live
+uv run whyback verify-artifacts artifacts/local/live
 ```
 
 The default model is `gemini-3.7-flash`, overridable with `RETENTION_MODEL`.
@@ -155,7 +172,9 @@ See [Architecture](docs/architecture.md),
 [agent-loop ADR](docs/adr/001-own-the-agent-loop.md), and the current
 [Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md). The
 [population-context and claim-boundary ADR](docs/adr/008-population-context-and-claim-boundaries.md)
-records this methodology.
+records this methodology. For a file-by-file explanation, use the
+[plain-English agent guide](docs/agent-guide.md) and
+[repository technical outline](docs/repository-technical-outline.md).
 
 ## Decline detector
 
@@ -240,15 +259,26 @@ Expected limitations remain visible in state and reports. The opt-in-only
 attempts, stops retrying, continues with other tools, and cannot cite promotion
 evidence.
 
+The credential-free demo always generates a persistent timeout example while
+still completing the requested customer reports:
+
 ```bash
-uv run whyback investigate \
-  --household-id 5 \
-  --demo-fault promotion_response:timeout-always
+uv run whyback demo --customers 3 --output-dir artifacts/local/failure-demo
+uv run whyback verify-artifacts artifacts/local/failure-demo
 ```
+
+Its `failure_example/trace.html` records the two bounded failed attempts and
+the later evidence-backed finish. A direct `whyback investigate --demo-fault`
+command is also available when validated prepared data already exists.
 
 See [Reliability and failure semantics](docs/reliability.md).
 
 ## Results for five customers
+
+The CLI and dashboard accept 3–24 customers, and integration tests execute both
+three- and four-customer batches. The committed reviewer run intentionally uses
+the default of five because the deliverables separately require results for at
+least five customers; this is the stricter output target.
 
 The official detector deterministically selected households `5`, `181`, `423`,
 `472`, and `682`. This ordering is preserved even when paths look similar.
@@ -301,7 +331,7 @@ records, complete typed tool-result envelopes, retries, evidence additions,
 verifier events, and final status. It never stores hidden reasoning.
 `trace.html` is a self-contained, offline timeline with the same validated
 events. Start with the [household 101 trace](artifacts/demo/customer_101/trace.html),
-then inspect the [persistent-failure trace](artifacts/demo/failure_example/trace.html)
+then inspect the [persistent-failure trace](artifacts/demo/failure_example/trace.html),
 the [live Gemini bounded-failure trace](artifacts/live-gemini-synthetic-failure/trace.html),
 and [official Type A trace](artifacts/official-type-a/customer_181/trace.html).
 
@@ -313,24 +343,31 @@ prepared-data integration, bounded orchestration, evidence verification,
 failure injection, reports, and trace sanitation. Twelve behavioral scenarios
 score observable invariants rather than exact prose: relevant selection,
 unnecessary-call avoidance, budgets, verification, grounding, limitation
-propagation, graceful degradation, duplicates, and unsupported evidence.
+propagation, graceful degradation, duplicates, and unsupported evidence. A
+documentation regression test also requires a plain-English module, class, and
+callable explanation throughout the Python tree; the web gate checks its own
+documented source boundaries.
 
 ```bash
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright
 uv run pytest
+cd web && npm run check && cd ..
 uv run python scripts/run_quality_gate.py
 ```
 
 The latest machine-captured commands, outputs, exit codes, environment, JUnit,
 and branch-aware coverage belong in `artifacts/tests/`; do not infer final
-counts from this README. Evaluation methodology is documented in
-[Evaluation](docs/evaluation.md).
+counts from this README. The final quality-gate command installs both locked
+environments, runs Python and web checks, evaluates deterministic scenarios,
+and verifies every committed artifact profile. Evaluation methodology is
+documented in [Evaluation](docs/evaluation.md).
 
 ## Reproducibility
 
-- Dependencies are locked by `uv.lock`; baseline CI installs with `--frozen`.
+- Python dependencies are locked by `uv.lock`, and dashboard dependencies by
+  `web/package-lock.json`; the quality gate uses frozen/clean installs.
 - Source data is only `bradleyboehmke/completejourney` at commit
   `5b5d06192b9856edd04e4d405787af2f2e4a1fef`.
 - Source and prepared hashes, schemas, row counts, missingness, and derived-table
@@ -360,11 +397,12 @@ causal treatment effects. See [Productionization](docs/productionization.md).
 
 WhyBack does not add a learned churn classifier, RAG/vector database, Spark,
 LangChain, LangGraph, multiple business agents, Programmatic Tool Calling,
-automatic outreach, or a heavy web frontend. None is required to demonstrate
-the evaluated loop, and each would add an unearned failure or governance
-surface. JSONL is the authoritative local trace; OpenTelemetry/OpenInference
-export and a stdio MCP adapter remain explicit future interoperability options,
-not hidden core dependencies.
+automatic outreach, or a write-enabled customer-action dashboard. Its local
+React interface is deliberately an internal reviewer over sanitized artifacts;
+Python remains the only analytical and policy authority. JSONL is the
+authoritative local trace. OpenTelemetry/OpenInference export and a stdio MCP
+adapter remain explicit future interoperability options, not hidden core
+dependencies.
 
 ## Assignment compliance matrix
 
@@ -372,6 +410,7 @@ not hidden core dependencies.
 | --- | --- | --- |
 | Official pinned data and hashes | Verified downloader, contracts, idempotent R-to-Parquet preparation, manifest | `src/whyback/data/`, `docs/data-semantics.md` |
 | Transparent decline detection | Max-week 8+8 windows, eligibility, weighted score, sensitivity | `src/whyback/detection/decline.py`, detector artifacts |
+| Assignment batch sizes | Explicit 3–24 bounds; deterministic tests run both 3- and 4-customer batches; committed default remains five | `src/whyback/demo_limits.py`, demo/CLI/web boundary tests |
 | Six deterministic tools | Strict inputs/results, DuckDB calculations, provenance | `src/whyback/tools/`, unit/property tests |
 | Dynamic model selection | Provider-neutral backend; fresh Gemini function-calling requests or scripted decisions | `src/whyback/agent/backend.py`, `gemini_backend.py`, `scripted_backend.py` |
 | Bounded reliable loop | Tool/turn budgets, duplicate refusal, timeout, one retry, one repair | `src/whyback/agent/runner.py`, orchestration tests |
@@ -384,8 +423,11 @@ not hidden core dependencies.
 | Claim boundaries | Typed evidence ceilings and driver claims, causal rejection, counterevidence, context-aware confidence | `src/whyback/agent/verifier.py`, verifier/report tests |
 | Replayable audit | Sanitized append-only JSONL and offline HTML viewer | `src/whyback/observability/`, `src/whyback/reporting/` |
 | Reports | Strict JSON plus deterministic Markdown/HTML | report tests, `artifacts/demo/` |
+| Five customer results | Five verified scripted controls with individual reports and traces | `artifacts/demo/RESULTS.md`, `artifacts/demo/manifest.json` |
+| Failure example | Persistent timeout is retried once, yields no evidence, and remains visible while other evidence completes safely | `artifacts/demo/failure_example/`, orchestration tests |
+| Plain-English code documentation | File/module and named-function/class explanations with regression coverage | source docstrings/JSDoc, `tests/unit/test_documentation_coverage.py`, web documentation test |
 | Behavioral evaluations | Twelve versioned scenarios and deterministic aggregate metrics | `evals/`, `artifacts/evals/` |
-| Quality and CI | Frozen install, Ruff, Pyright, branch coverage/JUnit, artifact check | `.github/workflows/ci.yml`, `artifacts/tests/` |
+| Quality and CI | Frozen Python/npm installs, Ruff, Pyright, branch coverage/JUnit, web lint/test/build, artifact checks | `.github/workflows/ci.yml`, `artifacts/tests/` |
 | Honest live status | Gemini analytical-call contract validated on synthetic state; longer synthetic run timed out safely; no official data sent and no completed live investigation claimed | this README, ADR 007, and artifact manifests |
 | Design and operations record | Architecture, reliability, evaluation, eight ADRs, production plan | `docs/` |
 
@@ -402,6 +444,7 @@ src/whyback/reporting/  typed JSON, Markdown/HTML reports, static trace viewer
 evals/                  scenario contracts and deterministic scorer
 tests/                  unit, property, integration, orchestration, golden, live
 scripts/                demo generation, artifact verification, quality audit
+web/                    read-only React reviewer UI and localhost artifact bridge
 artifacts/              small reviewer-facing outputs; never raw/prepared data
 docs/                   semantics, architecture, reliability, evaluation, ADRs
 ```

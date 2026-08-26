@@ -1,3 +1,5 @@
+/** Presents sanitized provenance, replay events, and links to rendered audit artifacts. */
+
 import {
   ArrowUpRight,
   Bot,
@@ -22,8 +24,10 @@ interface AuditPanelProps {
   trace: TraceEvent[];
 }
 
+/** Renders the read-only audit view for one completed or failed investigation. */
 export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
   const [showEvidenceEvents, setShowEvidenceEvents] = useState(false);
+  // Hide low-level evidence-write noise until a reviewer explicitly requests it.
   const events = useMemo(
     () => (showEvidenceEvents ? trace : meaningfulTrace(trace)),
     [showEvidenceEvents, trace],
@@ -91,14 +95,17 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
   );
 }
 
+/** Displays one compact numeric summary above the replay timeline. */
 function AuditStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return <div>{icon}<span><strong>{value}</strong><small>{label}</small></span></div>;
 }
 
+/** Displays one immutable provenance field with its identifying icon. */
 function ProvenanceRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return <div className="provenance-row"><span>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></div>;
 }
 
+/** Formats a machine timestamp for local display without changing its source value. */
 function formatTimestamp(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? "Unknown" : date.toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });

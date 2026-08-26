@@ -1,3 +1,5 @@
+/** Lets reviewers choose an artifact collection and ranked household investigation. */
+
 import { AlertTriangle, Check, ChevronDown, Database, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -12,6 +14,7 @@ interface CandidateRailProps {
   onHouseholdChange: (householdId: string) => void;
 }
 
+/** Renders the searchable collection and household navigation rail. */
 export function CandidateRail({
   collections,
   collectionId,
@@ -21,6 +24,7 @@ export function CandidateRail({
 }: CandidateRailProps) {
   const [query, setQuery] = useState("");
   const collection = collections.find((item) => item.id === collectionId);
+  // Preserve each report's original rank even when the search narrows visible rows.
   const reports = useMemo(() => {
     if (!collection) return [];
     const normalized = query.trim().toLocaleLowerCase();
@@ -102,6 +106,7 @@ export function CandidateRail({
   );
 }
 
+/** Renders one ranked household summary and reports selection through the rail. */
 function CandidateButton({
   report,
   rank,

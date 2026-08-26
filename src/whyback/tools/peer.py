@@ -50,6 +50,8 @@ _PEER_LIMITATION = (
 
 @dataclass(frozen=True, slots=True)
 class _Distribution:
+    """Summary statistics comparing the target change with one household cohort."""
+
     count: int
     median: float
     q25: float
@@ -60,15 +62,21 @@ class _Distribution:
 
 
 def _identifier_key(identifier: str) -> tuple[int, int | str]:
+    """Sort numeric household IDs numerically before stable text identifiers."""
+
     return (0, int(identifier)) if identifier.isdigit() else (1, identifier)
 
 
 def _sales_change(row: dict[str, Any]) -> float:
+    """Calculate signed retailer-sales change from an eligible household row."""
+
     baseline = float(row["baseline_sales"])
     return (float(row["recent_sales"]) - baseline) / baseline
 
 
 def _distribution(values: np.ndarray, target_change: float) -> _Distribution:
+    """Summarize a nonempty cohort and locate the target within its changes."""
+
     if not values.size:
         raise ValueError("A comparison distribution cannot be empty")
     median_change = float(np.median(values))
@@ -89,6 +97,8 @@ def _dimensions(
     scope: str,
     definition: str,
 ) -> dict[str, str]:
+    """Describe a target-excluded comparison cohort and its change convention."""
+
     window = context.window
     return {
         "comparison_scope": scope,
@@ -387,6 +397,8 @@ def run_peer_comparison(
     def add_distribution_evidence(
         *, scope: str, distribution: _Distribution, dimensions: dict[str, str]
     ) -> None:
+        """Append the complete evidence set for one available comparison cohort."""
+
         prefix = "population" if scope == "population" else "peer"
         evidence.extend(
             [

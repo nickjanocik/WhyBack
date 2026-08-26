@@ -1,6 +1,10 @@
+/** Wraps the dashboard bridge endpoints in small typed browser helpers. */
+
 import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
 
+/** Carries an HTTP status alongside a bridge error that React can handle. */
 export class ApiError extends Error {
+  /** Creates an API error from the bridge's public message and response status. */
   constructor(
     message: string,
     readonly status: number,
@@ -10,6 +14,7 @@ export class ApiError extends Error {
   }
 }
 
+/** Sends one same-origin request and converts non-success responses into ApiError. */
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -25,10 +30,12 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return payload;
 }
 
+/** Loads available artifact collections and live-run readiness. */
 export function getWorkspace(signal?: AbortSignal): Promise<Workspace> {
   return requestJson<Workspace>("/api/workspace", { signal });
 }
 
+/** Loads one household's validated report and sanitized replay trace. */
 export function getInvestigation(
   collectionId: string,
   householdId: string,
@@ -41,6 +48,7 @@ export function getInvestigation(
   return requestJson<InvestigationResponse>(`/api/investigation?${query}`, { signal });
 }
 
+/** Requests a bounded live Gemini batch containing only the selected customer count. */
 export function runDemo(customers: number): Promise<DemoStatusResponse> {
   return requestJson<DemoStatusResponse>("/api/demo", {
     method: "POST",
@@ -48,6 +56,7 @@ export function runDemo(customers: number): Promise<DemoStatusResponse> {
   });
 }
 
+/** Polls a live job and requests only events after the last received cursor. */
 export function getDemoStatus(
   jobId?: string | null,
   after = 0,
@@ -58,6 +67,7 @@ export function getDemoStatus(
   return requestJson<DemoStatusResponse>(`/api/demo/status?${query}`, { signal });
 }
 
+/** Builds a safe bridge URL for one allow-listed human-readable artifact. */
 export function artifactUrl(
   collectionId: string,
   householdId: string,

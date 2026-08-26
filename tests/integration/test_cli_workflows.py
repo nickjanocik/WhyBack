@@ -1,3 +1,5 @@
+"""Tests for WhyBack's cli workflows behavior."""
+
 from __future__ import annotations
 
 import hashlib
@@ -10,10 +12,16 @@ from typer.testing import CliRunner
 from whyback.cli import app
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.demo import synthetic_demo_frames
-from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
+from whyback.demo_limits import (
+    DEFAULT_DEMO_CUSTOMERS,
+    MAX_DEMO_CUSTOMERS,
+    MIN_DEMO_CUSTOMERS,
+)
 
 
 def _prepared_fixture(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    """Prepare a validated local data fixture for CLI tests."""
+
     data_root = tmp_path / "data"
     prepare_frames_for_tests(synthetic_demo_frames(), data_root / "prepared")
     return data_root, {
@@ -23,6 +31,8 @@ def _prepared_fixture(tmp_path: Path) -> tuple[Path, dict[str, str]]:
 
 
 def test_cli_config_status_and_full_prepare_guard(tmp_path: Path) -> None:
+    """Verify that cli config status and full prepare guard."""
+
     data_root, environment = _prepared_fixture(tmp_path)
     runner = CliRunner()
 
@@ -49,6 +59,8 @@ def test_cli_config_status_and_full_prepare_guard(tmp_path: Path) -> None:
 
 
 def test_cli_detect_investigate_and_verify_round_trip(tmp_path: Path) -> None:
+    """Verify that cli detect investigate and verify round trip."""
+
     data_root, environment = _prepared_fixture(tmp_path)
     prepared = data_root / "prepared"
     detector_output = tmp_path / "detector"
@@ -91,6 +103,8 @@ def test_cli_detect_investigate_and_verify_round_trip(tmp_path: Path) -> None:
 
 
 def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
+    """Verify that cli demo and invalid backend paths."""
+
     _, environment = _prepared_fixture(tmp_path)
     demo_output = tmp_path / "demo"
     runner = CliRunner()
@@ -100,7 +114,7 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
         [
             "demo",
             "--customers",
-            str(MIN_DEMO_CUSTOMERS),
+            str(DEFAULT_DEMO_CUSTOMERS),
             "--output-dir",
             str(demo_output),
         ],
@@ -127,6 +141,8 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
 
 
 def test_cli_demo_enforces_the_shared_customer_boundaries(tmp_path: Path) -> None:
+    """Verify that cli demo enforces the shared customer boundaries."""
+
     runner = CliRunner()
 
     for customers in (MIN_DEMO_CUSTOMERS - 1, MAX_DEMO_CUSTOMERS + 1):
@@ -142,11 +158,13 @@ def test_cli_demo_enforces_the_shared_customer_boundaries(tmp_path: Path) -> Non
         )
 
         assert result.exit_code == 2
-        assert "5" in result.stderr
+        assert str(MIN_DEMO_CUSTOMERS) in result.stderr
         assert "24" in result.stderr
 
 
 def test_cli_rejects_retired_openai_backend(tmp_path: Path) -> None:
+    """Verify that cli rejects retired openai backend."""
+
     _, environment = _prepared_fixture(tmp_path)
     runner = CliRunner()
 
@@ -169,6 +187,8 @@ def test_cli_rejects_retired_openai_backend(tmp_path: Path) -> None:
 
 
 def test_cli_gemini_investigation_reports_missing_key(tmp_path: Path) -> None:
+    """Verify that cli gemini investigation reports missing key."""
+
     data_root, environment = _prepared_fixture(tmp_path)
     environment["GEMINI_API_KEY"] = ""
     runner = CliRunner()
@@ -194,6 +214,8 @@ def test_cli_gemini_investigation_reports_missing_key(tmp_path: Path) -> None:
 
 
 def test_cli_verifies_historical_skip_with_current_key_present(tmp_path: Path) -> None:
+    """Verify that cli verifies historical skip with current key present."""
+
     status_path = tmp_path / "live_model_status.json"
     status_path.write_text(
         json.dumps(

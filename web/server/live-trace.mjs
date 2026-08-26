@@ -1,3 +1,5 @@
+/** Streams sanitized audit events from an active live run through a bounded job manager. */
+
 import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { lstat, open, readFile, readdir } from "node:fs/promises";
@@ -19,6 +21,7 @@ const OWNERSHIP_DOCUMENT = {
 };
 const MAX_JOB_HISTORY = 8;
 
+/** Accepts only a real directory at the live-trace filesystem boundary. */
 async function isRealDirectory(directory) {
   try {
     const details = await lstat(directory);
@@ -29,6 +32,7 @@ async function isRealDirectory(directory) {
   }
 }
 
+/** Accepts only a real file at the live-trace filesystem boundary. */
 async function isRealFile(filePath) {
   try {
     const details = await lstat(filePath);
@@ -39,6 +43,7 @@ async function isRealFile(filePath) {
   }
 }
 
+/** Requires the exact ownership marker before reading a generated artifact tree. */
 async function isOwnedArtifactDirectory(directory) {
   if (!(await isRealDirectory(directory))) return false;
   const marker = path.join(directory, OWNERSHIP_MARKER);
@@ -57,6 +62,7 @@ async function isOwnedArtifactDirectory(directory) {
   }
 }
 
+/** Lists local artifact entries without treating a missing local root as an error. */
 async function localStagingEntries(repositoryRoot) {
   const localRoot = path.join(repositoryRoot, "artifacts", "local");
   if (!(await isRealDirectory(localRoot))) return [];
@@ -68,6 +74,7 @@ async function localStagingEntries(repositoryRoot) {
   }
 }
 
+/** Captures staging names that predate a run so they cannot be mistaken for its output. */
 export async function stagingDirectoryNames(repositoryRoot) {
   const entries = await localStagingEntries(repositoryRoot);
   return new Set(
@@ -82,6 +89,7 @@ export async function stagingDirectoryNames(repositoryRoot) {
   );
 }
 
+/** Finds the newest owned staging directory created around the current run's start. */
 async function newestStagingDirectory(
   repositoryRoot,
   startedAtMs,
@@ -117,6 +125,7 @@ async function newestStagingDirectory(
   return candidates[0]?.directory ?? null;
 }
 
+/** Finds canonical customer trace files and gives each one a public source label. */
 async function customerTraceFiles(root) {
   if (!(await isRealDirectory(root))) return [];
   let entries;
@@ -143,6 +152,7 @@ async function customerTraceFiles(root) {
     }));
 }
 
+/** Creates an incremental JSONL reader that advances only after a whole batch validates. */
 export function createLiveTraceReader(
   repositoryRoot,
   startedAtMs,
@@ -153,6 +163,7 @@ export function createLiveTraceReader(
   const excludedNames = new Set(excludedStagingNames);
   const explicitRoot = runDirectory ? path.resolve(runDirectory) : null;
 
+  /** Chooses the explicit run, active staging tree, or final published trace root. */
   async function traceRoot(includePublished) {
     if (explicitRoot) {
       const owned = await resolveOwnedLiveRunDirectory(
@@ -181,16 +192,27 @@ export function createLiveTraceReader(
     return activeStaging;
   }
 
+  /** Parses newly completed lines without advancing the durable reader cursor yet. */
   async function previewFileIncrement(file) {
     if (!(await isRealFile(file.filePath))) {
-      return { events: [], commit() {} };
+      return {
+        events: [],
+        /** Leaves the cursor unchanged when the trace file does not exist yet. */
+        commit() {},
+      };
     }
     const previous = files.get(file.filePath) ?? { lineNumber: 0, offset: 0 };
     let handle;
     try {
       handle = await open(file.filePath, "r");
     } catch (error) {
-      if (error?.code === "ENOENT") return { events: [], commit() {} };
+      if (error?.code === "ENOENT") {
+        return {
+          events: [],
+          /** Leaves the cursor unchanged when the trace disappears during the read. */
+          commit() {},
+        };
+      }
       throw error;
     }
     try {
@@ -203,6 +225,7 @@ export function createLiveTraceReader(
       if (byteCount <= 0) {
         return {
           events: [],
+          /** Records the current end offset after confirming that no bytes were added. */
           commit() {
             files.set(file.filePath, {
               lineNumber: baseLineNumber,
@@ -215,7 +238,13 @@ export function createLiveTraceReader(
       const { bytesRead } = await handle.read(buffer, 0, byteCount, baseOffset);
       const appended = buffer.subarray(0, bytesRead);
       const finalNewline = appended.lastIndexOf(0x0a);
-      if (finalNewline < 0) return { events: [], commit() {} };
+      if (finalNewline < 0) {
+        return {
+          events: [],
+          /** Preserves a partial final line so the next read can complete it. */
+          commit() {},
+        };
+      }
       let decoded;
       try {
         decoded = new TextDecoder("utf-8", { fatal: true }).decode(
@@ -262,6 +291,7 @@ export function createLiveTraceReader(
       }
       return {
         events,
+        /** Advances the cursor only after every preview in the batch parsed successfully. */
         commit() {
           files.set(file.filePath, {
             lineNumber: nextLineNumber,
@@ -275,6 +305,7 @@ export function createLiveTraceReader(
   }
 
   return {
+    /** Returns newly committed events in deterministic timestamp and source order. */
     async readNew({ includePublished = false } = {}) {
       const root = await traceRoot(includePublished);
       if (!root) return [];
@@ -289,23 +320,28 @@ export function createLiveTraceReader(
   };
 }
 
+/** Marks an operational live-run failure whose message is safe to show publicly. */
 export class DemoRunError extends Error {
+  /** Creates a public live-run error without attaching private process output. */
   constructor(message) {
     super(message);
     this.name = "DemoRunError";
   }
 }
 
+/** Exposes allow-listed run errors and replaces unexpected failures with a generic message. */
 function publicRunError(error) {
   return error instanceof DemoRunError
     ? error.message.slice(0, 1_000)
     : "The live Gemini run failed before completion.";
 }
 
+/** Returns the stable warning used when live audit events cannot be read safely. */
 function traceWarningMessage() {
   return "Some live audit events could not be read. The generated report remains authoritative.";
 }
 
+/** Builds the public no-job status returned before any live run has started. */
 function idleStatus(eventCapacity, backend, model) {
   return {
     jobId: null,
@@ -327,6 +363,7 @@ function idleStatus(eventCapacity, backend, model) {
   };
 }
 
+/** Creates the in-memory gate, history, polling, and bounded event buffer for live jobs. */
 export function createDemoRunManager({
   repositoryRoot,
   execute,
@@ -343,12 +380,14 @@ export function createDemoRunManager({
   let timer = null;
   let collectionChain = Promise.resolve();
 
+  /** Stops polling for the active job without clearing another job's timer. */
   function clearTimer(jobId = null) {
     if (jobId && runningJobId !== jobId) return;
     if (timer) clearInterval(timer);
     timer = null;
   }
 
+  /** Returns one public job snapshot and only events newer than the supplied cursor. */
   function status(jobId = null, after = 0) {
     const target = jobId
       ? jobs.get(jobId)
@@ -376,6 +415,7 @@ export function createDemoRunManager({
     };
   }
 
+  /** Serializes trace reads so cursor commits and bounded-buffer updates cannot overlap. */
   function collect(jobId, includePublished) {
     const target = jobs.get(jobId);
     if (!target?.reader) return Promise.resolve(true);
@@ -407,6 +447,7 @@ export function createDemoRunManager({
     return collectionChain;
   }
 
+  /** Retains a small recent job history while never deleting the active run. */
   function pruneHistory() {
     if (jobs.size <= MAX_JOB_HISTORY) return;
     for (const [jobId, target] of jobs) {
@@ -417,6 +458,7 @@ export function createDemoRunManager({
     }
   }
 
+  /** Starts one gated live job and returns its initial public status immediately. */
   function start(customers) {
     if (runningJobId && jobs.get(runningJobId)?.status === "running") {
       const error = new Error("A live Gemini run is already active.");
@@ -457,11 +499,13 @@ export function createDemoRunManager({
     latestJobId = jobId;
     runningJobId = jobId;
     pruneHistory();
+    // Poll frequently while the process writes append-only audit records.
     timer = setInterval(() => {
       void collect(jobId, false);
     }, intervalMs);
     timer.unref?.();
 
+    // The HTTP request returns immediately; this task owns execution through terminal cleanup.
     void (async () => {
       try {
         const excludedStagingNames = descriptor.runDirectory
@@ -495,6 +539,7 @@ export function createDemoRunManager({
   }
 
   return {
+    /** Reports whether the single paid live-run slot is currently occupied. */
     get running() {
       return Boolean(
         runningJobId && jobs.get(runningJobId)?.status === "running",
@@ -502,6 +547,7 @@ export function createDemoRunManager({
     },
     start,
     status,
+    /** Performs an on-demand trace collection for a job that is still running. */
     async refresh(jobId) {
       const target = jobs.get(jobId);
       if (target?.status === "running") {

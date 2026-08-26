@@ -1,3 +1,5 @@
+/** Presents the immutable evidence ledger with role, tool, and path-step filters. */
+
 import {
   AlertTriangle,
   ArrowDown,
@@ -28,6 +30,7 @@ interface EvidencePanelProps {
 
 type RoleFilter = "all" | EvidenceRole;
 
+/** Renders searchable evidence records and keeps citations tied to ledger IDs. */
 export function EvidencePanel({
   report,
   selectedEvidenceId,
@@ -40,10 +43,12 @@ export function EvidencePanel({
   const [stepIds, setStepIds] = useState<string[] | null>(null);
   const [limit, setLimit] = useState(18);
 
+  // Build filter choices from the report itself so unavailable tools never appear.
   const tools = useMemo(
     () => [...new Set(report.evidence_ledger.map((item) => item.source_tool))].sort(),
     [report.evidence_ledger],
   );
+  // Apply all reviewer filters together without mutating the authoritative ledger.
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return report.evidence_ledger.filter((item) => {
@@ -61,6 +66,7 @@ export function EvidencePanel({
     });
   }, [query, report.evidence_ledger, role, stepIds, tool]);
 
+  // Bring a newly cited record into view after the evidence panel renders it.
   useEffect(() => {
     if (!selectedEvidenceId) return;
     const focusFrame = requestAnimationFrame(() => {
@@ -168,6 +174,7 @@ export function EvidencePanel({
   );
 }
 
+/** Renders one expandable evidence receipt with provenance and limitations. */
 function EvidenceRow({
   record,
   expanded,

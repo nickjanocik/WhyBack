@@ -19,11 +19,15 @@ class InsufficientWindowError(ValueError):
 class AggregateRepository(Protocol):
     """Narrow query boundary required by the detector."""
 
-    def query(
-        self, sql: str, parameters: list[object] | None = None
-    ) -> pd.DataFrame: ...
+    def query(self, sql: str, parameters: list[object] | None = None) -> pd.DataFrame:
+        """Execute an aggregate query and return its tabular result."""
 
-    def scalar(self, sql: str, parameters: list[object] | None = None) -> object: ...
+        ...
+
+    def scalar(self, sql: str, parameters: list[object] | None = None) -> object:
+        """Execute an aggregate query expected to return one scalar value."""
+
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +43,8 @@ class WindowSpec:
     def from_max_week(
         cls, max_week: int, *, baseline_weeks: int = 8, recent_weeks: int = 8
     ) -> WindowSpec:
+        """Build adjacent baseline and recent windows ending at the latest week."""
+
         if baseline_weeks < 1 or recent_weeks < 1:
             raise ValueError("Window lengths must be positive")
         if max_week < baseline_weeks + recent_weeks:
@@ -56,6 +62,8 @@ class WindowSpec:
         )
 
     def model_dump(self) -> dict[str, int]:
+        """Return the four inclusive window bounds as a plain dictionary."""
+
         return {
             "baseline_start": self.baseline_start,
             "baseline_end": self.baseline_end,
@@ -129,6 +137,8 @@ def calculate_decline_score(
 
 
 def _identifier_sort_key(identifier: str) -> tuple[int, int | str]:
+    """Sort numeric household IDs numerically before nonnumeric identifiers."""
+
     if identifier.isdigit():
         return (0, int(identifier))
     return (1, identifier)
@@ -137,6 +147,8 @@ def _identifier_sort_key(identifier: str) -> tuple[int, int | str]:
 def _aggregate_households(
     repository: AggregateRepository, window: WindowSpec
 ) -> pd.DataFrame:
+    """Aggregate sales, trips, and active weeks for both detector windows."""
+
     return repository.query(
         """
         SELECT household_id,

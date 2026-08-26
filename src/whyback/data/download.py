@@ -35,6 +35,8 @@ class SourceFile:
 
     @property
     def url(self) -> str:
+        """Build this file's raw GitHub URL at the pinned source commit."""
+
         return (
             "https://raw.githubusercontent.com/"
             f"{SOURCE_REPOSITORY}/{SOURCE_COMMIT}/data/{self.name}"
@@ -128,6 +130,8 @@ OpenUrl = Callable[[str], BinaryIO]
 
 
 def _open_url(url: str) -> BinaryIO:
+    """Open a source URL with the acquisition timeout used by the downloader."""
+
     return urllib.request.urlopen(url, timeout=120)
 
 

@@ -1,3 +1,5 @@
+"""Tests for WhyBack's tool contract properties behavior."""
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -11,6 +13,8 @@ from whyback.tools.contracts import AnalysisWindow, ToolExecutionContext, ToolNa
 
 @given(count=st.integers(min_value=1, max_value=200))
 def test_evidence_ids_are_unique_within_a_tool_call(count: int) -> None:
+    """Verify that evidence ids are unique within a tool call."""
+
     context = ToolExecutionContext(
         run_id=UUID("00000000-0000-0000-0000-000000000001"),
         tool_call_id="property-call",

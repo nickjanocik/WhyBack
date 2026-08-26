@@ -9,16 +9,22 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from whyback.demo import build_official_demo, build_synthetic_demo
-from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
+from whyback.demo_limits import (
+    DEFAULT_DEMO_CUSTOMERS,
+    MAX_DEMO_CUSTOMERS,
+    MIN_DEMO_CUSTOMERS,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for synthetic and official demo outputs."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--customers",
         type=int,
         choices=range(MIN_DEMO_CUSTOMERS, MAX_DEMO_CUSTOMERS + 1),
-        default=MIN_DEMO_CUSTOMERS,
+        default=DEFAULT_DEMO_CUSTOMERS,
     )
     parser.add_argument("--demo-output", type=Path, default=Path("artifacts/demo"))
     parser.add_argument(

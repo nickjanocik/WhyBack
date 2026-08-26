@@ -1,3 +1,5 @@
+"""Tests for WhyBack's trend category basket behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,6 +28,8 @@ RUN_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _context(tool_call_id: str) -> ToolExecutionContext:
+    """Create the context value used by these tests."""
+
     return ToolExecutionContext(
         run_id=RUN_ID,
         tool_call_id=tool_call_id,
@@ -42,6 +46,8 @@ def _context(tool_call_id: str) -> ToolExecutionContext:
 def test_customer_trend_uses_baskets_and_zero_fills_inactive_weeks(
     tmp_path: Path,
 ) -> None:
+    """Verify that customer trend uses baskets and zero fills inactive weeks."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = customer_trend(
@@ -66,6 +72,8 @@ def test_customer_trend_uses_baskets_and_zero_fills_inactive_weeks(
 
 
 def test_category_decomposition_retains_unknown_and_reconciles(tmp_path: Path) -> None:
+    """Verify that category decomposition retains unknown and reconciles."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = category_decomposition(
@@ -93,6 +101,8 @@ def test_category_decomposition_retains_unknown_and_reconciles(tmp_path: Path) -
 def test_basket_behavior_aggregates_multiline_basket_before_metrics(
     tmp_path: Path,
 ) -> None:
+    """Verify that basket behavior aggregates multiline basket before metrics."""
+
     prepare_frames_for_tests(minimal_source_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = basket_behavior(
@@ -110,6 +120,8 @@ def test_basket_behavior_aggregates_multiline_basket_before_metrics(
 
 
 def test_trend_direct_metrics_ignore_transaction_row_order(tmp_path: Path) -> None:
+    """Verify that trend direct metrics ignore transaction row order."""
+
     first_dir = tmp_path / "first"
     second_dir = tmp_path / "second"
     first = minimal_source_frames()
@@ -135,6 +147,8 @@ def test_trend_direct_metrics_ignore_transaction_row_order(tmp_path: Path) -> No
 
 
 def _category_population_frames() -> dict[str, pd.DataFrame]:
+    """Create source frames for category-population comparisons."""
+
     frames = minimal_source_frames()
     rows: list[dict[str, object]] = []
     for household in range(1, 8):
@@ -198,6 +212,8 @@ def _category_population_context(
     minimum_category_households: int = 5,
     meaningful_category_baseline_retailer_sales_value: float = 1.0,
 ) -> ToolExecutionContext:
+    """Create tool context with a target-excluded category population."""
+
     return ToolExecutionContext(
         run_id=RUN_ID,
         tool_call_id=call_id,
@@ -218,6 +234,8 @@ def _category_population_context(
 
 
 def test_category_context_is_target_excluded_and_exact(tmp_path: Path) -> None:
+    """Verify that category context is target excluded and exact."""
+
     prepare_frames_for_tests(_category_population_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = category_decomposition(
@@ -261,6 +279,8 @@ def test_category_context_is_target_excluded_and_exact(tmp_path: Path) -> None:
 
 
 def test_category_context_suppresses_undersized_population(tmp_path: Path) -> None:
+    """Verify that category context suppresses undersized population."""
+
     prepare_frames_for_tests(_category_population_frames(), tmp_path)
     with DataRepository(tmp_path) as repository:
         result = category_decomposition(
@@ -287,6 +307,8 @@ def test_category_context_suppresses_undersized_population(tmp_path: Path) -> No
 def test_category_context_excludes_subthreshold_baseline_shoppers(
     tmp_path: Path,
 ) -> None:
+    """Verify that category context excludes subthreshold baseline shoppers."""
+
     frames = _category_population_frames()
     tiny_soup_purchase = {
         **frames["transactions"].iloc[0].to_dict(),
@@ -327,6 +349,8 @@ def test_category_context_excludes_subthreshold_baseline_shoppers(
 def test_category_context_classifies_broad_contemporaneous_decline(
     tmp_path: Path,
 ) -> None:
+    """Verify that category context classifies broad contemporaneous decline."""
+
     frames = _category_population_frames()
     transactions = frames["transactions"]
     soup_recent = (transactions["week"] >= 5) & (
@@ -350,6 +374,8 @@ def test_category_context_classifies_broad_contemporaneous_decline(
 
 
 def test_category_context_is_invariant_to_transaction_row_order(tmp_path: Path) -> None:
+    """Verify that category context is invariant to transaction row order."""
+
     first_dir = tmp_path / "first-category"
     second_dir = tmp_path / "second-category"
     first = _category_population_frames()
@@ -359,6 +385,8 @@ def test_category_context_is_invariant_to_transaction_row_order(tmp_path: Path) 
     prepare_frames_for_tests(second, second_dir)
 
     def run(prepared_dir: Path, call_id: str):
+        """Run the local scenario and return its deterministic result."""
+
         with DataRepository(prepared_dir) as repository:
             return category_decomposition(
                 CategoryDecompositionInput(household_id="1", top_n=1),

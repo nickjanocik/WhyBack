@@ -14,6 +14,8 @@ class FrozenDict(dict[K, V]):
 
     @staticmethod
     def _immutable(*_args: object, **_kwargs: object) -> Never:
+        """Reject any dictionary mutation routed through an aliased method."""
+
         raise TypeError("FrozenDict is immutable")
 
     __setitem__ = _immutable
@@ -26,9 +28,13 @@ class FrozenDict(dict[K, V]):
     update = _immutable
 
     def __copy__(self) -> FrozenDict[K, V]:
+        """Return this immutable dictionary because a shallow copy is unnecessary."""
+
         return self
 
     def __deepcopy__(self, _memo: dict[int, object]) -> FrozenDict[K, V]:
+        """Return this recursively frozen dictionary for deep-copy operations."""
+
         return self
 
 
@@ -37,6 +43,8 @@ class FrozenList(list[V]):
 
     @staticmethod
     def _immutable(*_args: object, **_kwargs: object) -> Never:
+        """Reject any list mutation routed through an aliased method."""
+
         raise TypeError("FrozenList is immutable")
 
     __setitem__ = _immutable
@@ -53,9 +61,13 @@ class FrozenList(list[V]):
     sort = _immutable
 
     def __copy__(self) -> FrozenList[V]:
+        """Return this immutable list because a shallow copy is unnecessary."""
+
         return self
 
     def __deepcopy__(self, _memo: dict[int, object]) -> FrozenList[V]:
+        """Return this recursively frozen list for deep-copy operations."""
+
         return self
 
 

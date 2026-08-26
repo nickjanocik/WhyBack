@@ -1,3 +1,5 @@
+"""Tests for WhyBack's evaluation cases behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,6 +11,8 @@ from whyback.evaluation_cases import SCENARIO_IDS, build_normalized_synthetic_ru
 def test_all_synthetic_cases_execute_and_pass_behavior_contracts(
     tmp_path: Path,
 ) -> None:
+    """Verify that all synthetic cases execute and pass behavior contracts."""
+
     output = tmp_path / "normalized_runs.json"
     summaries = build_normalized_synthetic_runs(output)
     report = evaluate_runs(load_normalized_runs(output))

@@ -53,6 +53,8 @@ _EVAL_NAMESPACE = uuid5(NAMESPACE_URL, "https://github.com/whyback/evaluations")
 
 
 def _evidence_id(run_id: UUID, call_index: int, tool: ToolName, ordinal: int) -> str:
+    """Build the evidence ID a scripted tool call will deterministically emit."""
+
     call_id = make_tool_call_id(run_id, call_index, tool)
     return f"ev_{call_id}_{ordinal:03d}"
 
@@ -63,6 +65,8 @@ def _tool(
     *,
     arguments: dict[str, JsonValue] | None = None,
 ) -> ToolDecision:
+    """Create one model-shaped decision to run a named tool in a control case."""
+
     return ToolDecision(
         investigation_question=f"What deterministic evidence can {name.value} add?",
         selected_tool=name,
@@ -83,6 +87,8 @@ def _finish(
         "that warrants a reviewed test."
     ),
 ) -> FinishDecision:
+    """Build a grounded finish proposal for a deterministic evaluation case."""
+
     return FinishDecision(
         investigation_question="Is the bounded evidence sufficient to finish?",
         decision_summary="Submit the controlled hypothesis for deterministic review.",
@@ -122,6 +128,8 @@ def _finish(
 
 
 def _fallback() -> FinishDecision:
+    """Return the safe no-action proposal appended to every scripted case."""
+
     return FinishDecision(
         investigation_question="Can any customer action be supported safely?",
         decision_summary="Use the governed evidence-insufficiency fallback.",
@@ -145,6 +153,8 @@ def _decisions(
     run_id: UUID,
     household_id: str,
 ) -> tuple[ModelDecision, ...]:
+    """Return the tool sequence and finish proposals for one evaluation scenario."""
+
     if scenario_id == "frequency_decline":
         support = (_evidence_id(run_id, 1, ToolName.CUSTOMER_TREND, 2),)
         steps: tuple[ModelDecision, ...] = (
@@ -279,6 +289,8 @@ def _run_case(
     snapshot: DeclineSnapshot,
     scenario_id: str,
 ) -> InvestigationOutcome:
+    """Execute one scenario through the real runner using its stable run identity."""
+
     run_id = uuid5(_EVAL_NAMESPACE, scenario_id)
     injector = (
         DemoFaultInjector(
@@ -299,6 +311,8 @@ def _run_case(
 
 
 def _unique(values: list[str]) -> list[str]:
+    """Remove repeated strings while preserving their first-seen order."""
+
     return list(dict.fromkeys(values))
 
 

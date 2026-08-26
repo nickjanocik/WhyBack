@@ -1,3 +1,5 @@
+/** Reads verified WhyBack artifacts and exposes only safe summaries to the dashboard. */
+
 import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -84,10 +86,12 @@ const TRACE_DETAIL_KEYS = new Set([
   "unavailable_tools",
 ]);
 
+/** Distinguishes record-shaped JSON values from arrays and null. */
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** Bounds one trace detail to the primitive values that the UI may display. */
 function safeTraceDetailValue(value) {
   if (value === null || typeof value === "boolean") return value;
   if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
@@ -104,6 +108,7 @@ function safeTraceDetailValue(value) {
     .map((item) => (typeof item === "string" ? item.slice(0, 1_000) : item));
 }
 
+/** Reads a JSON file and requires its top-level value to be an object. */
 async function readJson(filePath) {
   const value = JSON.parse(await readFile(filePath, "utf8"));
   if (!isPlainObject(value)) {
@@ -112,6 +117,7 @@ async function readJson(filePath) {
   return value;
 }
 
+/** Accepts only a real directory and rejects symlinks at the artifact boundary. */
 async function isRealDirectory(directory) {
   try {
     const details = await lstat(directory);
@@ -122,6 +128,7 @@ async function isRealDirectory(directory) {
   }
 }
 
+/** Accepts only a real file and rejects missing paths and symlinks. */
 async function isRealFile(filePath) {
   try {
     const details = await lstat(filePath);
@@ -132,6 +139,7 @@ async function isRealFile(filePath) {
   }
 }
 
+/** Reduces a full report to the fields needed by the household selection rail. */
 function summarizeReport(report) {
   const decline = isPlainObject(report.decline) ? report.decline : {};
   const action = isPlainObject(report.action) ? report.action : null;
@@ -158,6 +166,7 @@ function summarizeReport(report) {
   };
 }
 
+/** Finds canonical customer directories in stable household-number order. */
 async function reportDirectories(collectionPath) {
   const entries = await readdir(collectionPath, { withFileTypes: true });
   return entries
@@ -170,6 +179,7 @@ async function reportDirectories(collectionPath) {
     .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true }));
 }
 
+/** Loads one fixed or verified live collection without exposing unsafe paths. */
 async function loadCollection(repositoryRoot, definition) {
   const collectionPath = definition.liveRun
     ? await resolveVerifiedLiveRunDirectory(repositoryRoot, definition.id)
@@ -231,6 +241,7 @@ async function loadCollection(repositoryRoot, definition) {
   };
 }
 
+/** Builds the dashboard workspace while isolating unreadable collections as warnings. */
 export async function loadWorkspace(repositoryRoot) {
   let liveRunDefinitions = [];
   const collectionWarnings = [];
@@ -240,6 +251,7 @@ export async function loadWorkspace(repositoryRoot) {
     collectionWarnings.push("Live Gemini runs could not be discovered.");
   }
   const definitions = [...liveRunDefinitions, ...COLLECTIONS];
+  // One malformed optional collection must not hide every valid reviewer artifact.
   const results = await Promise.allSettled(
     definitions.map((definition) => loadCollection(repositoryRoot, definition)),
   );
@@ -263,12 +275,14 @@ export async function loadWorkspace(repositoryRoot) {
   };
 }
 
+/** Resolves only a fixed collection or a sealed live-run collection. */
 export async function resolveCollection(repositoryRoot, collectionId) {
   const definition = COLLECTIONS.find((item) => item.id === collectionId);
   if (definition) return path.resolve(repositoryRoot, definition.relativePath);
   return resolveVerifiedLiveRunDirectory(repositoryRoot, collectionId);
 }
 
+/** Returns display and layout metadata for an allow-listed collection ID. */
 function collectionDefinition(collectionId) {
   return (
     COLLECTIONS.find((item) => item.id === collectionId) ??
@@ -276,10 +290,12 @@ function collectionDefinition(collectionId) {
   );
 }
 
+/** Restricts household IDs to the safe filename alphabet used by artifacts. */
 export function validateHouseholdId(householdId) {
   return /^[A-Za-z0-9_-]{1,64}$/.test(householdId);
 }
 
+/** Removes unapproved trace fields and replaces evidence ID arrays with counts. */
 export function summarizeTraceDetails(details) {
   if (!isPlainObject(details)) return {};
   const summary = Object.fromEntries(
@@ -308,6 +324,7 @@ export function summarizeTraceDetails(details) {
   return summary;
 }
 
+/** Converts a snake-case audit record into the browser's sanitized trace contract. */
 export function normalizeTraceEvent(event) {
   if (!isPlainObject(event)) return null;
   return {
@@ -320,6 +337,7 @@ export function normalizeTraceEvent(event) {
   };
 }
 
+/** Reads an append-only JSONL trace and drops records that cannot be normalized. */
 async function readTrace(tracePath) {
   let raw;
   try {
@@ -336,6 +354,7 @@ async function readTrace(tracePath) {
     .filter(Boolean);
 }
 
+/** Loads one report and trace only when their collection and household agree. */
 export async function loadInvestigation(repositoryRoot, collectionId, householdId) {
   if (!validateHouseholdId(householdId)) return null;
   const definition = collectionDefinition(collectionId);
@@ -367,6 +386,7 @@ export async function loadInvestigation(repositoryRoot, collectionId, householdI
   }
 }
 
+/** Resolves one allow-listed rendered artifact without permitting path traversal. */
 export async function resolveArtifactFile(
   repositoryRoot,
   collectionId,

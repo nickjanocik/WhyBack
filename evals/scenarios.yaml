@@ -1,3 +1,4 @@
+# Describe deterministic agent-harness scenarios and their observable contracts.
 schema_version: 3
 scenarios:
   - scenario_id: frequency_decline

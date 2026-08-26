@@ -37,11 +37,15 @@ class RunProvenance(BaseModel):
     @field_validator("generated_at")
     @classmethod
     def require_aware_utc(cls, value: datetime) -> datetime:
+        """Require an aware timestamp and normalize it to UTC."""
+
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("generated_at must be timezone-aware")
         return value.astimezone(UTC)
 
     @model_validator(mode="after")
     def freeze_hashes(self) -> Self:
+        """Freeze source hashes so run provenance cannot change after validation."""
+
         object.__setattr__(self, "source_hashes", frozen_mapping(self.source_hashes))
         return self
