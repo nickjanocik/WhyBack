@@ -126,8 +126,9 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     assert verification.passed, verification.issues
 
 
+@pytest.mark.timeout(90)
 def test_synthetic_demo_supports_the_full_customer_maximum(tmp_path: Path) -> None:
-    """Verify that synthetic demo supports the full customer maximum."""
+    """Exercise all 24 reports within a bounded coverage-instrumented timeout."""
 
     summary = build_synthetic_demo(tmp_path, customers=MAX_DEMO_CUSTOMERS)
     expected_ids = tuple(str(identifier) for identifier in range(101, 125))

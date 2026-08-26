@@ -1,5 +1,5 @@
 {
-  "backend": "openai",
+  "backend": "gemini",
   "completed_household_ids": [],
   "customer_outreach_executed": false,
   "dataset_kind": "official_complete_journey",
@@ -9,17 +9,17 @@
   "failed_household_ids": [],
   "files": {
     ".whyback-owned-artifact-root.json": "a182c246df9e8661f0e7f8df735471b936ed001dc37459fa3165347cdaf9ae24",
-    "RESULTS.md": "7c24ecd9eb2ab6c0d7f5cbe684430cf89fcc964ab13e6ec18fabeb7b817e3d51",
-    "data_provenance.json": "8b3880a11aac24f50c327e6edfcaa89bc986dfbaad034771bf887af59f71ab51",
+    "RESULTS.md": "cabe1293b70efce0e5f96da177b60ad4fbcc9dc2f5315be42775dd02294802e1",
+    "data_provenance.json": "ac1a61f495884d1c66bdf073829a85466f50a6b8efc2e2dd4f9f448ba8fc274d",
     "decline_candidates.csv": "8222cde5835aac9cb20c4594ee0d99fe58daf20c40dc784b7fdbf807323a49c2",
-    "live_model_status.json": "40be64fb34009706ebc78361d1d3f81debcb32935a6f7e33342c65a9c9963b4c",
+    "live_model_status.json": "58ba01ec7b95d119c718f047b4cdb7003d234099e031d7fbc25b69f16e55e10a",
     "results.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "sensitivity.csv": "ab1cb1ce82d076bc054cf463c23684871e2c77944ff55947198cef5aefa40c78"
   },
   "human_review_required": true,
   "model_execution": "skipped_no_api_key",
   "product": "WhyBack",
-  "reason": "OPENAI_API_KEY was absent; no live model call was attempted.",
+  "reason": "GEMINI_API_KEY was absent; no live model call was attempted.",
   "schema_version": 1,
   "selected_household_ids": [
     "5",

@@ -1672,7 +1672,7 @@
         "retry_count": 0,
         "tool_label": "Coupon campaign history",
         "tool_name": "coupon_campaign_history",
-        "total_latency_ms": 24.72499990835786
+        "total_latency_ms": 28.1892498023808
       },
       {
         "attempt_count": 1,
@@ -1715,7 +1715,7 @@
         "retry_count": 0,
         "tool_label": "Customer trend",
         "tool_name": "customer_trend",
-        "total_latency_ms": 53.08237485587597
+        "total_latency_ms": 54.912291932851076
       },
       {
         "attempt_count": 1,
@@ -1746,7 +1746,7 @@
         "retry_count": 0,
         "tool_label": "Basket behavior",
         "tool_name": "basket_behavior",
-        "total_latency_ms": 10.938249994069338
+        "total_latency_ms": 10.59449976310134
       },
       {
         "attempt_count": 1,
@@ -1779,7 +1779,7 @@
         "retry_count": 0,
         "tool_label": "Behavioral peer comparison",
         "tool_name": "peer_comparison",
-        "total_latency_ms": 43.917750008404255
+        "total_latency_ms": 44.35241688042879
       }
     ],
     "investigator_name": "WhyBack Investigator",
@@ -1884,12 +1884,12 @@
       "dataset_source_commit": "5b5d06192b9856edd04e4d405787af2f2e4a1fef",
       "dataset_source_repository": "bradleyboehmke/completejourney",
       "execution_mode": "scripted_control",
-      "generated_at": "2026-08-26T05:33:38.346704Z",
+      "generated_at": "2026-08-26T06:18:58.167097Z",
       "model": "scripted/whyback-v1",
       "prompt_hash": "e5ce76e3a7696a49faeb91b46d2bcfc99b78f2bb8c63d8931b53ab25fc971533",
       "prompt_version": "whyback-investigator-v2",
       "source_hashes": {
-        "manifest/manifest.json": "befa2c21a91913d10c4b42137149fbc1f383b3f510d0726b28fb2d59732b2fb0",
+        "manifest/manifest.json": "fa1bbe08c58b89b18fcce802767f0f13824c02d0673690f2ba8b668df2317d31",
         "prepared/baskets.parquet": "75fcdc22a7ffbe99a28d2d33164420be0417c24f22329a123a7677b4b3e28ea4",
         "prepared/campaign_descriptions.parquet": "84f7fa81c8a73659a9f0e4136b0ac99a1cac5f0c72fadae067346832acbdf352",
         "prepared/campaigns.parquet": "664d2cdfdfa52d4902bb2002c3387ccd69f01392a0b02e22721ad9aa9cade3d6",
@@ -1969,7 +1969,7 @@
         ],
         "retry_count": 0,
         "tool_name": "coupon_campaign_history",
-        "total_latency_ms": 24.72499990835786,
+        "total_latency_ms": 28.1892498023808,
         "unavailable": false
       },
       {
@@ -1985,7 +1985,7 @@
         ],
         "retry_count": 0,
         "tool_name": "customer_trend",
-        "total_latency_ms": 53.08237485587597,
+        "total_latency_ms": 54.912291932851076,
         "unavailable": false
       },
       {
@@ -2001,7 +2001,7 @@
         ],
         "retry_count": 0,
         "tool_name": "basket_behavior",
-        "total_latency_ms": 10.938249994069338,
+        "total_latency_ms": 10.59449976310134,
         "unavailable": false
       }
     ],

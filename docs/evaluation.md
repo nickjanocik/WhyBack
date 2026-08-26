@@ -191,11 +191,11 @@ the source manifest and generated artifacts are the proper provenance records.
 
 ## Live-model status
 
-The preserved prior-submission artifacts record that the OpenAI Responses
-backend was not run because `OPENAI_API_KEY` was absent. Live GPT-5.6
-investigations were skipped rather than replaced with scripted output under a
-live label. That remains truthful historical evidence and is not a current
-provider-status claim.
+The committed official artifacts were regenerated for the current Gemini
+backend. Because `GEMINI_API_KEY` was absent, the canonical top five official
+households were selected and explicitly marked skipped; no provider call or
+customer report was manufactured. The manifest and live-status record therefore
+describe the current credential-free boundary rather than a historical provider.
 
 The current live backend uses Gemini function calling through the Interactions
 API. A live request over a fabricated decline snapshot returned a valid

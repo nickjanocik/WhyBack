@@ -91,14 +91,15 @@ Parquet tables with SHA-256 hashes. Raw R files and prepared Parquet are ignored
 by Git. The local detector selected the canonical top five households `5`,
 `181`, `423`, `472`, and `682`.
 
-The preserved prior-submission artifacts record that `OPENAI_API_KEY` was absent
-and that the then-current live GPT investigation was skipped. That is historical
-evidence, not the status of the current provider. The active live backend is now
-Gemini. A live synthetic contract request returned a provider-issued Gemini
-function-call ID and one valid analytical decision. A longer synthetic attempt
-completed three model/tool turns before a later provider request failed at the
-configured 60-second request boundary. No completed live Gemini investigation is
-therefore claimed, and no official customer-behavior data was sent to Gemini.
+The committed official artifacts use the current Gemini backend. During their
+reproducible regeneration `GEMINI_API_KEY` was absent, so the canonical top five
+official households were selected and explicitly skipped with no provider call
+and no manufactured report. Separately, a live synthetic contract request
+returned a provider-issued Gemini function-call ID and one valid analytical
+decision. A longer synthetic attempt completed three model/tool turns before a
+later provider request failed at the configured 60-second request boundary. No
+completed live Gemini investigation is therefore claimed, and no official
+customer-behavior data was sent to Gemini.
 Credential-free scripted investigations exercise the same runner, tools,
 verifier, report renderer, and trace writer; their manifests label the execution
 mode.
@@ -289,9 +290,9 @@ known, while the exact 16 delivered coupon identities are not.
 `artifacts/demo/` contains five investigations over a compact synthetic fixture;
 they are explicitly labeled `scripted` and demonstrate orchestration and
 deterministic analytics, not live-model quality. `artifacts/official/` is the
-preserved OpenAI-era submission record: it records the official top-five
-selection and then-current no-key skip status without manufacturing customer
-reports. It is not evidence of a live Gemini run.
+current Gemini no-key status record: it preserves the official top-five
+selection, marks all five as skipped, and contains no manufactured customer
+reports. It is not evidence of a completed live Gemini run.
 `artifacts/live-gemini-synthetic-failure/` is the current live-provider audit:
 three Gemini-selected analytical tools completed over fabricated data, then the
 fourth provider request failed at the configured 60-second request boundary,
@@ -318,7 +319,7 @@ Reviewer entry points:
   [strict artifact manifest](artifacts/demo/manifest.json).
 - [Persistent retry-failure report](artifacts/demo/failure_example/report.html)
   and [trace](artifacts/demo/failure_example/trace.html).
-- [Prior OpenAI-era official full-data no-key status](artifacts/official/live_model_status.json)
+- [Current Gemini official full-data no-key status](artifacts/official/live_model_status.json)
   and [manifest](artifacts/official/manifest.json).
 - [Live Gemini synthetic bounded-failure report](artifacts/live-gemini-synthetic-failure/report.html),
   [trace](artifacts/live-gemini-synthetic-failure/trace.html), and
@@ -434,7 +435,7 @@ dependencies.
 | Plain-English code documentation | File/module and named-function/class explanations with regression coverage | source docstrings/JSDoc, `tests/unit/test_documentation_coverage.py`, web documentation test |
 | Behavioral evaluations | Twelve versioned scenarios and deterministic aggregate metrics | `evals/`, `artifacts/evals/` |
 | Quality and CI | Frozen Python/npm installs, Ruff, Pyright, branch coverage/JUnit, web lint/test/build, artifact checks | `.github/workflows/ci.yml`, `artifacts/tests/` |
-| Honest live status | Gemini analytical-call contract validated on synthetic state; longer synthetic run timed out safely; no official data sent and no completed live investigation claimed | this README, ADR 007, and artifact manifests |
+| Honest live status | Current official Gemini no-key skip plus a synthetic analytical-call contract and bounded failure; no official data sent and no completed live investigation claimed | this README, ADR 007, and artifact manifests |
 | Design and operations record | Architecture, reliability, evaluation, eight ADRs, production plan | `docs/` |
 
 ## Repository map
