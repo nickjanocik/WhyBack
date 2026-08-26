@@ -9,6 +9,7 @@ const LIVE_RUN_ID =
 const JOB_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const LIVE_RUN_RELATIVE_ROOT = path.join("artifacts", "local", "live-runs");
+const DEFAULT_LIVE_RUN_POINTER = path.join("artifacts", "default-live-run.json");
 const OWNERSHIP_MARKER = ".whyback-owned-artifact-root.json";
 const VERIFICATION_MARKER = ".whyback-live-verification.json";
 const OWNERSHIP_DOCUMENT = Object.freeze({
@@ -17,6 +18,32 @@ const OWNERSHIP_DOCUMENT = Object.freeze({
   scope: "replaceable_generated_artifact_tree",
 });
 const VERIFICATION_STATUS = "verified_live_gemini";
+
+/** Reads an optional checked-in pointer that pins dashboard discovery to one run. */
+async function defaultLiveRunCollectionId(repositoryRoot) {
+  const pointerPath = path.resolve(repositoryRoot, DEFAULT_LIVE_RUN_POINTER);
+  let details;
+  try {
+    details = await lstat(pointerPath);
+  } catch (error) {
+    if (["ELOOP", "ENOENT", "ENOTDIR"].includes(error?.code)) return undefined;
+    throw error;
+  }
+  if (!details.isFile() || details.isSymbolicLink()) return null;
+  try {
+    const pointer = JSON.parse(await readFile(pointerPath, "utf8"));
+    return isPlainObject(pointer) &&
+      Object.keys(pointer).length === 3 &&
+      pointer.schema_version === 1 &&
+      pointer.product === "WhyBack" &&
+      isLiveRunCollectionId(pointer.collection_id)
+      ? pointer.collection_id
+      : null;
+  } catch (error) {
+    if (error instanceof SyntaxError) return null;
+    throw error;
+  }
+}
 
 /** Returns metadata only for a real directory that is not a symbolic link. */
 async function realDirectoryDetails(directory) {
@@ -304,6 +331,8 @@ export async function markLiveRunVerified(repositoryRoot, collectionId) {
 export async function discoverLiveRunCollections(repositoryRoot) {
   const root = await safeLiveRunRoot(repositoryRoot);
   if (!root) return [];
+  const pinnedCollectionId = await defaultLiveRunCollectionId(repositoryRoot);
+  if (pinnedCollectionId === null) return [];
   let entries;
   try {
     entries = await readdir(root, { withFileTypes: true });
@@ -316,7 +345,8 @@ export async function discoverLiveRunCollections(repositoryRoot) {
     if (
       !entry.isDirectory() ||
       entry.isSymbolicLink() ||
-      !isLiveRunCollectionId(entry.name)
+      !isLiveRunCollectionId(entry.name) ||
+      (pinnedCollectionId !== undefined && entry.name !== pinnedCollectionId)
     ) {
       continue;
     }

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "product": "WhyBack",
+  "status": "verified_live_gemini",
+  "collection_id": "live-1db7b89a-26b9-43a8-b58e-45c224ee1e6d",
+  "manifest_sha256": "8da1df02d20277e9f259040e1954198b20db4e22da3078c52ca5e27066207c64",
+  "artifact_tree_sha256": "28fcf77b2b90a1a4b60ba24da78919cc2ebb5230054153fef491893c28f72990"
+}

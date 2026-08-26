@@ -38,6 +38,12 @@ data/*.duckdb.*
 
 # Local run output (reviewer-facing committed fixtures are allow-listed below)
 artifacts/local/
+!artifacts/local/
+artifacts/local/*
+!artifacts/local/live-runs/
+artifacts/local/live-runs/*
+!artifacts/local/live-runs/live-1db7b89a-26b9-43a8-b58e-45c224ee1e6d/
+!artifacts/local/live-runs/live-1db7b89a-26b9-43a8-b58e-45c224ee1e6d/**
 artifacts/live/
 *.tmp
 *.log

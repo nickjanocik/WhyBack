@@ -1,0 +1,4626 @@
+{
+  "analysis_windows": {
+    "baseline_end_week": 45,
+    "baseline_start_week": 38,
+    "recent_end_week": 53,
+    "recent_start_week": 46
+  },
+  "availability": "full",
+  "cohort_definitions": {
+    "eligible": "All households meeting the declared baseline activity, basket, and retailer-sales eligibility policy in this analysis window.",
+    "flagged": "Eligible households at or above the configured decline-score threshold.",
+    "investigated": "The ranked batch selected from the flagged cohort for household-level investigation."
+  },
+  "cohorts": [
+    {
+      "aggregate_baseline_value": 603009.4400000001,
+      "aggregate_recent_value": 602669.83,
+      "cohort": "eligible",
+      "definition": "All households meeting the declared baseline activity, basket, and retailer-sales eligibility policy in this analysis window.",
+      "gross_recorded_decrease": 103431.75,
+      "household_count": 1313,
+      "metrics": [
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.0
+            },
+            {
+              "probability": 0.3,
+              "value": 0.0
+            },
+            {
+              "probability": 0.4,
+              "value": 0.04000000000000001
+            },
+            {
+              "probability": 0.5,
+              "value": 0.08888888888888888
+            },
+            {
+              "probability": 0.6,
+              "value": 0.14788113474419773
+            },
+            {
+              "probability": 0.7,
+              "value": 0.22406616728474577
+            },
+            {
+              "probability": 0.8,
+              "value": 0.3399587654516209
+            },
+            {
+              "probability": 0.9,
+              "value": 0.5306221153429439
+            }
+          ],
+          "histogram": [
+            {
+              "count": 591,
+              "lower": 0.0,
+              "share": 0.4501142421934501,
+              "upper": 0.0625
+            },
+            {
+              "count": 149,
+              "lower": 0.0625,
+              "share": 0.11348057882711349,
+              "upper": 0.125
+            },
+            {
+              "count": 116,
+              "lower": 0.125,
+              "share": 0.08834729626808835,
+              "upper": 0.1875
+            },
+            {
+              "count": 100,
+              "lower": 0.1875,
+              "share": 0.07616146230007616,
+              "upper": 0.25
+            },
+            {
+              "count": 69,
+              "lower": 0.25,
+              "share": 0.05255140898705255,
+              "upper": 0.3125
+            },
+            {
+              "count": 62,
+              "lower": 0.3125,
+              "share": 0.04722010662604722,
+              "upper": 0.375
+            },
+            {
+              "count": 51,
+              "lower": 0.375,
+              "share": 0.03884234577303884,
+              "upper": 0.4375
+            },
+            {
+              "count": 36,
+              "lower": 0.4375,
+              "share": 0.027418126428027417,
+              "upper": 0.5
+            },
+            {
+              "count": 26,
+              "lower": 0.5,
+              "share": 0.019801980198019802,
+              "upper": 0.5625
+            },
+            {
+              "count": 30,
+              "lower": 0.5625,
+              "share": 0.02284843869002285,
+              "upper": 0.625
+            },
+            {
+              "count": 21,
+              "lower": 0.625,
+              "share": 0.015993907083015995,
+              "upper": 0.6875
+            },
+            {
+              "count": 19,
+              "lower": 0.6875,
+              "share": 0.014470677837014471,
+              "upper": 0.75
+            },
+            {
+              "count": 14,
+              "lower": 0.75,
+              "share": 0.010662604722010662,
+              "upper": 0.8125
+            },
+            {
+              "count": 8,
+              "lower": 0.8125,
+              "share": 0.006092916984006093,
+              "upper": 0.875
+            },
+            {
+              "count": 3,
+              "lower": 0.875,
+              "share": 0.002284843869002285,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.013709063214013708,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.17925655797042567,
+          "median": 0.08888888888888888,
+          "metric": "decline_score",
+          "minimum": 0.0,
+          "q25": 0.0,
+          "q75": 0.27720201090189117,
+          "unit": "share"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.0
+            },
+            {
+              "probability": 0.3,
+              "value": 0.0
+            },
+            {
+              "probability": 0.4,
+              "value": 0.0
+            },
+            {
+              "probability": 0.5,
+              "value": 0.0366141959291933
+            },
+            {
+              "probability": 0.6,
+              "value": 0.1480178515849439
+            },
+            {
+              "probability": 0.7,
+              "value": 0.27535369807884275
+            },
+            {
+              "probability": 0.8,
+              "value": 0.40410257439063957
+            },
+            {
+              "probability": 0.9,
+              "value": 0.6042854572878208
+            }
+          ],
+          "histogram": [
+            {
+              "count": 690,
+              "lower": 0.0,
+              "share": 0.5255140898705255,
+              "upper": 0.0625
+            },
+            {
+              "count": 73,
+              "lower": 0.0625,
+              "share": 0.055597867479055596,
+              "upper": 0.125
+            },
+            {
+              "count": 74,
+              "lower": 0.125,
+              "share": 0.05635948210205636,
+              "upper": 0.1875
+            },
+            {
+              "count": 55,
+              "lower": 0.1875,
+              "share": 0.041888804265041886,
+              "upper": 0.25
+            },
+            {
+              "count": 60,
+              "lower": 0.25,
+              "share": 0.0456968773800457,
+              "upper": 0.3125
+            },
+            {
+              "count": 73,
+              "lower": 0.3125,
+              "share": 0.055597867479055596,
+              "upper": 0.375
+            },
+            {
+              "count": 58,
+              "lower": 0.375,
+              "share": 0.044173648134044174,
+              "upper": 0.4375
+            },
+            {
+              "count": 46,
+              "lower": 0.4375,
+              "share": 0.035034272658035034,
+              "upper": 0.5
+            },
+            {
+              "count": 31,
+              "lower": 0.5,
+              "share": 0.02361005331302361,
+              "upper": 0.5625
+            },
+            {
+              "count": 31,
+              "lower": 0.5625,
+              "share": 0.02361005331302361,
+              "upper": 0.625
+            },
+            {
+              "count": 36,
+              "lower": 0.625,
+              "share": 0.027418126428027417,
+              "upper": 0.6875
+            },
+            {
+              "count": 18,
+              "lower": 0.6875,
+              "share": 0.013709063214013708,
+              "upper": 0.75
+            },
+            {
+              "count": 20,
+              "lower": 0.75,
+              "share": 0.015232292460015232,
+              "upper": 0.8125
+            },
+            {
+              "count": 17,
+              "lower": 0.8125,
+              "share": 0.012947448591012947,
+              "upper": 0.875
+            },
+            {
+              "count": 8,
+              "lower": 0.875,
+              "share": 0.006092916984006093,
+              "upper": 0.9375
+            },
+            {
+              "count": 23,
+              "lower": 0.9375,
+              "share": 0.017517136329017517,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.1910849254843986,
+          "median": 0.0366141959291933,
+          "metric": "sales_drop",
+          "minimum": 0.0,
+          "q25": 0.0,
+          "q75": 0.3344342614667864,
+          "unit": "share"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.0
+            },
+            {
+              "probability": 0.3,
+              "value": 0.0
+            },
+            {
+              "probability": 0.4,
+              "value": 0.0
+            },
+            {
+              "probability": 0.5,
+              "value": 0.07692307692307693
+            },
+            {
+              "probability": 0.6,
+              "value": 0.16666666666666666
+            },
+            {
+              "probability": 0.7,
+              "value": 0.2727272727272727
+            },
+            {
+              "probability": 0.8,
+              "value": 0.375
+            },
+            {
+              "probability": 0.9,
+              "value": 0.5714285714285714
+            }
+          ],
+          "histogram": [
+            {
+              "count": 631,
+              "lower": 0.0,
+              "share": 0.4805788271134806,
+              "upper": 0.0625
+            },
+            {
+              "count": 82,
+              "lower": 0.0625,
+              "share": 0.062452399086062454,
+              "upper": 0.125
+            },
+            {
+              "count": 109,
+              "lower": 0.125,
+              "share": 0.08301599390708302,
+              "upper": 0.1875
+            },
+            {
+              "count": 59,
+              "lower": 0.1875,
+              "share": 0.04493526275704494,
+              "upper": 0.25
+            },
+            {
+              "count": 96,
+              "lower": 0.25,
+              "share": 0.07311500380807312,
+              "upper": 0.3125
+            },
+            {
+              "count": 62,
+              "lower": 0.3125,
+              "share": 0.04722010662604722,
+              "upper": 0.375
+            },
+            {
+              "count": 51,
+              "lower": 0.375,
+              "share": 0.03884234577303884,
+              "upper": 0.4375
+            },
+            {
+              "count": 36,
+              "lower": 0.4375,
+              "share": 0.027418126428027417,
+              "upper": 0.5
+            },
+            {
+              "count": 48,
+              "lower": 0.5,
+              "share": 0.03655750190403656,
+              "upper": 0.5625
+            },
+            {
+              "count": 23,
+              "lower": 0.5625,
+              "share": 0.017517136329017517,
+              "upper": 0.625
+            },
+            {
+              "count": 34,
+              "lower": 0.625,
+              "share": 0.025894897182025894,
+              "upper": 0.6875
+            },
+            {
+              "count": 25,
+              "lower": 0.6875,
+              "share": 0.01904036557501904,
+              "upper": 0.75
+            },
+            {
+              "count": 19,
+              "lower": 0.75,
+              "share": 0.014470677837014471,
+              "upper": 0.8125
+            },
+            {
+              "count": 18,
+              "lower": 0.8125,
+              "share": 0.013709063214013708,
+              "upper": 0.875
+            },
+            {
+              "count": 2,
+              "lower": 0.875,
+              "share": 0.0015232292460015233,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.013709063214013708,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.1907510665902496,
+          "median": 0.07692307692307693,
+          "metric": "trip_drop",
+          "minimum": 0.0,
+          "q25": 0.0,
+          "q75": 0.32,
+          "unit": "share"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.0
+            },
+            {
+              "probability": 0.3,
+              "value": 0.0
+            },
+            {
+              "probability": 0.4,
+              "value": 0.0
+            },
+            {
+              "probability": 0.5,
+              "value": 0.0
+            },
+            {
+              "probability": 0.6,
+              "value": 0.125
+            },
+            {
+              "probability": 0.7,
+              "value": 0.14285714285714285
+            },
+            {
+              "probability": 0.8,
+              "value": 0.25
+            },
+            {
+              "probability": 0.9,
+              "value": 0.42857142857142855
+            }
+          ],
+          "histogram": [
+            {
+              "count": 776,
+              "lower": 0.0,
+              "share": 0.591012947448591,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 199,
+              "lower": 0.125,
+              "share": 0.15156130997715156,
+              "upper": 0.1875
+            },
+            {
+              "count": 37,
+              "lower": 0.1875,
+              "share": 0.02817974105102818,
+              "upper": 0.25
+            },
+            {
+              "count": 86,
+              "lower": 0.25,
+              "share": 0.0654988575780655,
+              "upper": 0.3125
+            },
+            {
+              "count": 33,
+              "lower": 0.3125,
+              "share": 0.02513328255902513,
+              "upper": 0.375
+            },
+            {
+              "count": 55,
+              "lower": 0.375,
+              "share": 0.041888804265041886,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 48,
+              "lower": 0.5,
+              "share": 0.03655750190403656,
+              "upper": 0.5625
+            },
+            {
+              "count": 21,
+              "lower": 0.5625,
+              "share": 0.015993907083015995,
+              "upper": 0.625
+            },
+            {
+              "count": 16,
+              "lower": 0.625,
+              "share": 0.012185833968012186,
+              "upper": 0.6875
+            },
+            {
+              "count": 4,
+              "lower": 0.6875,
+              "share": 0.0030464584920030465,
+              "upper": 0.75
+            },
+            {
+              "count": 14,
+              "lower": 0.75,
+              "share": 0.010662604722010662,
+              "upper": 0.8125
+            },
+            {
+              "count": 7,
+              "lower": 0.8125,
+              "share": 0.005331302361005331,
+              "upper": 0.875
+            },
+            {
+              "count": 0,
+              "lower": 0.875,
+              "share": 0.0,
+              "upper": 0.9375
+            },
+            {
+              "count": 17,
+              "lower": 0.9375,
+              "share": 0.012947448591012947,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.13244387625575743,
+          "median": 0.0,
+          "metric": "active_week_drop",
+          "minimum": 0.0,
+          "q25": 0.0,
+          "q75": 0.2,
+          "unit": "share"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 114.8
+            },
+            {
+              "probability": 0.2,
+              "value": 179.62800000000001
+            },
+            {
+              "probability": 0.3,
+              "value": 246.21399999999997
+            },
+            {
+              "probability": 0.4,
+              "value": 309.78
+            },
+            {
+              "probability": 0.5,
+              "value": 370.34000000000003
+            },
+            {
+              "probability": 0.6,
+              "value": 439.2819999999999
+            },
+            {
+              "probability": 0.7,
+              "value": 545.4340000000001
+            },
+            {
+              "probability": 0.8,
+              "value": 669.8480000000003
+            },
+            {
+              "probability": 0.9,
+              "value": 925.722
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.6757612713565913
+            },
+            {
+              "count": 0,
+              "lower": 0.6757612713565913,
+              "share": 0.0,
+              "upper": 1.808175838578659
+            },
+            {
+              "count": 0,
+              "lower": 1.808175838578659,
+              "share": 0.0,
+              "upper": 3.705832313449436
+            },
+            {
+              "count": 0,
+              "lower": 3.705832313449436,
+              "share": 0.0,
+              "upper": 6.885851540376955
+            },
+            {
+              "count": 0,
+              "lower": 6.885851540376955,
+              "share": 0.0,
+              "upper": 12.21480460303142
+            },
+            {
+              "count": 0,
+              "lower": 12.21480460303142,
+              "share": 0.0,
+              "upper": 21.144857762304873
+            },
+            {
+              "count": 4,
+              "lower": 21.144857762304873,
+              "share": 0.0030464584920030465,
+              "upper": 36.10949499777089
+            },
+            {
+              "count": 25,
+              "lower": 36.10949499777089,
+              "share": 0.01904036557501904,
+              "upper": 61.186654516865595
+            },
+            {
+              "count": 69,
+              "lower": 61.186654516865595,
+              "share": 0.05255140898705255,
+              "upper": 103.20998723459579
+            },
+            {
+              "count": 154,
+              "lower": 103.20998723459579,
+              "share": 0.1172886519421173,
+              "upper": 173.63106069630038
+            },
+            {
+              "count": 233,
+              "lower": 173.63106069630038,
+              "share": 0.17745620715917745,
+              "upper": 291.63996829078235
+            },
+            {
+              "count": 377,
+              "lower": 291.63996829078235,
+              "share": 0.2871287128712871,
+              "upper": 489.39472531271434
+            },
+            {
+              "count": 279,
+              "lower": 489.39472531271434,
+              "share": 0.2124904798172125,
+              "upper": 820.7844883566004
+            },
+            {
+              "count": 137,
+              "lower": 820.7844883566004,
+              "share": 0.10434120335110435,
+              "upper": 1376.1146189895824
+            },
+            {
+              "count": 33,
+              "lower": 1376.1146189895824,
+              "share": 0.02513328255902513,
+              "upper": 2306.71534472173
+            },
+            {
+              "count": 2,
+              "lower": 2306.71534472173,
+              "share": 0.0015232292460015233,
+              "upper": 3866.180000000001
+            }
+          ],
+          "maximum": 3866.1800000000007,
+          "mean": 459.2608073115004,
+          "median": 370.34000000000003,
+          "metric": "baseline_retailer_sales_value",
+          "minimum": 25.37,
+          "q25": 209.92000000000002,
+          "q75": 596.96,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 93.92000000000003
+            },
+            {
+              "probability": 0.2,
+              "value": 148.47
+            },
+            {
+              "probability": 0.3,
+              "value": 213.78599999999997
+            },
+            {
+              "probability": 0.4,
+              "value": 278.728
+            },
+            {
+              "probability": 0.5,
+              "value": 346.85999999999996
+            },
+            {
+              "probability": 0.6,
+              "value": 439.90999999999997
+            },
+            {
+              "probability": 0.7,
+              "value": 550.542
+            },
+            {
+              "probability": 0.8,
+              "value": 709.222
+            },
+            {
+              "probability": 0.9,
+              "value": 972.7279999999997
+            }
+          ],
+          "histogram": [
+            {
+              "count": 17,
+              "lower": -5e-324,
+              "share": 0.012947448591012947,
+              "upper": 0.6862228147515992
+            },
+            {
+              "count": 0,
+              "lower": 0.6862228147515992,
+              "share": 0.0,
+              "upper": 1.8433473809888061
+            },
+            {
+              "count": 0,
+              "lower": 1.8433473809888061,
+              "share": 0.0,
+              "upper": 3.794517224087532
+            },
+            {
+              "count": 3,
+              "lower": 3.794517224087532,
+              "share": 0.002284843869002285,
+              "upper": 7.084624328975902
+            },
+            {
+              "count": 7,
+              "lower": 7.084624328975902,
+              "share": 0.005331302361005331,
+              "upper": 12.632477992215005
+            },
+            {
+              "count": 12,
+              "lower": 12.632477992215005,
+              "share": 0.00913937547600914,
+              "upper": 21.987395412072015
+            },
+            {
+              "count": 23,
+              "lower": 21.987395412072015,
+              "share": 0.017517136329017517,
+              "upper": 37.76187059555207
+            },
+            {
+              "count": 40,
+              "lower": 37.76187059555207,
+              "share": 0.030464584920030464,
+              "upper": 64.36115054066906
+            },
+            {
+              "count": 63,
+              "lower": 64.36115054066906,
+              "share": 0.04798172124904798,
+              "upper": 109.21346324009004
+            },
+            {
+              "count": 178,
+              "lower": 109.21346324009004,
+              "share": 0.13556740289413557,
+              "upper": 184.84445620822646
+            },
+            {
+              "count": 244,
+              "lower": 184.84445620822646,
+              "share": 0.18583396801218582,
+              "upper": 312.3751620534158
+            },
+            {
+              "count": 302,
+              "lower": 312.3751620534158,
+              "share": 0.23000761614623,
+              "upper": 527.4203478309496
+            },
+            {
+              "count": 267,
+              "lower": 527.4203478309496,
+              "share": 0.20335110434120335,
+              "upper": 890.0344462915233
+            },
+            {
+              "count": 123,
+              "lower": 890.0344462915233,
+              "share": 0.09367859862909368,
+              "upper": 1501.4826120663242
+            },
+            {
+              "count": 32,
+              "lower": 1501.4826120663242,
+              "share": 0.024371667936024372,
+              "upper": 2532.5204592338114
+            },
+            {
+              "count": 2,
+              "lower": 2532.5204592338114,
+              "share": 0.0015232292460015233,
+              "upper": 4271.080000000004
+            }
+          ],
+          "maximum": 4271.080000000001,
+          "mean": 459.00215536938316,
+          "median": 346.85999999999996,
+          "metric": "recent_retailer_sales_value",
+          "minimum": 0.0,
+          "q25": 176.14999999999998,
+          "q75": 613.28,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 1313,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": -247.75599999999997
+            },
+            {
+              "probability": 0.2,
+              "value": -147.5260000000001
+            },
+            {
+              "probability": 0.3,
+              "value": -86.42999999999999
+            },
+            {
+              "probability": 0.4,
+              "value": -50.51399999999999
+            },
+            {
+              "probability": 0.5,
+              "value": -12.480000000000018
+            },
+            {
+              "probability": 0.6,
+              "value": 23.097999999999992
+            },
+            {
+              "probability": 0.7,
+              "value": 74.23199999999999
+            },
+            {
+              "probability": 0.8,
+              "value": 140.60600000000017
+            },
+            {
+              "probability": 0.9,
+              "value": 251.862
+            }
+          ],
+          "histogram": [
+            {
+              "count": 1,
+              "lower": -1091.9600000000007,
+              "share": 0.0007616146230007616,
+              "upper": -937.6575000000005
+            },
+            {
+              "count": 1,
+              "lower": -937.6575000000005,
+              "share": 0.0007616146230007616,
+              "upper": -783.3550000000005
+            },
+            {
+              "count": 5,
+              "lower": -783.3550000000005,
+              "share": 0.003808073115003808,
+              "upper": -629.0525000000004
+            },
+            {
+              "count": 17,
+              "lower": -629.0525000000004,
+              "share": 0.012947448591012947,
+              "upper": -474.75000000000034
+            },
+            {
+              "count": 55,
+              "lower": -474.75000000000034,
+              "share": 0.041888804265041886,
+              "upper": -320.44750000000033
+            },
+            {
+              "count": 143,
+              "lower": -320.44750000000033,
+              "share": 0.10891089108910891,
+              "upper": -166.1450000000002
+            },
+            {
+              "count": 438,
+              "lower": -166.1450000000002,
+              "share": 0.3335872048743336,
+              "upper": -11.8425000000002
+            },
+            {
+              "count": 394,
+              "lower": -11.8425000000002,
+              "share": 0.3000761614623001,
+              "upper": 142.4599999999998
+            },
+            {
+              "count": 151,
+              "lower": 142.4599999999998,
+              "share": 0.115003808073115,
+              "upper": 296.7624999999998
+            },
+            {
+              "count": 65,
+              "lower": 296.7624999999998,
+              "share": 0.04950495049504951,
+              "upper": 451.0649999999998
+            },
+            {
+              "count": 28,
+              "lower": 451.0649999999998,
+              "share": 0.021325209444021324,
+              "upper": 605.3674999999998
+            },
+            {
+              "count": 6,
+              "lower": 605.3674999999998,
+              "share": 0.00456968773800457,
+              "upper": 759.6700000000001
+            },
+            {
+              "count": 5,
+              "lower": 759.6700000000001,
+              "share": 0.003808073115003808,
+              "upper": 913.9725000000001
+            },
+            {
+              "count": 2,
+              "lower": 913.9725000000001,
+              "share": 0.0015232292460015233,
+              "upper": 1068.275
+            },
+            {
+              "count": 0,
+              "lower": 1068.275,
+              "share": 0.0,
+              "upper": 1222.5774999999999
+            },
+            {
+              "count": 2,
+              "lower": 1222.5774999999999,
+              "share": 0.0015232292460015233,
+              "upper": 1376.8800000000003
+            }
+          ],
+          "maximum": 1376.88,
+          "mean": -0.2586519421172891,
+          "median": -12.480000000000018,
+          "metric": "recorded_value_change",
+          "minimum": -1091.9600000000005,
+          "q25": -112.03000000000003,
+          "q75": 102.58000000000001,
+          "unit": "retailer_sales_value"
+        }
+      ]
+    },
+    {
+      "aggregate_baseline_value": 117097.88,
+      "aggregate_recent_value": 52696.07,
+      "cohort": "flagged",
+      "definition": "Eligible households at or above the configured decline-score threshold.",
+      "gross_recorded_decrease": 64796.65,
+      "household_count": 304,
+      "metrics": [
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.32944474014959657
+            },
+            {
+              "probability": 0.2,
+              "value": 0.3608618524635554
+            },
+            {
+              "probability": 0.3,
+              "value": 0.38837584913590534
+            },
+            {
+              "probability": 0.4,
+              "value": 0.4231292480102768
+            },
+            {
+              "probability": 0.5,
+              "value": 0.4800624682865037
+            },
+            {
+              "probability": 0.6,
+              "value": 0.549597766221704
+            },
+            {
+              "probability": 0.7,
+              "value": 0.6065536419357584
+            },
+            {
+              "probability": 0.8,
+              "value": 0.6949995847992224
+            },
+            {
+              "probability": 0.9,
+              "value": 0.8033134401430567
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 0,
+              "lower": 0.125,
+              "share": 0.0,
+              "upper": 0.1875
+            },
+            {
+              "count": 0,
+              "lower": 0.1875,
+              "share": 0.0,
+              "upper": 0.25
+            },
+            {
+              "count": 16,
+              "lower": 0.25,
+              "share": 0.05263157894736842,
+              "upper": 0.3125
+            },
+            {
+              "count": 62,
+              "lower": 0.3125,
+              "share": 0.20394736842105263,
+              "upper": 0.375
+            },
+            {
+              "count": 51,
+              "lower": 0.375,
+              "share": 0.16776315789473684,
+              "upper": 0.4375
+            },
+            {
+              "count": 36,
+              "lower": 0.4375,
+              "share": 0.11842105263157894,
+              "upper": 0.5
+            },
+            {
+              "count": 26,
+              "lower": 0.5,
+              "share": 0.08552631578947369,
+              "upper": 0.5625
+            },
+            {
+              "count": 30,
+              "lower": 0.5625,
+              "share": 0.09868421052631579,
+              "upper": 0.625
+            },
+            {
+              "count": 21,
+              "lower": 0.625,
+              "share": 0.06907894736842106,
+              "upper": 0.6875
+            },
+            {
+              "count": 19,
+              "lower": 0.6875,
+              "share": 0.0625,
+              "upper": 0.75
+            },
+            {
+              "count": 14,
+              "lower": 0.75,
+              "share": 0.046052631578947366,
+              "upper": 0.8125
+            },
+            {
+              "count": 8,
+              "lower": 0.8125,
+              "share": 0.02631578947368421,
+              "upper": 0.875
+            },
+            {
+              "count": 3,
+              "lower": 0.875,
+              "share": 0.009868421052631578,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.05921052631578947,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.5307580417371727,
+          "median": 0.4800624682865037,
+          "metric": "decline_score",
+          "minimum": 0.3,
+          "q25": 0.3736127238532748,
+          "q75": 0.6558972197185062,
+          "unit": "share"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.3356672529133911
+            },
+            {
+              "probability": 0.2,
+              "value": 0.39627616569342
+            },
+            {
+              "probability": 0.3,
+              "value": 0.4439112600324706
+            },
+            {
+              "probability": 0.4,
+              "value": 0.49526781796844904
+            },
+            {
+              "probability": 0.5,
+              "value": 0.5638116539217118
+            },
+            {
+              "probability": 0.6,
+              "value": 0.6265298245502223
+            },
+            {
+              "probability": 0.7,
+              "value": 0.6744208024635017
+            },
+            {
+              "probability": 0.8,
+              "value": 0.7728922468384698
+            },
+            {
+              "probability": 0.9,
+              "value": 0.8786322219368651
+            }
+          ],
+          "histogram": [
+            {
+              "count": 3,
+              "lower": 0.0,
+              "share": 0.009868421052631578,
+              "upper": 0.0625
+            },
+            {
+              "count": 1,
+              "lower": 0.0625,
+              "share": 0.003289473684210526,
+              "upper": 0.125
+            },
+            {
+              "count": 2,
+              "lower": 0.125,
+              "share": 0.006578947368421052,
+              "upper": 0.1875
+            },
+            {
+              "count": 3,
+              "lower": 0.1875,
+              "share": 0.009868421052631578,
+              "upper": 0.25
+            },
+            {
+              "count": 12,
+              "lower": 0.25,
+              "share": 0.039473684210526314,
+              "upper": 0.3125
+            },
+            {
+              "count": 31,
+              "lower": 0.3125,
+              "share": 0.10197368421052631,
+              "upper": 0.375
+            },
+            {
+              "count": 38,
+              "lower": 0.375,
+              "share": 0.125,
+              "upper": 0.4375
+            },
+            {
+              "count": 33,
+              "lower": 0.4375,
+              "share": 0.10855263157894737,
+              "upper": 0.5
+            },
+            {
+              "count": 29,
+              "lower": 0.5,
+              "share": 0.09539473684210527,
+              "upper": 0.5625
+            },
+            {
+              "count": 30,
+              "lower": 0.5625,
+              "share": 0.09868421052631579,
+              "upper": 0.625
+            },
+            {
+              "count": 36,
+              "lower": 0.625,
+              "share": 0.11842105263157894,
+              "upper": 0.6875
+            },
+            {
+              "count": 18,
+              "lower": 0.6875,
+              "share": 0.05921052631578947,
+              "upper": 0.75
+            },
+            {
+              "count": 20,
+              "lower": 0.75,
+              "share": 0.06578947368421052,
+              "upper": 0.8125
+            },
+            {
+              "count": 17,
+              "lower": 0.8125,
+              "share": 0.05592105263157895,
+              "upper": 0.875
+            },
+            {
+              "count": 8,
+              "lower": 0.875,
+              "share": 0.02631578947368421,
+              "upper": 0.9375
+            },
+            {
+              "count": 23,
+              "lower": 0.9375,
+              "share": 0.0756578947368421,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.5787820102421958,
+          "median": 0.5638116539217118,
+          "metric": "sales_drop",
+          "minimum": 0.0,
+          "q25": 0.42194324000508016,
+          "q75": 0.7094988010179178,
+          "unit": "share"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.2857142857142857
+            },
+            {
+              "probability": 0.2,
+              "value": 0.3333333333333333
+            },
+            {
+              "probability": 0.3,
+              "value": 0.42105263157894735
+            },
+            {
+              "probability": 0.4,
+              "value": 0.4666666666666667
+            },
+            {
+              "probability": 0.5,
+              "value": 0.5086206896551724
+            },
+            {
+              "probability": 0.6,
+              "value": 0.5872549019607842
+            },
+            {
+              "probability": 0.7,
+              "value": 0.6666666666666666
+            },
+            {
+              "probability": 0.8,
+              "value": 0.7272727272727273
+            },
+            {
+              "probability": 0.9,
+              "value": 0.8333333333333334
+            }
+          ],
+          "histogram": [
+            {
+              "count": 4,
+              "lower": 0.0,
+              "share": 0.013157894736842105,
+              "upper": 0.0625
+            },
+            {
+              "count": 1,
+              "lower": 0.0625,
+              "share": 0.003289473684210526,
+              "upper": 0.125
+            },
+            {
+              "count": 7,
+              "lower": 0.125,
+              "share": 0.023026315789473683,
+              "upper": 0.1875
+            },
+            {
+              "count": 8,
+              "lower": 0.1875,
+              "share": 0.02631578947368421,
+              "upper": 0.25
+            },
+            {
+              "count": 25,
+              "lower": 0.25,
+              "share": 0.08223684210526316,
+              "upper": 0.3125
+            },
+            {
+              "count": 24,
+              "lower": 0.3125,
+              "share": 0.07894736842105263,
+              "upper": 0.375
+            },
+            {
+              "count": 32,
+              "lower": 0.375,
+              "share": 0.10526315789473684,
+              "upper": 0.4375
+            },
+            {
+              "count": 27,
+              "lower": 0.4375,
+              "share": 0.08881578947368421,
+              "upper": 0.5
+            },
+            {
+              "count": 40,
+              "lower": 0.5,
+              "share": 0.13157894736842105,
+              "upper": 0.5625
+            },
+            {
+              "count": 22,
+              "lower": 0.5625,
+              "share": 0.07236842105263158,
+              "upper": 0.625
+            },
+            {
+              "count": 32,
+              "lower": 0.625,
+              "share": 0.10526315789473684,
+              "upper": 0.6875
+            },
+            {
+              "count": 25,
+              "lower": 0.6875,
+              "share": 0.08223684210526316,
+              "upper": 0.75
+            },
+            {
+              "count": 19,
+              "lower": 0.75,
+              "share": 0.0625,
+              "upper": 0.8125
+            },
+            {
+              "count": 18,
+              "lower": 0.8125,
+              "share": 0.05921052631578947,
+              "upper": 0.875
+            },
+            {
+              "count": 2,
+              "lower": 0.875,
+              "share": 0.006578947368421052,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.05921052631578947,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.5433047001655289,
+          "median": 0.5086206896551724,
+          "metric": "trip_drop",
+          "minimum": 0.0,
+          "q25": 0.38782051282051283,
+          "q75": 0.7028846153846153,
+          "unit": "share"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.14285714285714285
+            },
+            {
+              "probability": 0.3,
+              "value": 0.25
+            },
+            {
+              "probability": 0.4,
+              "value": 0.29523809523809535
+            },
+            {
+              "probability": 0.5,
+              "value": 0.375
+            },
+            {
+              "probability": 0.6,
+              "value": 0.42857142857142855
+            },
+            {
+              "probability": 0.7,
+              "value": 0.5
+            },
+            {
+              "probability": 0.8,
+              "value": 0.6
+            },
+            {
+              "probability": 0.9,
+              "value": 0.75
+            }
+          ],
+          "histogram": [
+            {
+              "count": 39,
+              "lower": 0.0,
+              "share": 0.12828947368421054,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 41,
+              "lower": 0.125,
+              "share": 0.13486842105263158,
+              "upper": 0.1875
+            },
+            {
+              "count": 9,
+              "lower": 0.1875,
+              "share": 0.029605263157894735,
+              "upper": 0.25
+            },
+            {
+              "count": 33,
+              "lower": 0.25,
+              "share": 0.10855263157894737,
+              "upper": 0.3125
+            },
+            {
+              "count": 19,
+              "lower": 0.3125,
+              "share": 0.0625,
+              "upper": 0.375
+            },
+            {
+              "count": 46,
+              "lower": 0.375,
+              "share": 0.1513157894736842,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 41,
+              "lower": 0.5,
+              "share": 0.13486842105263158,
+              "upper": 0.5625
+            },
+            {
+              "count": 19,
+              "lower": 0.5625,
+              "share": 0.0625,
+              "upper": 0.625
+            },
+            {
+              "count": 15,
+              "lower": 0.625,
+              "share": 0.049342105263157895,
+              "upper": 0.6875
+            },
+            {
+              "count": 4,
+              "lower": 0.6875,
+              "share": 0.013157894736842105,
+              "upper": 0.75
+            },
+            {
+              "count": 14,
+              "lower": 0.75,
+              "share": 0.046052631578947366,
+              "upper": 0.8125
+            },
+            {
+              "count": 7,
+              "lower": 0.8125,
+              "share": 0.023026315789473683,
+              "upper": 0.875
+            },
+            {
+              "count": 0,
+              "lower": 0.875,
+              "share": 0.0,
+              "upper": 0.9375
+            },
+            {
+              "count": 17,
+              "lower": 0.9375,
+              "share": 0.05592105263157895,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.3918781328320802,
+          "median": 0.375,
+          "metric": "active_week_drop",
+          "minimum": 0.0,
+          "q25": 0.16666666666666666,
+          "q75": 0.5178571428571428,
+          "unit": "share"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 99.148
+            },
+            {
+              "probability": 0.2,
+              "value": 147.40800000000002
+            },
+            {
+              "probability": 0.3,
+              "value": 205.02199999999996
+            },
+            {
+              "probability": 0.4,
+              "value": 269.09400000000005
+            },
+            {
+              "probability": 0.5,
+              "value": 315.455
+            },
+            {
+              "probability": 0.6,
+              "value": 371.846
+            },
+            {
+              "probability": 0.7,
+              "value": 446.63699999999994
+            },
+            {
+              "probability": 0.8,
+              "value": 556.034
+            },
+            {
+              "probability": 0.9,
+              "value": 755.826
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.6757612713565913
+            },
+            {
+              "count": 0,
+              "lower": 0.6757612713565913,
+              "share": 0.0,
+              "upper": 1.808175838578659
+            },
+            {
+              "count": 0,
+              "lower": 1.808175838578659,
+              "share": 0.0,
+              "upper": 3.705832313449436
+            },
+            {
+              "count": 0,
+              "lower": 3.705832313449436,
+              "share": 0.0,
+              "upper": 6.885851540376955
+            },
+            {
+              "count": 0,
+              "lower": 6.885851540376955,
+              "share": 0.0,
+              "upper": 12.21480460303142
+            },
+            {
+              "count": 0,
+              "lower": 12.21480460303142,
+              "share": 0.0,
+              "upper": 21.144857762304873
+            },
+            {
+              "count": 3,
+              "lower": 21.144857762304873,
+              "share": 0.009868421052631578,
+              "upper": 36.10949499777089
+            },
+            {
+              "count": 7,
+              "lower": 36.10949499777089,
+              "share": 0.023026315789473683,
+              "upper": 61.186654516865595
+            },
+            {
+              "count": 22,
+              "lower": 61.186654516865595,
+              "share": 0.07236842105263158,
+              "upper": 103.20998723459579
+            },
+            {
+              "count": 44,
+              "lower": 103.20998723459579,
+              "share": 0.14473684210526316,
+              "upper": 173.63106069630038
+            },
+            {
+              "count": 62,
+              "lower": 173.63106069630038,
+              "share": 0.20394736842105263,
+              "upper": 291.63996829078235
+            },
+            {
+              "count": 92,
+              "lower": 291.63996829078235,
+              "share": 0.3026315789473684,
+              "upper": 489.39472531271434
+            },
+            {
+              "count": 49,
+              "lower": 489.39472531271434,
+              "share": 0.1611842105263158,
+              "upper": 820.7844883566004
+            },
+            {
+              "count": 20,
+              "lower": 820.7844883566004,
+              "share": 0.06578947368421052,
+              "upper": 1376.1146189895824
+            },
+            {
+              "count": 5,
+              "lower": 1376.1146189895824,
+              "share": 0.01644736842105263,
+              "upper": 2306.71534472173
+            },
+            {
+              "count": 0,
+              "lower": 2306.71534472173,
+              "share": 0.0,
+              "upper": 3866.180000000001
+            }
+          ],
+          "maximum": 1971.6599999999999,
+          "mean": 385.1903947368421,
+          "median": 315.455,
+          "metric": "baseline_retailer_sales_value",
+          "minimum": 25.37,
+          "q25": 172.43499999999997,
+          "q75": 478.51750000000004,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 16.755
+            },
+            {
+              "probability": 0.2,
+              "value": 36.326
+            },
+            {
+              "probability": 0.3,
+              "value": 64.21300000000001
+            },
+            {
+              "probability": 0.4,
+              "value": 97.292
+            },
+            {
+              "probability": 0.5,
+              "value": 134.64000000000001
+            },
+            {
+              "probability": 0.6,
+              "value": 164.876
+            },
+            {
+              "probability": 0.7,
+              "value": 197.48200000000003
+            },
+            {
+              "probability": 0.8,
+              "value": 259.70200000000006
+            },
+            {
+              "probability": 0.9,
+              "value": 379.495
+            }
+          ],
+          "histogram": [
+            {
+              "count": 17,
+              "lower": -5e-324,
+              "share": 0.05592105263157895,
+              "upper": 0.6862228147515992
+            },
+            {
+              "count": 0,
+              "lower": 0.6862228147515992,
+              "share": 0.0,
+              "upper": 1.8433473809888061
+            },
+            {
+              "count": 0,
+              "lower": 1.8433473809888061,
+              "share": 0.0,
+              "upper": 3.794517224087532
+            },
+            {
+              "count": 3,
+              "lower": 3.794517224087532,
+              "share": 0.009868421052631578,
+              "upper": 7.084624328975902
+            },
+            {
+              "count": 7,
+              "lower": 7.084624328975902,
+              "share": 0.023026315789473683,
+              "upper": 12.632477992215005
+            },
+            {
+              "count": 12,
+              "lower": 12.632477992215005,
+              "share": 0.039473684210526314,
+              "upper": 21.987395412072015
+            },
+            {
+              "count": 23,
+              "lower": 21.987395412072015,
+              "share": 0.0756578947368421,
+              "upper": 37.76187059555207
+            },
+            {
+              "count": 30,
+              "lower": 37.76187059555207,
+              "share": 0.09868421052631579,
+              "upper": 64.36115054066906
+            },
+            {
+              "count": 39,
+              "lower": 64.36115054066906,
+              "share": 0.12828947368421054,
+              "upper": 109.21346324009004
+            },
+            {
+              "count": 70,
+              "lower": 109.21346324009004,
+              "share": 0.23026315789473684,
+              "upper": 184.84445620822646
+            },
+            {
+              "count": 61,
+              "lower": 184.84445620822646,
+              "share": 0.20065789473684212,
+              "upper": 312.3751620534158
+            },
+            {
+              "count": 29,
+              "lower": 312.3751620534158,
+              "share": 0.09539473684210527,
+              "upper": 527.4203478309496
+            },
+            {
+              "count": 9,
+              "lower": 527.4203478309496,
+              "share": 0.029605263157894735,
+              "upper": 890.0344462915233
+            },
+            {
+              "count": 4,
+              "lower": 890.0344462915233,
+              "share": 0.013157894736842105,
+              "upper": 1501.4826120663242
+            },
+            {
+              "count": 0,
+              "lower": 1501.4826120663242,
+              "share": 0.0,
+              "upper": 2532.5204592338114
+            },
+            {
+              "count": 0,
+              "lower": 2532.5204592338114,
+              "share": 0.0,
+              "upper": 4271.080000000004
+            }
+          ],
+          "maximum": 1213.2600000000002,
+          "mean": 173.34233552631582,
+          "median": 134.64000000000001,
+          "metric": "recent_retailer_sales_value",
+          "minimum": 0.0,
+          "q25": 50.45,
+          "q75": 227.3625,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 304,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": -429.43100000000004
+            },
+            {
+              "probability": 0.2,
+              "value": -326.87199999999996
+            },
+            {
+              "probability": 0.3,
+              "value": -262.802
+            },
+            {
+              "probability": 0.4,
+              "value": -210.224
+            },
+            {
+              "probability": 0.5,
+              "value": -164.8
+            },
+            {
+              "probability": 0.6,
+              "value": -135.71399999999997
+            },
+            {
+              "probability": 0.7,
+              "value": -107.72600000000003
+            },
+            {
+              "probability": 0.8,
+              "value": -76.64800000000001
+            },
+            {
+              "probability": 0.9,
+              "value": -53.172000000000004
+            }
+          ],
+          "histogram": [
+            {
+              "count": 1,
+              "lower": -1091.9600000000007,
+              "share": 0.003289473684210526,
+              "upper": -937.6575000000005
+            },
+            {
+              "count": 1,
+              "lower": -937.6575000000005,
+              "share": 0.003289473684210526,
+              "upper": -783.3550000000005
+            },
+            {
+              "count": 5,
+              "lower": -783.3550000000005,
+              "share": 0.01644736842105263,
+              "upper": -629.0525000000004
+            },
+            {
+              "count": 16,
+              "lower": -629.0525000000004,
+              "share": 0.05263157894736842,
+              "upper": -474.75000000000034
+            },
+            {
+              "count": 43,
+              "lower": -474.75000000000034,
+              "share": 0.14144736842105263,
+              "upper": -320.44750000000033
+            },
+            {
+              "count": 83,
+              "lower": -320.44750000000033,
+              "share": 0.2730263157894737,
+              "upper": -166.1450000000002
+            },
+            {
+              "count": 151,
+              "lower": -166.1450000000002,
+              "share": 0.4967105263157895,
+              "upper": -11.8425000000002
+            },
+            {
+              "count": 3,
+              "lower": -11.8425000000002,
+              "share": 0.009868421052631578,
+              "upper": 142.4599999999998
+            },
+            {
+              "count": 0,
+              "lower": 142.4599999999998,
+              "share": 0.0,
+              "upper": 296.7624999999998
+            },
+            {
+              "count": 1,
+              "lower": 296.7624999999998,
+              "share": 0.003289473684210526,
+              "upper": 451.0649999999998
+            },
+            {
+              "count": 0,
+              "lower": 451.0649999999998,
+              "share": 0.0,
+              "upper": 605.3674999999998
+            },
+            {
+              "count": 0,
+              "lower": 605.3674999999998,
+              "share": 0.0,
+              "upper": 759.6700000000001
+            },
+            {
+              "count": 0,
+              "lower": 759.6700000000001,
+              "share": 0.0,
+              "upper": 913.9725000000001
+            },
+            {
+              "count": 0,
+              "lower": 913.9725000000001,
+              "share": 0.0,
+              "upper": 1068.275
+            },
+            {
+              "count": 0,
+              "lower": 1068.275,
+              "share": 0.0,
+              "upper": 1222.5774999999999
+            },
+            {
+              "count": 0,
+              "lower": 1222.5774999999999,
+              "share": 0.0,
+              "upper": 1376.8800000000003
+            }
+          ],
+          "maximum": 320.55,
+          "mean": -211.84805921052634,
+          "median": -164.8,
+          "metric": "recorded_value_change",
+          "minimum": -1091.9600000000005,
+          "q25": -301.2649999999999,
+          "q75": -91.04250000000005,
+          "unit": "retailer_sales_value"
+        }
+      ]
+    },
+    {
+      "aggregate_baseline_value": 5431.33,
+      "aggregate_recent_value": 105.77000000000001,
+      "cohort": "investigated",
+      "definition": "The ranked batch selected from the flagged cohort for household-level investigation.",
+      "gross_recorded_decrease": 5325.56,
+      "household_count": 24,
+      "metrics": [
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.8775592792790227
+            },
+            {
+              "probability": 0.2,
+              "value": 0.9010896734475692
+            },
+            {
+              "probability": 0.3,
+              "value": 0.9938729470096064
+            },
+            {
+              "probability": 0.4,
+              "value": 1.0
+            },
+            {
+              "probability": 0.5,
+              "value": 1.0
+            },
+            {
+              "probability": 0.6,
+              "value": 1.0
+            },
+            {
+              "probability": 0.7,
+              "value": 1.0
+            },
+            {
+              "probability": 0.8,
+              "value": 1.0
+            },
+            {
+              "probability": 0.9,
+              "value": 1.0
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 0,
+              "lower": 0.125,
+              "share": 0.0,
+              "upper": 0.1875
+            },
+            {
+              "count": 0,
+              "lower": 0.1875,
+              "share": 0.0,
+              "upper": 0.25
+            },
+            {
+              "count": 0,
+              "lower": 0.25,
+              "share": 0.0,
+              "upper": 0.3125
+            },
+            {
+              "count": 0,
+              "lower": 0.3125,
+              "share": 0.0,
+              "upper": 0.375
+            },
+            {
+              "count": 0,
+              "lower": 0.375,
+              "share": 0.0,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 0,
+              "lower": 0.5,
+              "share": 0.0,
+              "upper": 0.5625
+            },
+            {
+              "count": 0,
+              "lower": 0.5625,
+              "share": 0.0,
+              "upper": 0.625
+            },
+            {
+              "count": 0,
+              "lower": 0.625,
+              "share": 0.0,
+              "upper": 0.6875
+            },
+            {
+              "count": 0,
+              "lower": 0.6875,
+              "share": 0.0,
+              "upper": 0.75
+            },
+            {
+              "count": 0,
+              "lower": 0.75,
+              "share": 0.0,
+              "upper": 0.8125
+            },
+            {
+              "count": 3,
+              "lower": 0.8125,
+              "share": 0.125,
+              "upper": 0.875
+            },
+            {
+              "count": 3,
+              "lower": 0.875,
+              "share": 0.125,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.75,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.966763567433445,
+          "median": 1.0,
+          "metric": "decline_score",
+          "minimum": 0.8487207052246829,
+          "q25": 0.9301407444176503,
+          "q75": 1.0,
+          "unit": "share"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.9544478894886287
+            },
+            {
+              "probability": 0.2,
+              "value": 0.9718440291285425
+            },
+            {
+              "probability": 0.3,
+              "value": 0.9975208762094008
+            },
+            {
+              "probability": 0.4,
+              "value": 1.0
+            },
+            {
+              "probability": 0.5,
+              "value": 1.0
+            },
+            {
+              "probability": 0.6,
+              "value": 1.0
+            },
+            {
+              "probability": 0.7,
+              "value": 1.0
+            },
+            {
+              "probability": 0.8,
+              "value": 1.0
+            },
+            {
+              "probability": 0.9,
+              "value": 1.0
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 0,
+              "lower": 0.125,
+              "share": 0.0,
+              "upper": 0.1875
+            },
+            {
+              "count": 0,
+              "lower": 0.1875,
+              "share": 0.0,
+              "upper": 0.25
+            },
+            {
+              "count": 0,
+              "lower": 0.25,
+              "share": 0.0,
+              "upper": 0.3125
+            },
+            {
+              "count": 0,
+              "lower": 0.3125,
+              "share": 0.0,
+              "upper": 0.375
+            },
+            {
+              "count": 0,
+              "lower": 0.375,
+              "share": 0.0,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 0,
+              "lower": 0.5,
+              "share": 0.0,
+              "upper": 0.5625
+            },
+            {
+              "count": 0,
+              "lower": 0.5625,
+              "share": 0.0,
+              "upper": 0.625
+            },
+            {
+              "count": 0,
+              "lower": 0.625,
+              "share": 0.0,
+              "upper": 0.6875
+            },
+            {
+              "count": 0,
+              "lower": 0.6875,
+              "share": 0.0,
+              "upper": 0.75
+            },
+            {
+              "count": 0,
+              "lower": 0.75,
+              "share": 0.0,
+              "upper": 0.8125
+            },
+            {
+              "count": 1,
+              "lower": 0.8125,
+              "share": 0.041666666666666664,
+              "upper": 0.875
+            },
+            {
+              "count": 1,
+              "lower": 0.875,
+              "share": 0.041666666666666664,
+              "upper": 0.9375
+            },
+            {
+              "count": 22,
+              "lower": 0.9375,
+              "share": 0.9166666666666666,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.9818229815323022,
+          "median": 1.0,
+          "metric": "sales_drop",
+          "minimum": 0.8305066523316759,
+          "q25": 0.9744877378431617,
+          "q75": 1.0,
+          "unit": "share"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.8333333333333334
+            },
+            {
+              "probability": 0.2,
+              "value": 0.9114624505928853
+            },
+            {
+              "probability": 0.3,
+              "value": 0.9942857142857142
+            },
+            {
+              "probability": 0.4,
+              "value": 1.0
+            },
+            {
+              "probability": 0.5,
+              "value": 1.0
+            },
+            {
+              "probability": 0.6,
+              "value": 1.0
+            },
+            {
+              "probability": 0.7,
+              "value": 1.0
+            },
+            {
+              "probability": 0.8,
+              "value": 1.0
+            },
+            {
+              "probability": 0.9,
+              "value": 1.0
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 0,
+              "lower": 0.125,
+              "share": 0.0,
+              "upper": 0.1875
+            },
+            {
+              "count": 0,
+              "lower": 0.1875,
+              "share": 0.0,
+              "upper": 0.25
+            },
+            {
+              "count": 0,
+              "lower": 0.25,
+              "share": 0.0,
+              "upper": 0.3125
+            },
+            {
+              "count": 0,
+              "lower": 0.3125,
+              "share": 0.0,
+              "upper": 0.375
+            },
+            {
+              "count": 0,
+              "lower": 0.375,
+              "share": 0.0,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 0,
+              "lower": 0.5,
+              "share": 0.0,
+              "upper": 0.5625
+            },
+            {
+              "count": 0,
+              "lower": 0.5625,
+              "share": 0.0,
+              "upper": 0.625
+            },
+            {
+              "count": 0,
+              "lower": 0.625,
+              "share": 0.0,
+              "upper": 0.6875
+            },
+            {
+              "count": 0,
+              "lower": 0.6875,
+              "share": 0.0,
+              "upper": 0.75
+            },
+            {
+              "count": 1,
+              "lower": 0.75,
+              "share": 0.041666666666666664,
+              "upper": 0.8125
+            },
+            {
+              "count": 3,
+              "lower": 0.8125,
+              "share": 0.125,
+              "upper": 0.875
+            },
+            {
+              "count": 2,
+              "lower": 0.875,
+              "share": 0.08333333333333333,
+              "upper": 0.9375
+            },
+            {
+              "count": 18,
+              "lower": 0.9375,
+              "share": 0.75,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.9601153878327792,
+          "median": 1.0,
+          "metric": "trip_drop",
+          "minimum": 0.7777777777777778,
+          "q25": 0.9354037267080745,
+          "q75": 1.0,
+          "unit": "share"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.765
+            },
+            {
+              "probability": 0.2,
+              "value": 0.8333333333333334
+            },
+            {
+              "probability": 0.3,
+              "value": 0.9857142857142857
+            },
+            {
+              "probability": 0.4,
+              "value": 1.0
+            },
+            {
+              "probability": 0.5,
+              "value": 1.0
+            },
+            {
+              "probability": 0.6,
+              "value": 1.0
+            },
+            {
+              "probability": 0.7,
+              "value": 1.0
+            },
+            {
+              "probability": 0.8,
+              "value": 1.0
+            },
+            {
+              "probability": 0.9,
+              "value": 1.0
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.0625
+            },
+            {
+              "count": 0,
+              "lower": 0.0625,
+              "share": 0.0,
+              "upper": 0.125
+            },
+            {
+              "count": 0,
+              "lower": 0.125,
+              "share": 0.0,
+              "upper": 0.1875
+            },
+            {
+              "count": 0,
+              "lower": 0.1875,
+              "share": 0.0,
+              "upper": 0.25
+            },
+            {
+              "count": 0,
+              "lower": 0.25,
+              "share": 0.0,
+              "upper": 0.3125
+            },
+            {
+              "count": 0,
+              "lower": 0.3125,
+              "share": 0.0,
+              "upper": 0.375
+            },
+            {
+              "count": 0,
+              "lower": 0.375,
+              "share": 0.0,
+              "upper": 0.4375
+            },
+            {
+              "count": 0,
+              "lower": 0.4375,
+              "share": 0.0,
+              "upper": 0.5
+            },
+            {
+              "count": 0,
+              "lower": 0.5,
+              "share": 0.0,
+              "upper": 0.5625
+            },
+            {
+              "count": 0,
+              "lower": 0.5625,
+              "share": 0.0,
+              "upper": 0.625
+            },
+            {
+              "count": 0,
+              "lower": 0.625,
+              "share": 0.0,
+              "upper": 0.6875
+            },
+            {
+              "count": 1,
+              "lower": 0.6875,
+              "share": 0.041666666666666664,
+              "upper": 0.75
+            },
+            {
+              "count": 3,
+              "lower": 0.75,
+              "share": 0.125,
+              "upper": 0.8125
+            },
+            {
+              "count": 3,
+              "lower": 0.8125,
+              "share": 0.125,
+              "upper": 0.875
+            },
+            {
+              "count": 0,
+              "lower": 0.875,
+              "share": 0.0,
+              "upper": 0.9375
+            },
+            {
+              "count": 17,
+              "lower": 0.9375,
+              "share": 0.7083333333333334,
+              "upper": 1.0
+            }
+          ],
+          "maximum": 1.0,
+          "mean": 0.9390873015873016,
+          "median": 1.0,
+          "metric": "active_week_drop",
+          "minimum": 0.7142857142857143,
+          "q25": 0.8511904761904762,
+          "q75": 1.0,
+          "unit": "share"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 72.58500000000001
+            },
+            {
+              "probability": 0.2,
+              "value": 87.852
+            },
+            {
+              "probability": 0.3,
+              "value": 114.03
+            },
+            {
+              "probability": 0.4,
+              "value": 140.55800000000005
+            },
+            {
+              "probability": 0.5,
+              "value": 229.08499999999998
+            },
+            {
+              "probability": 0.6,
+              "value": 266.114
+            },
+            {
+              "probability": 0.7,
+              "value": 312.57000000000005
+            },
+            {
+              "probability": 0.8,
+              "value": 347.0480000000001
+            },
+            {
+              "probability": 0.9,
+              "value": 423.171
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": 0.0,
+              "share": 0.0,
+              "upper": 0.6757612713565913
+            },
+            {
+              "count": 0,
+              "lower": 0.6757612713565913,
+              "share": 0.0,
+              "upper": 1.808175838578659
+            },
+            {
+              "count": 0,
+              "lower": 1.808175838578659,
+              "share": 0.0,
+              "upper": 3.705832313449436
+            },
+            {
+              "count": 0,
+              "lower": 3.705832313449436,
+              "share": 0.0,
+              "upper": 6.885851540376955
+            },
+            {
+              "count": 0,
+              "lower": 6.885851540376955,
+              "share": 0.0,
+              "upper": 12.21480460303142
+            },
+            {
+              "count": 0,
+              "lower": 12.21480460303142,
+              "share": 0.0,
+              "upper": 21.144857762304873
+            },
+            {
+              "count": 0,
+              "lower": 21.144857762304873,
+              "share": 0.0,
+              "upper": 36.10949499777089
+            },
+            {
+              "count": 2,
+              "lower": 36.10949499777089,
+              "share": 0.08333333333333333,
+              "upper": 61.186654516865595
+            },
+            {
+              "count": 5,
+              "lower": 61.186654516865595,
+              "share": 0.20833333333333334,
+              "upper": 103.20998723459579
+            },
+            {
+              "count": 4,
+              "lower": 103.20998723459579,
+              "share": 0.16666666666666666,
+              "upper": 173.63106069630038
+            },
+            {
+              "count": 4,
+              "lower": 173.63106069630038,
+              "share": 0.16666666666666666,
+              "upper": 291.63996829078235
+            },
+            {
+              "count": 9,
+              "lower": 291.63996829078235,
+              "share": 0.375,
+              "upper": 489.39472531271434
+            },
+            {
+              "count": 0,
+              "lower": 489.39472531271434,
+              "share": 0.0,
+              "upper": 820.7844883566004
+            },
+            {
+              "count": 0,
+              "lower": 820.7844883566004,
+              "share": 0.0,
+              "upper": 1376.1146189895824
+            },
+            {
+              "count": 0,
+              "lower": 1376.1146189895824,
+              "share": 0.0,
+              "upper": 2306.71534472173
+            },
+            {
+              "count": 0,
+              "lower": 2306.71534472173,
+              "share": 0.0,
+              "upper": 3866.180000000001
+            }
+          ],
+          "maximum": 455.35,
+          "mean": 226.30541666666667,
+          "median": 229.08499999999998,
+          "metric": "baseline_retailer_sales_value",
+          "minimum": 46.51,
+          "q25": 96.0125,
+          "q75": 320.5325,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": 0.0
+            },
+            {
+              "probability": 0.2,
+              "value": 0.0
+            },
+            {
+              "probability": 0.3,
+              "value": 0.0
+            },
+            {
+              "probability": 0.4,
+              "value": 0.0
+            },
+            {
+              "probability": 0.5,
+              "value": 0.0
+            },
+            {
+              "probability": 0.6,
+              "value": 0.0
+            },
+            {
+              "probability": 0.7,
+              "value": 0.47699999999998977
+            },
+            {
+              "probability": 0.8,
+              "value": 5.408000000000002
+            },
+            {
+              "probability": 0.9,
+              "value": 8.447
+            }
+          ],
+          "histogram": [
+            {
+              "count": 17,
+              "lower": -5e-324,
+              "share": 0.7083333333333334,
+              "upper": 0.6862228147515992
+            },
+            {
+              "count": 0,
+              "lower": 0.6862228147515992,
+              "share": 0.0,
+              "upper": 1.8433473809888061
+            },
+            {
+              "count": 0,
+              "lower": 1.8433473809888061,
+              "share": 0.0,
+              "upper": 3.794517224087532
+            },
+            {
+              "count": 3,
+              "lower": 3.794517224087532,
+              "share": 0.125,
+              "upper": 7.084624328975902
+            },
+            {
+              "count": 3,
+              "lower": 7.084624328975902,
+              "share": 0.125,
+              "upper": 12.632477992215005
+            },
+            {
+              "count": 0,
+              "lower": 12.632477992215005,
+              "share": 0.0,
+              "upper": 21.987395412072015
+            },
+            {
+              "count": 0,
+              "lower": 21.987395412072015,
+              "share": 0.0,
+              "upper": 37.76187059555207
+            },
+            {
+              "count": 1,
+              "lower": 37.76187059555207,
+              "share": 0.041666666666666664,
+              "upper": 64.36115054066906
+            },
+            {
+              "count": 0,
+              "lower": 64.36115054066906,
+              "share": 0.0,
+              "upper": 109.21346324009004
+            },
+            {
+              "count": 0,
+              "lower": 109.21346324009004,
+              "share": 0.0,
+              "upper": 184.84445620822646
+            },
+            {
+              "count": 0,
+              "lower": 184.84445620822646,
+              "share": 0.0,
+              "upper": 312.3751620534158
+            },
+            {
+              "count": 0,
+              "lower": 312.3751620534158,
+              "share": 0.0,
+              "upper": 527.4203478309496
+            },
+            {
+              "count": 0,
+              "lower": 527.4203478309496,
+              "share": 0.0,
+              "upper": 890.0344462915233
+            },
+            {
+              "count": 0,
+              "lower": 890.0344462915233,
+              "share": 0.0,
+              "upper": 1501.4826120663242
+            },
+            {
+              "count": 0,
+              "lower": 1501.4826120663242,
+              "share": 0.0,
+              "upper": 2532.5204592338114
+            },
+            {
+              "count": 0,
+              "lower": 2532.5204592338114,
+              "share": 0.0,
+              "upper": 4271.080000000004
+            }
+          ],
+          "maximum": 63.06000000000002,
+          "mean": 4.4070833333333335,
+          "median": 0.0,
+          "metric": "recent_retailer_sales_value",
+          "minimum": 0.0,
+          "q25": 0.0,
+          "q75": 4.8325,
+          "unit": "retailer_sales_value"
+        },
+        {
+          "count": 24,
+          "deciles": [
+            {
+              "probability": 0.1,
+              "value": -420.027
+            },
+            {
+              "probability": 0.2,
+              "value": -319.382
+            },
+            {
+              "probability": 0.3,
+              "value": -308.52200000000005
+            },
+            {
+              "probability": 0.4,
+              "value": -264.58
+            },
+            {
+              "probability": 0.5,
+              "value": -229.08499999999998
+            },
+            {
+              "probability": 0.6,
+              "value": -139.55400000000003
+            },
+            {
+              "probability": 0.7,
+              "value": -108.63900000000004
+            },
+            {
+              "probability": 0.8,
+              "value": -87.85199999999999
+            },
+            {
+              "probability": 0.9,
+              "value": -72.58500000000001
+            }
+          ],
+          "histogram": [
+            {
+              "count": 0,
+              "lower": -1091.9600000000007,
+              "share": 0.0,
+              "upper": -937.6575000000005
+            },
+            {
+              "count": 0,
+              "lower": -937.6575000000005,
+              "share": 0.0,
+              "upper": -783.3550000000005
+            },
+            {
+              "count": 0,
+              "lower": -783.3550000000005,
+              "share": 0.0,
+              "upper": -629.0525000000004
+            },
+            {
+              "count": 0,
+              "lower": -629.0525000000004,
+              "share": 0.0,
+              "upper": -474.75000000000034
+            },
+            {
+              "count": 5,
+              "lower": -474.75000000000034,
+              "share": 0.20833333333333334,
+              "upper": -320.44750000000033
+            },
+            {
+              "count": 8,
+              "lower": -320.44750000000033,
+              "share": 0.3333333333333333,
+              "upper": -166.1450000000002
+            },
+            {
+              "count": 11,
+              "lower": -166.1450000000002,
+              "share": 0.4583333333333333,
+              "upper": -11.8425000000002
+            },
+            {
+              "count": 0,
+              "lower": -11.8425000000002,
+              "share": 0.0,
+              "upper": 142.4599999999998
+            },
+            {
+              "count": 0,
+              "lower": 142.4599999999998,
+              "share": 0.0,
+              "upper": 296.7624999999998
+            },
+            {
+              "count": 0,
+              "lower": 296.7624999999998,
+              "share": 0.0,
+              "upper": 451.0649999999998
+            },
+            {
+              "count": 0,
+              "lower": 451.0649999999998,
+              "share": 0.0,
+              "upper": 605.3674999999998
+            },
+            {
+              "count": 0,
+              "lower": 605.3674999999998,
+              "share": 0.0,
+              "upper": 759.6700000000001
+            },
+            {
+              "count": 0,
+              "lower": 759.6700000000001,
+              "share": 0.0,
+              "upper": 913.9725000000001
+            },
+            {
+              "count": 0,
+              "lower": 913.9725000000001,
+              "share": 0.0,
+              "upper": 1068.275
+            },
+            {
+              "count": 0,
+              "lower": 1068.275,
+              "share": 0.0,
+              "upper": 1222.5774999999999
+            },
+            {
+              "count": 0,
+              "lower": 1222.5774999999999,
+              "share": 0.0,
+              "upper": 1376.8800000000003
+            }
+          ],
+          "maximum": -41.739999999999995,
+          "mean": -221.89833333333334,
+          "median": -229.08499999999998,
+          "metric": "recorded_value_change",
+          "minimum": -455.35,
+          "q25": -309.755,
+          "q75": -96.0125,
+          "unit": "retailer_sales_value"
+        }
+      ]
+    }
+  ],
+  "data_quality_warnings": [
+    "Source week 53 contains fewer calendar days than an ordinary week."
+  ],
+  "density_grid": {
+    "cells": [
+      {
+        "eligible_count": 14,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 58,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 137,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 235,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 176,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 67,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 2,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 1941.8749765159098,
+        "x_upper": 3866.180000000001,
+        "y_lower": 0.0,
+        "y_upper": 0.1
+      },
+      {
+        "eligible_count": 5,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 7,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 22,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 71,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 71,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 17,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 1941.8749765159098,
+        "x_upper": 3866.180000000001,
+        "y_lower": 0.1,
+        "y_upper": 0.2
+      },
+      {
+        "eligible_count": 16,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.2,
+        "y_upper": 0.30000000000000004
+      },
+      {
+        "eligible_count": 27,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.2,
+        "y_upper": 0.30000000000000004
+      },
+      {
+        "eligible_count": 42,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.2,
+        "y_upper": 0.30000000000000004
+      },
+      {
+        "eligible_count": 33,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.2,
+        "y_upper": 0.30000000000000004
+      },
+      {
+        "eligible_count": 10,
+        "flagged_count": 0,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.2,
+        "y_upper": 0.30000000000000004
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 14.696330298412903,
+        "x_upper": 30.242635443413104,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 8,
+        "flagged_count": 8,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 11,
+        "flagged_count": 11,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 44,
+        "flagged_count": 44,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 27,
+        "flagged_count": 27,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 8,
+        "flagged_count": 8,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 1941.8749765159098,
+        "x_upper": 3866.180000000001,
+        "y_lower": 0.30000000000000004,
+        "y_upper": 0.4
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 14.696330298412903,
+        "x_upper": 30.242635443413104,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 2,
+        "flagged_count": 2,
+        "investigated_count": 0,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 3,
+        "flagged_count": 3,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 14,
+        "flagged_count": 14,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 28,
+        "flagged_count": 28,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 12,
+        "flagged_count": 12,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 3,
+        "flagged_count": 3,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.4,
+        "y_upper": 0.5
+      },
+      {
+        "eligible_count": 7,
+        "flagged_count": 7,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.5,
+        "y_upper": 0.6000000000000001
+      },
+      {
+        "eligible_count": 8,
+        "flagged_count": 8,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.5,
+        "y_upper": 0.6000000000000001
+      },
+      {
+        "eligible_count": 14,
+        "flagged_count": 14,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.5,
+        "y_upper": 0.6000000000000001
+      },
+      {
+        "eligible_count": 10,
+        "flagged_count": 10,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.5,
+        "y_upper": 0.6000000000000001
+      },
+      {
+        "eligible_count": 2,
+        "flagged_count": 2,
+        "investigated_count": 0,
+        "x_lower": 975.1022694500126,
+        "x_upper": 1941.8749765159098,
+        "y_lower": 0.5,
+        "y_upper": 0.6000000000000001
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 14.696330298412903,
+        "x_upper": 30.242635443413104,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 12,
+        "flagged_count": 12,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 10,
+        "flagged_count": 10,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 11,
+        "flagged_count": 11,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 5,
+        "flagged_count": 5,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.6000000000000001,
+        "y_upper": 0.7000000000000001
+      },
+      {
+        "eligible_count": 2,
+        "flagged_count": 2,
+        "investigated_count": 0,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.7000000000000001,
+        "y_upper": 0.8
+      },
+      {
+        "eligible_count": 4,
+        "flagged_count": 4,
+        "investigated_count": 0,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.7000000000000001,
+        "y_upper": 0.8
+      },
+      {
+        "eligible_count": 7,
+        "flagged_count": 7,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.7000000000000001,
+        "y_upper": 0.8
+      },
+      {
+        "eligible_count": 9,
+        "flagged_count": 9,
+        "investigated_count": 0,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.7000000000000001,
+        "y_upper": 0.8
+      },
+      {
+        "eligible_count": 5,
+        "flagged_count": 5,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.7000000000000001,
+        "y_upper": 0.8
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 1,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.8,
+        "y_upper": 0.9
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 1,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.8,
+        "y_upper": 0.9
+      },
+      {
+        "eligible_count": 3,
+        "flagged_count": 3,
+        "investigated_count": 0,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.8,
+        "y_upper": 0.9
+      },
+      {
+        "eligible_count": 6,
+        "flagged_count": 6,
+        "investigated_count": 3,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.8,
+        "y_upper": 0.9
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 0,
+        "x_lower": 489.3947253127139,
+        "x_upper": 975.1022694500126,
+        "y_lower": 0.8,
+        "y_upper": 0.9
+      },
+      {
+        "eligible_count": 1,
+        "flagged_count": 1,
+        "investigated_count": 1,
+        "x_lower": 30.242635443413104,
+        "x_upper": 61.186654516865595,
+        "y_lower": 0.9,
+        "y_upper": 1.0
+      },
+      {
+        "eligible_count": 6,
+        "flagged_count": 6,
+        "investigated_count": 6,
+        "x_lower": 61.186654516865595,
+        "x_upper": 122.77893046200487,
+        "y_lower": 0.9,
+        "y_upper": 1.0
+      },
+      {
+        "eligible_count": 3,
+        "flagged_count": 3,
+        "investigated_count": 3,
+        "x_lower": 122.77893046200487,
+        "x_upper": 245.37478483687488,
+        "y_lower": 0.9,
+        "y_upper": 1.0
+      },
+      {
+        "eligible_count": 9,
+        "flagged_count": 9,
+        "investigated_count": 9,
+        "x_lower": 245.37478483687488,
+        "x_upper": 489.3947253127139,
+        "y_lower": 0.9,
+        "y_upper": 1.0
+      }
+    ],
+    "x_edges": [
+      0.0,
+      0.9904420236730194,
+      2.9618594496035446,
+      6.885851540376955,
+      14.696330298412903,
+      30.242635443413104,
+      61.186654516865595,
+      122.77893046200487,
+      245.37478483687488,
+      489.3947253127139,
+      975.1022694500126,
+      1941.8749765159098,
+      3866.180000000001
+    ],
+    "x_metric": "baseline_retailer_sales_value",
+    "x_scale": "log1p",
+    "y_edges": [
+      0.0,
+      0.1,
+      0.2,
+      0.30000000000000004,
+      0.4,
+      0.5,
+      0.6000000000000001,
+      0.7000000000000001,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "y_metric": "decline_score"
+  },
+  "detector_policy": {
+    "decline_threshold": 0.3,
+    "minimum_baseline_active_weeks": 4,
+    "minimum_baseline_distinct_baskets": 6,
+    "minimum_baseline_retailer_sales_value": 0.0,
+    "sensitivity_thresholds": [
+      0.2,
+      0.3,
+      0.4
+    ]
+  },
+  "executive": {
+    "action_mix": [
+      {
+        "count": 22,
+        "key": "CATEGORY_WINBACK",
+        "label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+        "share": 0.9166666666666666
+      },
+      {
+        "count": 2,
+        "key": "VISIT_FREQUENCY_REACTIVATION",
+        "label": "Recommend a human-reviewed reactivation test focused on restoring shopping cadence when visit-frequency evidence, rather than basket value alone, supports the decline.",
+        "share": 0.08333333333333333
+      }
+    ],
+    "aggregate_baseline_value": 603009.4400000001,
+    "aggregate_recent_value": 602669.83,
+    "completed_count": 24,
+    "context_mix": [
+      {
+        "count": 15,
+        "key": "customer_specific",
+        "label": "Customer Specific",
+        "share": 0.625
+      },
+      {
+        "count": 6,
+        "key": "insufficient_context",
+        "label": "Insufficient Context",
+        "share": 0.25
+      },
+      {
+        "count": 3,
+        "key": "mixed",
+        "label": "Mixed",
+        "share": 0.125
+      }
+    ],
+    "eligible_count": 1313,
+    "factor_mix": [
+      {
+        "count": 9,
+        "key": "category:GROCERY / SOFT DRINKS",
+        "label": "GROCERY / SOFT DRINKS",
+        "share": 0.375
+      },
+      {
+        "count": 5,
+        "key": "category:GROCERY / CHEESE",
+        "label": "GROCERY / CHEESE",
+        "share": 0.20833333333333334
+      },
+      {
+        "count": 5,
+        "key": "category:GROCERY / FLUID MILK PRODUCTS",
+        "label": "GROCERY / FLUID MILK PRODUCTS",
+        "share": 0.20833333333333334
+      },
+      {
+        "count": 2,
+        "key": "cadence:Visit cadence \u00b7 100% trip drop",
+        "label": "Visit cadence \u00b7 100% trip drop",
+        "share": 0.08333333333333333
+      },
+      {
+        "count": 2,
+        "key": "category:GROCERY / BAG SNACKS",
+        "label": "GROCERY / BAG SNACKS",
+        "share": 0.08333333333333333
+      },
+      {
+        "count": 1,
+        "key": "category:GROCERY / BAKED BREAD/BUNS/ROLLS",
+        "label": "GROCERY / BAKED BREAD/BUNS/ROLLS",
+        "share": 0.041666666666666664
+      }
+    ],
+    "failed_count": 0,
+    "flagged_count": 304,
+    "flagged_share": 0.23153084539223154,
+    "gross_recorded_decrease": 103431.75,
+    "insufficient_count": 0,
+    "investigated_count": 24,
+    "recorded_value_change": -339.61000000010245,
+    "selected_count": 24,
+    "verified_action_rate": 1.0
+  },
+  "investigated_households": [
+    {
+      "action_id": "VISIT_FREQUENCY_REACTIVATION",
+      "action_label": "Recommend a human-reviewed reactivation test focused on restoring shopping cadence when visit-frequency evidence, rather than basket value alone, supports the decline.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 98.37,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "5",
+      "identified_factor": {
+        "detail": "Reduced recorded visit cadence is a plausible contributor to the observed engagement decline.",
+        "factor_type": "cadence",
+        "label": "Visit cadence \u00b7 100% trip drop"
+      },
+      "peer_gap": -1.3153882130907053,
+      "population_gap": -0.9635283983718087,
+      "rank": 1,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -98.37,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Category DRUG GM / PERSONAL CARE APPLIANCES has 9 eligible target-excluded households with meaningful baseline activity; policy requires at least 20, so category population distribution statistics are unavailable.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 304.19,
+      "confidence": "medium",
+      "context_classification": "mixed",
+      "decline_score": 1.0,
+      "household_id": "181",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / CHEESE is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / CHEESE"
+      },
+      "peer_gap": -0.9068517807016012,
+      "population_gap": -0.9635283983718087,
+      "rank": 2,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -304.19,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 81.72,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "423",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.3633595680594173,
+      "population_gap": -0.9635283983718087,
+      "rank": 3,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -81.72,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Some transaction products lack a product-table match and are retained in the explicit UNKNOWN group.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "VISIT_FREQUENCY_REACTIVATION",
+      "action_label": "Recommend a human-reviewed reactivation test focused on restoring shopping cadence when visit-frequency evidence, rather than basket value alone, supports the decline.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 423.35999999999996,
+      "confidence": "medium",
+      "context_classification": "mixed",
+      "decline_score": 1.0,
+      "household_id": "472",
+      "identified_factor": {
+        "detail": "Reduced recorded visit cadence is a plausible contributor to the observed engagement decline.",
+        "factor_type": "cadence",
+        "label": "Visit cadence \u00b7 100% trip drop"
+      },
+      "peer_gap": -0.8374318405984749,
+      "population_gap": -0.9635283983718087,
+      "rank": 4,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -423.35999999999996,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Some transaction products lack a product-table match and are retained in the explicit UNKNOWN group.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 455.35,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 1.0,
+      "household_id": "682",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / FLUID MILK PRODUCTS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / FLUID MILK PRODUCTS"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 5,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -455.35,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Some transaction products lack a product-table match and are retained in the explicit UNKNOWN group.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 330.38,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "881",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.0546118419241213,
+      "population_gap": -0.9635283983718087,
+      "rank": 6,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -330.38,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 135.36,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "884",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.2760644040745437,
+      "population_gap": -0.9635283983718087,
+      "rank": 7,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -135.36,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 312.05000000000007,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 1.0,
+      "household_id": "1468",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / CHEESE is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / CHEESE"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 8,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -312.05000000000007,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 209.92000000000002,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 1.0,
+      "household_id": "1913",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 9,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -209.92000000000002,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 446.21,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "1959",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.0703191255483318,
+      "population_gap": -0.9635283983718087,
+      "rank": 10,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -446.21,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 248.24999999999997,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2059",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / CHEESE is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / CHEESE"
+      },
+      "peer_gap": -0.9507090489599931,
+      "population_gap": -0.9635283983718087,
+      "rank": 11,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -248.24999999999997,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Category DRUG GM / FALL AND WINTER SEASONAL has 10 eligible target-excluded households with meaningful baseline activity; policy requires at least 20, so category population distribution statistics are unavailable.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 86.22,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2145",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / CHEESE is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / CHEESE"
+      },
+      "peer_gap": -0.9883443142695216,
+      "population_gap": -0.9635283983718087,
+      "rank": 12,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -86.22,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 88.94,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2176",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.2190879866911846,
+      "population_gap": -0.9635283983718087,
+      "rank": 13,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -88.94,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Some transaction products lack a product-table match and are retained in the explicit UNKNOWN group.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 68.67,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 1.0,
+      "household_id": "2254",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / BAG SNACKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / BAG SNACKS"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 14,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -68.67,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 52.49,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2271",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / BAG SNACKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / BAG SNACKS"
+      },
+      "peer_gap": -1.5288074434687777,
+      "population_gap": -0.9635283983718087,
+      "rank": 15,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -52.49,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 266.24,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2373",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / FLUID MILK PRODUCTS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / FLUID MILK PRODUCTS"
+      },
+      "peer_gap": -0.9642630286725606,
+      "population_gap": -0.9635283983718087,
+      "rank": 16,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -266.24,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 1.0,
+      "baseline_retailer_sales_value": 122.34000000000002,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 1.0,
+      "household_id": "2411",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / BAKED BREAD/BUNS/ROLLS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / BAKED BREAD/BUNS/ROLLS"
+      },
+      "peer_gap": -1.326889077221216,
+      "population_gap": -0.9635283983718087,
+      "rank": 17,
+      "recent_retailer_sales_value": 0.0,
+      "recorded_value_change": -122.34000000000002,
+      "sales_drop": 1.0,
+      "status": "completed",
+      "trip_drop": 1.0,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "No recent transactions were observed; per-trip statistics for that period are unavailable.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "No recent transactions were observed; changes from that period cannot be fully compared.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.8571428571428571,
+      "baseline_retailer_sales_value": 161.35,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 0.9387294700960644,
+      "household_id": "1038",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -0.9308319340879027,
+      "population_gap": -0.932415909992509,
+      "rank": 18,
+      "recent_retailer_sales_value": 5.02,
+      "recorded_value_change": -156.32999999999998,
+      "sales_drop": 0.9688875116207003,
+      "status": "completed",
+      "trip_drop": 0.9428571428571428,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.7142857142857143,
+      "baseline_retailer_sales_value": 422.73,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 0.9043745673824077,
+      "household_id": "391",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 19,
+      "recent_retailer_sales_value": 10.48,
+      "recorded_value_change": -412.25,
+      "sales_drop": 0.975208762094008,
+      "status": "completed",
+      "trip_drop": 0.9130434782608695,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.8,
+      "baseline_retailer_sales_value": 317.25,
+      "confidence": "medium",
+      "context_classification": "mixed",
+      "decline_score": 0.8961623325453113,
+      "household_id": "1257",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / FLUID MILK PRODUCTS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / FLUID MILK PRODUCTS"
+      },
+      "peer_gap": -0.8002720600042181,
+      "population_gap": -0.9358530634624314,
+      "rank": 20,
+      "recent_retailer_sales_value": 8.780000000000001,
+      "recorded_value_change": -308.47,
+      "sales_drop": 0.9723246650906227,
+      "status": "completed",
+      "trip_drop": 0.8333333333333334,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.75,
+      "baseline_retailer_sales_value": 265.60999999999996,
+      "confidence": "medium",
+      "context_classification": "insufficient_context",
+      "decline_score": 0.8855615375927112,
+      "household_id": "570",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / FLUID MILK PRODUCTS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / FLUID MILK PRODUCTS"
+      },
+      "peer_gap": null,
+      "population_gap": null,
+      "rank": 21,
+      "recent_retailer_sales_value": 7.67,
+      "recorded_value_change": -257.93999999999994,
+      "sales_drop": 0.9711230751854222,
+      "status": "completed",
+      "trip_drop": 0.8333333333333334,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Category FLORAL / BOUQUET (NON ROSE) has 6 eligible target-excluded households with meaningful baseline activity; policy requires at least 20, so category population distribution statistics are unavailable.",
+        "Eligible-population and behavioral-peer context was not available; missing context must not be interpreted as neutral movement.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.8333333333333334,
+      "baseline_retailer_sales_value": 115.77000000000001,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 0.8741297400017276,
+      "household_id": "1666",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / CHEESE is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / CHEESE"
+      },
+      "peer_gap": -0.9459576118993906,
+      "population_gap": -0.9117878783752639,
+      "rank": 22,
+      "recent_retailer_sales_value": 5.99,
+      "recorded_value_change": -109.78000000000002,
+      "sales_drop": 0.9482594800034552,
+      "status": "completed",
+      "trip_drop": 0.7777777777777778,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.8333333333333334,
+      "baseline_retailer_sales_value": 372.05,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 0.8546472655597774,
+      "household_id": "1012",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / FLUID MILK PRODUCTS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / FLUID MILK PRODUCTS"
+      },
+      "peer_gap": -0.8536336182596297,
+      "population_gap": -0.7940350507034846,
+      "rank": 23,
+      "recent_retailer_sales_value": 63.06000000000002,
+      "recorded_value_change": -308.99,
+      "sales_drop": 0.8305066523316759,
+      "status": "completed",
+      "trip_drop": 0.9090909090909091,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    },
+    {
+      "action_id": "CATEGORY_WINBACK",
+      "action_label": "Recommend a human-reviewed test intended to rebuild engagement in a specifically evidenced declining category; the catalog does not prescribe an outreach channel or execute a treatment.",
+      "active_week_drop": 0.75,
+      "baseline_retailer_sales_value": 46.51,
+      "confidence": "medium",
+      "context_classification": "customer_specific",
+      "decline_score": 0.8487207052246829,
+      "household_id": "1657",
+      "identified_factor": {
+        "detail": "A recorded loss in GROCERY / SOFT DRINKS is a plausible contributor to the observed engagement decline.",
+        "factor_type": "category",
+        "label": "GROCERY / SOFT DRINKS"
+      },
+      "peer_gap": -1.2014106401343878,
+      "population_gap": -0.8609698088211744,
+      "rank": 24,
+      "recent_retailer_sales_value": 4.77,
+      "recorded_value_change": -41.739999999999995,
+      "sales_drop": 0.8974414104493657,
+      "status": "completed",
+      "trip_drop": 0.8333333333333334,
+      "warnings": [
+        "Source week 53 contains fewer calendar days than an ordinary week.",
+        "Recorded quantity is not comparable across all departments because fuel uses a different scale; it is not used as the primary engagement measure.",
+        "Source weeks 1 and 53 are partial calendar weeks, so comparisons including either week may not be like-for-like.",
+        "Category comparison is a target-excluded household-level descriptive benchmark among eligible households with meaningful baseline category activity. Broad contemporaneous movement does not establish seasonality or causation.",
+        "Eligible-population context is a household-level descriptive benchmark, excludes the target, and does not identify seasonality or a cause of change.",
+        "Peer similarity is descriptive, depends on the selected baseline features, excludes the target, and does not establish a causal control group.",
+        "Customer intent and activity outside the recorded retailer data are not observed."
+      ]
+    }
+  ],
+  "missing_data_reasons": [],
+  "provenance": {
+    "backend": "gemini",
+    "dataset_kind": "official_complete_journey",
+    "dataset_source_commit": "5b5d06192b9856edd04e4d405787af2f2e4a1fef",
+    "dataset_source_repository": "bradleyboehmke/completejourney",
+    "generated_at": "2026-08-26T20:51:53.631037Z",
+    "source_manifest": "data_provenance.json"
+  },
+  "schema_version": 1,
+  "threshold_sensitivity": [
+    {
+      "eligible_households": 1313,
+      "flagged_households": 430,
+      "flagged_share": 0.3274942878903275,
+      "threshold": 0.2
+    },
+    {
+      "eligible_households": 1313,
+      "flagged_households": 304,
+      "flagged_share": 0.23153084539223154,
+      "threshold": 0.3
+    },
+    {
+      "eligible_households": 1313,
+      "flagged_households": 202,
+      "flagged_share": 0.15384615384615385,
+      "threshold": 0.4
+    }
+  ]
+}

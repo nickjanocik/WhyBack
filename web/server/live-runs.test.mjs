@@ -263,3 +263,30 @@ test("discovers owned Live Gemini collections newest first", async (context) => 
   );
   assert.ok(definitions.every((item) => item.liveRun === true));
 });
+
+test("a checked-in default pointer exposes only its verified live run", async (context) => {
+  const root = await temporaryRoot(context);
+  const first = await makeOwnedRun(root, FIRST_JOB);
+  const second = await makeOwnedRun(root, SECOND_JOB);
+  await completeLiveRun(root, first, "7");
+  await completeLiveRun(root, second, "8");
+
+  await writeFile(
+    path.join(root, "artifacts", "default-live-run.json"),
+    `${JSON.stringify({
+      schema_version: 1,
+      product: "WhyBack",
+      collection_id: first.collectionId,
+    })}\n`,
+  );
+  assert.deepEqual(
+    (await discoverLiveRunCollections(root)).map((item) => item.id),
+    [first.collectionId],
+  );
+
+  await writeFile(
+    path.join(root, "artifacts", "default-live-run.json"),
+    '{"collection_id":"unsafe"}\n',
+  );
+  assert.deepEqual(await discoverLiveRunCollections(root), []);
+});
