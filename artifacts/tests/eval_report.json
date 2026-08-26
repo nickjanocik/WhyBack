@@ -3,7 +3,7 @@
   "passed": true,
   "provenance": {
     "normalized_input_sha256": "0b6e5915d7a88760fec2f3907938caed830a7204b1cc4a8058d1e64b3ac5ca70",
-    "scenario_catalog_sha256": "838dd01d82a722424fb89a19e0972a433086daf50cc28982d3d8e916b1c5c783",
+    "scenario_catalog_sha256": "7015e8cbd2b2e16c456a3bb6ef4bb0fd6c865953bd8bd9bcdb0506c31510fbd3",
     "input_materialization": "file_bytes",
     "dataset_kind": "synthetic",
     "backend": "scripted_control",

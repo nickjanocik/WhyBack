@@ -13,8 +13,8 @@
       "transaction_week_min": 1
     },
     "manifest_version": 2,
-    "preparation_code_sha256": "b99980f02c6dab7a929abd57bc6e5673bd79db5cf91e9d1cf4a97aa39c7f8c2e",
-    "preparation_timestamp": "2026-08-25T01:28:42.130226Z",
+    "preparation_code_sha256": "26a567d805b2eb614d7374573b6398c5239499fcbcf1c645bd55d037acf608be",
+    "preparation_timestamp": "2026-08-26T05:33:28.341363Z",
     "preparation_transform_version": "whyback-complete-journey-v1",
     "prepared": [
       {
@@ -182,7 +182,7 @@
     "source_commit": "5b5d06192b9856edd04e4d405787af2f2e4a1fef",
     "source_repository": "bradleyboehmke/completejourney",
     "source_tree_dirty": false,
-    "source_tree_version": "960c0987d36c7d7acd5b5bd62bdce06f9061bcaa",
+    "source_tree_version": "4a12b2ac4d5c2c13a8c9d306dd85358a6f80d4a6",
     "sources": [
       {
         "filename": "transactions.rds",
@@ -354,6 +354,6 @@
       }
     ]
   },
-  "manifest_sha256": "d5a361534a2a4c70a4eb94a65c21143f90b07e2df781d71aab3f0f72efc0f308",
+  "manifest_sha256": "befa2c21a91913d10c4b42137149fbc1f383b3f510d0726b28fb2d59732b2fb0",
   "schema_version": 1
 }
