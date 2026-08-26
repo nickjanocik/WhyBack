@@ -697,7 +697,7 @@ def _validate_trace(
     reconstructed: list[tuple[EvidenceRecord, ToolStatus]] = []
     tool_results: list[ToolResult] = []
     tool_call_ids: set[str] = set()
-    received_decisions = 0
+    consumed_decisions = 0
     started_attempts = 0
     retry_count = 0
     verification_pending = False
@@ -706,6 +706,8 @@ def _validate_trace(
     finish_decision_pending = False
     finish_request_pending = False
     verification_is_fallback = False
+    repair_consumed = False
+    repair_request_pending = False
 
     for index, event in enumerate(events[1:-1], start=2):
         name = event.event
@@ -752,6 +754,10 @@ def _validate_trace(
         if (
             expected_followup is not None
             and name is not expected_followup
+            and not (
+                expected_followup is AuditEventName.MODEL_DECISION_RECEIVED
+                and name is AuditEventName.MODEL_DECISION_REJECTED
+            )
             and not (
                 expected_followup is AuditEventName.TOOL_STARTED and duplicate_refusal
             )
@@ -809,8 +815,71 @@ def _validate_trace(
                         "Model request budgets do not reconcile with prior events",
                     )
                 )
+            repair_requested = event.details.get("repair_requested") is True
+            if repair_request_pending:
+                if not repair_requested:
+                    issues.append(
+                        _issue(
+                            path,
+                            root,
+                            "trace_repair_lifecycle_invalid",
+                            "The single permitted repair request was not identified",
+                        )
+                    )
+                repair_request_pending = False
+            elif repair_requested:
+                issues.append(
+                    _issue(
+                        path,
+                        root,
+                        "trace_repair_lifecycle_invalid",
+                        "A repair request had no matching rejected decision",
+                    )
+                )
             model_request_pending = True
             expected_followup = AuditEventName.MODEL_DECISION_RECEIVED
+            continue
+        if name is AuditEventName.MODEL_DECISION_REJECTED:
+            if not model_request_pending or remaining_turns < 1:
+                issues.append(
+                    _issue(
+                        path,
+                        root,
+                        "trace_lifecycle_invalid",
+                        "A model decision was rejected without an available request",
+                    )
+                )
+            else:
+                remaining_turns -= 1
+            model_request_pending = False
+            consumed_decisions += 1
+            message = event.details.get("message")
+            repair_available = event.details.get("repair_available")
+            expected_repair_available = not repair_consumed and remaining_turns > 0
+            if (
+                not isinstance(message, str)
+                or not message.strip()
+                or message != sanitize_public_text(message)
+                or not isinstance(repair_available, bool)
+                or repair_available is not expected_repair_available
+                or _integer_detail(event, "remaining_tool_budget") != remaining_tools
+                or _integer_detail(event, "remaining_turn_budget") != remaining_turns
+            ):
+                issues.append(
+                    _issue(
+                        path,
+                        root,
+                        "trace_model_rejection_invalid",
+                        "A rejected model decision must record a sanitized message, "
+                        "repair availability, and reconciled budgets",
+                    )
+                )
+            if repair_available is True and expected_repair_available:
+                repair_consumed = True
+                repair_request_pending = True
+                expected_followup = AuditEventName.MODEL_DECISION_REQUESTED
+            else:
+                expected_followup = AuditEventName.RUN_COMPLETED
             continue
         if name is AuditEventName.MODEL_DECISION_RECEIVED:
             if not model_request_pending or remaining_turns < 1:
@@ -825,7 +894,7 @@ def _validate_trace(
             else:
                 remaining_turns -= 1
             model_request_pending = False
-            received_decisions += 1
+            consumed_decisions += 1
             decision_kind = _string_detail(event, "decision_kind")
             if decision_kind == "tool":
                 finish_decision_pending = False
@@ -1132,10 +1201,47 @@ def _validate_trace(
                         )
                     )
                 expected_followup = AuditEventName.RUN_COMPLETED
+            else:
+                repair_available = event.details.get("repair_available")
+                expected_repair_available = (
+                    not verification_is_fallback
+                    and not repair_consumed
+                    and remaining_turns > 0
+                )
+                if (
+                    not isinstance(repair_available, bool)
+                    or repair_available is not expected_repair_available
+                ):
+                    issues.append(
+                        _issue(
+                            path,
+                            root,
+                            "trace_repair_lifecycle_invalid",
+                            "Verification rejection repair availability does not "
+                            "match the single bounded repair policy",
+                        )
+                    )
+                if repair_available is True and expected_repair_available:
+                    repair_consumed = True
+                    repair_request_pending = True
+                    expected_followup = AuditEventName.MODEL_DECISION_REQUESTED
+                elif verification_is_fallback:
+                    expected_followup = AuditEventName.RUN_COMPLETED
+                else:
+                    expected_followup = AuditEventName.VERIFICATION_STARTED
             continue
 
     completion = events[-1]
     completion_status = _string_detail(completion, "status")
+    if repair_request_pending:
+        issues.append(
+            _issue(
+                path,
+                root,
+                "trace_repair_lifecycle_invalid",
+                "Trace ended before the single permitted repair request",
+            )
+        )
     if expected_followup is not None and not (
         expected_followup is AuditEventName.RUN_COMPLETED
         or (
@@ -1259,7 +1365,7 @@ def _validate_trace(
         issues.append(
             _issue(path, root, "trace_budget_invalid", "Tool budget was exceeded")
         )
-    if initial_turn_budget is not None and received_decisions > initial_turn_budget:
+    if initial_turn_budget is not None and consumed_decisions > initial_turn_budget:
         issues.append(
             _issue(path, root, "trace_budget_invalid", "Turn budget was exceeded")
         )
@@ -1344,18 +1450,52 @@ def _validate_trace(
 
 
 def _is_failed_live_request_without_response(events: Sequence[AuditEvent]) -> bool:
-    """Recognize one request that failed safely before any live response claim."""
+    """Recognize bounded requests that failed before any valid model decision."""
 
-    if len(events) != 3:
+    if len(events) < 3 or len(events) > 6:
         return False
-    started, requested, completion = events
+    started, *attempt_events, completion = events
     if (
         started.event is not AuditEventName.RUN_STARTED
-        or requested.event is not AuditEventName.MODEL_DECISION_REQUESTED
         or completion.event is not AuditEventName.RUN_COMPLETED
         or frozenset(completion.details) != _LIVE_BACKEND_FAILURE_FIELDS
         or completion.details.get("status") != "failed"
         or completion.details.get("failure_type") not in _LIVE_BACKEND_FAILURE_TYPES
+    ):
+        return False
+    expecting_request = True
+    rejection_indexes: list[int] = []
+    for index, event in enumerate(attempt_events):
+        if expecting_request:
+            if event.event is not AuditEventName.MODEL_DECISION_REQUESTED:
+                return False
+            expecting_request = False
+            continue
+        if event.event is not AuditEventName.MODEL_DECISION_REJECTED:
+            return False
+        rejection_indexes.append(index)
+        if len(rejection_indexes) > 2:
+            return False
+        rejection_message = event.details.get("message")
+        if (
+            not isinstance(rejection_message, str)
+            or not rejection_message.strip()
+            or rejection_message != sanitize_public_text(rejection_message)
+            or not isinstance(event.details.get("repair_available"), bool)
+        ):
+            return False
+        expecting_request = True
+    if not attempt_events:
+        return False
+    for index in rejection_indexes:
+        has_repair_request = index < len(attempt_events) - 1
+        if attempt_events[index].details.get("repair_available") is not (
+            has_repair_request
+        ):
+            return False
+    if (
+        expecting_request
+        and completion.details.get("failure_type") != "MalformedModelResponse"
     ):
         return False
     message = completion.details.get("message")

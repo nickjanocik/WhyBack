@@ -52,7 +52,7 @@ class AgentConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_tool_executions: int = Field(default=5, ge=1)
-    max_model_decisions: int = Field(default=6, ge=1)
+    max_model_decisions: int = Field(default=7, ge=1)
     tool_timeout_seconds: float = Field(default=30.0, gt=0.0)
     max_retryable_retries: int = Field(default=1, ge=0, le=1)
     default_model: str = "gemini-3.7-flash"

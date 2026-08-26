@@ -2,19 +2,19 @@
 
 Overall result: **PASS**
 
-Invocation: `3b9bdd24-1f55-4770-ad0d-4f3790d122d4`
-Started: `2026-08-26T15:37:14.173342Z`
-Completed: `2026-08-26T15:38:41.175291Z`
-Duration: `87.00254841707647 seconds`
+Invocation: `4b77c198-c20b-4271-b609-44332f6bace3`
+Started: `2026-08-26T16:34:45.525311Z`
+Completed: `2026-08-26T16:36:19.924578Z`
+Duration: `94.39986283285543 seconds`
 
 ## Reproducibility metadata
 
-- Git: `89d9cc83a2788533a62d280213a3bcdc993897f6` on `codex/whyback-build` (dirty: `true`)
+- Git: `87a156ec45b6431c645ab9c3b5149c6a40dc3a8d` on `codex/whyback-build` (dirty: `true`)
 - Python: `3.12.14` (`CPython`)
 - uv: `uv 0.12.5 (Homebrew 2026-08-14 aarch64-apple-darwin)`
 - Platform: `macOS-26.3.1-arm64-arm-64bit`
 - Lock SHA-256: `33c6048fd1ed55d70a50dda82884dbdbc4ee2de3c24b6f54d9743011c89e0786`
-- Source-tree SHA-256: `bbf881d447e32152253d67c9d2984e2020a014df045c7d9648efe4e47a1444e6`
+- Source-tree SHA-256: `292f5367b69a9035f73c31f1df6c01ca831f7a5106aa653c3e092977bdf988f0`
 
 ```json
 {
@@ -63,21 +63,21 @@ Duration: `87.00254841707647 seconds`
 ```json
 {
   "coverage": {
-    "covered_branches": 925,
-    "covered_lines": 4077,
+    "covered_branches": 966,
+    "covered_lines": 4173,
     "minimum_percent": 85.0,
-    "missing_branches": 285,
-    "missing_lines": 445,
-    "num_branches": 1210,
-    "num_statements": 4522,
-    "percent_covered": 87.26448011165387
+    "missing_branches": 286,
+    "missing_lines": 440,
+    "num_branches": 1252,
+    "num_statements": 4613,
+    "percent_covered": 87.62148337595907
   },
   "junit": {
-    "duration_seconds": 68.129,
+    "duration_seconds": 72.161,
     "errors": 0,
     "failures": 0,
-    "skipped": 1,
-    "tests": 336
+    "skipped": 2,
+    "tests": 364
   }
 }
 ```
@@ -87,26 +87,26 @@ Duration: `87.00254841707647 seconds`
 | Step | Required | Status | Exit | Duration |
 | --- | ---: | ---: | ---: | ---: |
 | coverage_configuration | True | passed | 0 | 0.0s |
-| frozen_sync | True | passed | 0 | 0.016664582770317793s |
-| web_frozen_install | True | passed | 0 | 2.915327874943614s |
-| ruff_format | True | passed | 0 | 0.054049958009272814s |
-| ruff_lint | True | passed | 0 | 0.02867425000295043s |
-| pyright | True | passed | 0 | 3.774213083088398s |
-| web_quality | True | passed | 0 | 7.957386709284037s |
-| pytest | True | passed | 0 | 68.76166049996391s |
+| frozen_sync | True | passed | 0 | 0.018911167047917843s |
+| web_frozen_install | True | passed | 0 | 3.5044794590212405s |
+| ruff_format | True | passed | 0 | 0.029684375040233135s |
+| ruff_lint | True | passed | 0 | 0.0290112909860909s |
+| pyright | True | passed | 0 | 6.457623625174165s |
+| web_quality | True | passed | 0 | 8.35325154196471s |
+| pytest | True | passed | 0 | 72.62393604172394s |
 | test_output_validation | True | passed | 0 | 0.0s |
-| deterministic_evals | True | passed | 0 | 0.5409631249494851s |
-| artifact_verification | True | passed | 0 | 0.9933775002136827s |
-| live_gemini_artifact_verification | True | passed | 0 | 0.44532599998638034s |
-| official_artifact_verification | True | passed | 0 | 0.3947962918318808s |
-| official_type_a_artifact_verification | True | passed | 0 | 0.4850404169410467s |
+| deterministic_evals | True | passed | 0 | 0.48847870901227s |
+| artifact_verification | True | passed | 0 | 0.8997465833090246s |
+| live_gemini_artifact_verification | True | passed | 0 | 0.4678163328208029s |
+| official_artifact_verification | True | passed | 0 | 0.41663079196587205s |
+| official_type_a_artifact_verification | True | passed | 0 | 0.46187062514945865s |
 
 ### coverage_configuration
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-26T15:37:14.727206Z`
-Completed: `2026-08-26T15:37:14.727206Z`
+Started: `2026-08-26T16:34:46.095480Z`
+Completed: `2026-08-26T16:34:46.095480Z`
 
 Stdout:
 
@@ -125,8 +125,8 @@ Stderr:
 
 Command: `uv sync --frozen --extra dev`
 
-Started: `2026-08-26T15:37:14.733023Z`
-Completed: `2026-08-26T15:37:14.749695Z`
+Started: `2026-08-26T16:34:46.100453Z`
+Completed: `2026-08-26T16:34:46.119369Z`
 
 Stdout:
 
@@ -145,19 +145,17 @@ Checked 55 packages in 4ms
 
 Command: `npm --prefix web ci --ignore-scripts`
 
-Started: `2026-08-26T15:37:14.754350Z`
-Completed: `2026-08-26T15:37:17.669693Z`
+Started: `2026-08-26T16:34:46.124936Z`
+Completed: `2026-08-26T16:34:49.629403Z`
 
 Stdout:
 
 ```text
 
-added 246 packages, and audited 247 packages in 3s
+added 246 packages in 3s
 
 59 packages are looking for funding
   run `npm fund` for details
-
-found 0 vulnerabilities
 
 ```
 
@@ -171,13 +169,13 @@ Stderr:
 
 Command: `uv run ruff format --check .`
 
-Started: `2026-08-26T15:37:17.674650Z`
-Completed: `2026-08-26T15:37:17.728707Z`
+Started: `2026-08-26T16:34:49.634770Z`
+Completed: `2026-08-26T16:34:49.664460Z`
 
 Stdout:
 
 ```text
-96 files already formatted
+97 files already formatted
 
 ```
 
@@ -191,8 +189,8 @@ Stderr:
 
 Command: `uv run ruff check .`
 
-Started: `2026-08-26T15:37:17.733601Z`
-Completed: `2026-08-26T15:37:17.762280Z`
+Started: `2026-08-26T16:34:49.669605Z`
+Completed: `2026-08-26T16:34:49.698623Z`
 
 Stdout:
 
@@ -211,8 +209,8 @@ Stderr:
 
 Command: `uv run pyright`
 
-Started: `2026-08-26T15:37:17.766162Z`
-Completed: `2026-08-26T15:37:21.540359Z`
+Started: `2026-08-26T16:34:49.704271Z`
+Completed: `2026-08-26T16:34:56.161868Z`
 
 Stdout:
 
@@ -231,8 +229,8 @@ Stderr:
 
 Command: `npm --prefix web run check`
 
-Started: `2026-08-26T15:37:21.551325Z`
-Completed: `2026-08-26T15:37:29.508655Z`
+Started: `2026-08-26T16:34:56.167659Z`
+Completed: `2026-08-26T16:35:04.520869Z`
 
 Stdout:
 
@@ -255,59 +253,59 @@ Stdout:
 
  Test Files  3 passed (3)
       Tests  27 passed (27)
-   Start at  10:37:24
-   Duration  2.57s (transform 253ms, setup 324ms, import 621ms, tests 2.48s, environment 1.59s)
+   Start at  11:34:59
+   Duration  2.51s (transform 227ms, setup 342ms, import 581ms, tests 2.37s, environment 1.76s)
 
-✔ loads summaries only from sealed CLI artifacts (25.808291ms)
-✔ loads a report and emits only allow-listed trace detail (9.496916ms)
-✔ rejects traversal-shaped IDs and non-allow-listed artifact files (6.953625ms)
-✔ does not expose bundled examples or boundary fixtures (2.301541ms)
-✔ discovers and loads preserved Live Gemini collections newest first (19.444291ms)
-✔ rejects unsafe dynamic collections and files (8.3775ms)
-✔ publishes the supported inclusive demo customer range (1.375916ms)
-✔ rejects demo customer counts outside the range or not integers (0.066333ms)
-✔ every web source file and named function has leading plain-English documentation (24.06775ms)
-✔ accepts same-origin JSON mutation requests (0.722084ms)
-✔ rejects non-JSON and cross-site mutation requests (0.052083ms)
-✔ allows only localhost Host headers (0.060583ms)
-✔ publishes secret-free live readiness and requires official prepared data (5.630666ms)
-✔ validates official prepared data without passing the Gemini credential (0.860167ms)
-✔ fails closed without live readiness before invoking the run manager (0.245416ms)
-✔ accepts only a customer count from the browser (0.087208ms)
-✔ constructs only the fixed Gemini command in a unique live collection (0.20075ms)
-✔ accepts only reconciled manifests that prove a live Gemini execution (0.171917ms)
-✔ uses bounded live timeouts and the configured Gemini model (0.082208ms)
-✔ publishes independently verified terminal output after a nonzero CLI exit (17.530708ms)
-✔ rejects a nonzero CLI exit when its terminal output is missing (0.633459ms)
-✔ does not seal terminal output when independent verification fails (4.664958ms)
-✔ terminates a timed-out live process before rejecting (2.07125ms)
-✔ keeps a post-spawn process error failed until the child closes (0.489042ms)
-✔ does not start artifact verification after shutdown begins (4.942792ms)
-✔ shutdown terminates an active live child before releasing it (0.759916ms)
-✔ dashboard shutdown closes the listener, stops processes, and exits once (0.153209ms)
-✔ dashboard shutdown performs its final process drain after HTTP close (0.241916ms)
-✔ derives only canonical version-4 UUID collection paths (1.005625ms)
-✔ resolves only real owned run directories with an exact marker (8.556416ms)
-✔ resolves a terminal collection only after verification and rejects later mutation (17.788417ms)
-✔ rejects symlinked run roots, run directories, and ownership markers (5.133791ms)
-✔ discovers owned Live Gemini collections newest first (10.898ms)
-✔ publishes only newline-terminated JSONL records and resumes a partial line (9.119792ms)
-✔ allow-lists display details and omits raw, sensitive, and reasoning fields (3.649ms)
-✔ reads only real customer trace sources and ignores demo-control or symlink sources (4.420708ms)
-✔ ignores unowned and malformed-marker staging directories (4.753167ms)
-✔ returns monotonic reader deltas without replaying previously consumed lines (10.211917ms)
-✔ does not consume valid trace batches when another source is malformed (4.041417ms)
-✔ streams only from an explicit owned live-run directory (3.818917ms)
-✔ rejects an explicit trace root outside the repository (2.961792ms)
-✔ manager ignores staging directories that existed before its run (11.552375ms)
-✔ a successful published scan clears a transient staging warning (8.938708ms)
-✔ manager reports its capacity and drops only the oldest retained events (8.290792ms)
-✔ manager gates concurrent starts, exposes cursor deltas, and releases after completion (14.168958ms)
-✔ manager preserves partial events, records failure, and releases the running gate (12.697209ms)
-✔ manager carries a unique live descriptor through execution and status (6.706708ms)
-✔ loads the repository-root environment without replacing an exported Gemini key (0.809167ms)
-✔ tolerates only a missing repository environment file (0.311125ms)
-✔ loads the environment before dynamically importing and starting the server (0.746958ms)
+✔ loads summaries only from sealed CLI artifacts (37.199166ms)
+✔ loads a report and emits only allow-listed trace detail (11.630875ms)
+✔ rejects traversal-shaped IDs and non-allow-listed artifact files (8.913709ms)
+✔ does not expose bundled examples or boundary fixtures (4.660292ms)
+✔ discovers and loads preserved Live Gemini collections newest first (23.686333ms)
+✔ rejects unsafe dynamic collections and files (9.391542ms)
+✔ publishes the supported inclusive demo customer range (1.31325ms)
+✔ rejects demo customer counts outside the range or not integers (0.063792ms)
+✔ every web source file and named function has leading plain-English documentation (36.961ms)
+✔ accepts same-origin JSON mutation requests (1.277583ms)
+✔ rejects non-JSON and cross-site mutation requests (0.082542ms)
+✔ allows only localhost Host headers (0.0875ms)
+✔ publishes secret-free live readiness and requires official prepared data (6.467959ms)
+✔ validates official prepared data without passing the Gemini credential (1.081083ms)
+✔ fails closed without live readiness before invoking the run manager (0.275083ms)
+✔ accepts only a customer count from the browser (0.097125ms)
+✔ constructs only the fixed Gemini command in a unique live collection (0.244542ms)
+✔ accepts only reconciled manifests that prove a live Gemini execution (0.172792ms)
+✔ uses bounded live timeouts and the configured Gemini model (0.081ms)
+✔ publishes independently verified terminal output after a nonzero CLI exit (20.569542ms)
+✔ rejects a nonzero CLI exit when its terminal output is missing (1.381958ms)
+✔ does not seal terminal output when independent verification fails (9.037042ms)
+✔ terminates a timed-out live process before rejecting (2.266917ms)
+✔ keeps a post-spawn process error failed until the child closes (0.538ms)
+✔ does not start artifact verification after shutdown begins (3.959666ms)
+✔ shutdown terminates an active live child before releasing it (0.650291ms)
+✔ dashboard shutdown closes the listener, stops processes, and exits once (0.190125ms)
+✔ dashboard shutdown performs its final process drain after HTTP close (0.24875ms)
+✔ derives only canonical version-4 UUID collection paths (2.547209ms)
+✔ resolves only real owned run directories with an exact marker (18.318666ms)
+✔ resolves a terminal collection only after verification and rejects later mutation (27.235625ms)
+✔ rejects symlinked run roots, run directories, and ownership markers (7.895042ms)
+✔ discovers owned Live Gemini collections newest first (15.38325ms)
+✔ publishes only newline-terminated JSONL records and resumes a partial line (16.509708ms)
+✔ allow-lists display details and omits raw, sensitive, and reasoning fields (5.646583ms)
+✔ reads only real customer trace sources and ignores demo-control or symlink sources (7.511458ms)
+✔ ignores unowned and malformed-marker staging directories (7.074666ms)
+✔ returns monotonic reader deltas without replaying previously consumed lines (10.458917ms)
+✔ does not consume valid trace batches when another source is malformed (6.463416ms)
+✔ streams only from an explicit owned live-run directory (5.209584ms)
+✔ rejects an explicit trace root outside the repository (5.473125ms)
+✔ manager ignores staging directories that existed before its run (14.599667ms)
+✔ a successful published scan clears a transient staging warning (9.5955ms)
+✔ manager reports its capacity and drops only the oldest retained events (8.301333ms)
+✔ manager gates concurrent starts, exposes cursor deltas, and releases after completion (15.267292ms)
+✔ manager preserves partial events, records failure, and releases the running gate (14.323167ms)
+✔ manager carries a unique live descriptor through execution and status (7.681875ms)
+✔ loads the repository-root environment without replacing an exported Gemini key (0.756ms)
+✔ tolerates only a missing repository environment file (0.222583ms)
+✔ loads the environment before dynamically importing and starting the server (0.709709ms)
 ℹ tests 50
 ℹ suites 0
 ℹ pass 50
@@ -315,7 +313,7 @@ Stdout:
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 192.264458
+ℹ duration_ms 238.858416
 
 > whyback-dashboard@0.1.0 build
 > tsc -b && vite build
@@ -327,9 +325,9 @@ rendering chunks...
 computing gzip size...
 dist/index.html                   0.68 kB │ gzip:   0.40 kB
 dist/assets/index-BAUP1-OU.css   44.41 kB │ gzip:   8.94 kB
-dist/assets/index-B9_6peTs.js   378.93 kB │ gzip: 118.26 kB
+dist/assets/index-15qHnzhr.js   379.02 kB │ gzip: 118.28 kB
 
-✓ built in 399ms
+✓ built in 456ms
 
 ```
 
@@ -343,8 +341,8 @@ Stderr:
 
 Command: `uv run pytest --cov=whyback --cov-branch --cov-report=json:artifacts/tests/coverage.json --junitxml=artifacts/tests/junit.xml`
 
-Started: `2026-08-26T15:37:29.514061Z`
-Completed: `2026-08-26T15:38:38.275081Z`
+Started: `2026-08-26T16:35:04.526266Z`
+Completed: `2026-08-26T16:36:17.149692Z`
 
 Stdout:
 
@@ -358,35 +356,36 @@ plugins: cov-7.1.0, timeout-2.4.0, anyio-4.14.2, hypothesis-6.165.10
 timeout: 30.0s
 timeout method: signal
 timeout func_only: False
-collected 336 items
+collected 364 items
 
-tests/integration/test_cli_workflows.py .......                          [  2%]
-tests/integration/test_demo_pipeline.py ..............                   [  6%]
+tests/integration/test_cli_workflows.py .......                          [  1%]
+tests/integration/test_demo_pipeline.py ..............                   [  5%]
 tests/integration/test_evaluation_cases.py .                             [  6%]
 tests/integration/test_prepared_repository.py ....                       [  7%]
-tests/live/test_gemini_backend_live.py s                                 [  8%]
-tests/orchestration/test_runner.py ...............                       [ 12%]
-tests/property/test_agent_invariants.py ............                     [ 16%]
+tests/live/test_gemini_backend_live.py ss                                [  7%]
+tests/orchestration/test_runner.py ..................                    [ 12%]
+tests/property/test_agent_invariants.py ............                     [ 15%]
 tests/property/test_decline_properties.py .                              [ 16%]
 tests/property/test_tool_contract_properties.py .                        [ 16%]
-tests/unit/test_actions.py ........                                      [ 19%]
-tests/unit/test_agent_backends.py .....................                  [ 25%]
-tests/unit/test_audit_trace.py .........                                 [ 27%]
-tests/unit/test_data_contracts.py .......                                [ 30%]
-tests/unit/test_decline_detector.py .........                            [ 32%]
-tests/unit/test_demo_limits.py .......                                   [ 34%]
-tests/unit/test_documentation_coverage.py ..                             [ 35%]
-tests/unit/test_evals.py ...................                             [ 41%]
-tests/unit/test_evidence_verifier.py ................................... [ 51%]
-........................................................................ [ 72%]
-...                                                                      [ 73%]
-tests/unit/test_fault_injection.py ...                                   [ 74%]
+tests/unit/test_actions.py ........                                      [ 18%]
+tests/unit/test_agent_backends.py ...................................... [ 29%]
+..                                                                       [ 29%]
+tests/unit/test_audit_trace.py .........                                 [ 32%]
+tests/unit/test_data_contracts.py .......                                [ 34%]
+tests/unit/test_decline_detector.py .........                            [ 36%]
+tests/unit/test_demo_limits.py .......                                   [ 38%]
+tests/unit/test_documentation_coverage.py ..                             [ 39%]
+tests/unit/test_evals.py ...................                             [ 44%]
+tests/unit/test_evidence_verifier.py ................................... [ 53%]
+........................................................................ [ 73%]
+....                                                                     [ 74%]
+tests/unit/test_fault_injection.py ...                                   [ 75%]
 tests/unit/test_foundation.py .....                                      [ 76%]
-tests/unit/test_promotion_coupon_peer.py .....                           [ 77%]
+tests/unit/test_promotion_coupon_peer.py .....                           [ 78%]
 tests/unit/test_quality_scripts.py ..................................... [ 88%]
-.....                                                                    [ 90%]
-tests/unit/test_reporting.py ............                                [ 93%]
-tests/unit/test_scripted_plans.py ....                                   [ 94%]
+........                                                                 [ 90%]
+tests/unit/test_reporting.py .............                               [ 94%]
+tests/unit/test_scripted_plans.py ....                                   [ 95%]
 tests/unit/test_tool_contracts.py .....                                  [ 96%]
 tests/unit/test_tool_registry.py ...                                     [ 97%]
 tests/unit/test_trend_category_basket.py .........                       [100%]
@@ -396,10 +395,11 @@ tests/unit/test_trend_category_basket.py .........                       [100%]
 ______________ coverage: platform darwin, python 3.12.14-final-0 _______________
 
 Coverage JSON written to file artifacts/tests/coverage.json
-Required test coverage of 85.0% reached. Total coverage: 87.26%
+Required test coverage of 85.0% reached. Total coverage: 87.62%
 =========================== short test summary info ============================
 SKIPPED [1] tests/live/test_gemini_backend_live.py:44: GEMINI_API_KEY is absent; live Gemini execution was not attempted.
-================== 335 passed, 1 skipped in 68.25s (0:01:08) ===================
+SKIPPED [1] tests/live/test_gemini_backend_live.py:63: GEMINI_API_KEY is absent; live Gemini execution was not attempted.
+================== 362 passed, 2 skipped in 72.20s (0:01:12) ===================
 
 ```
 
@@ -413,13 +413,13 @@ Stderr:
 
 Command: `(internal or skipped)`
 
-Started: `2026-08-26T15:38:38.285667Z`
-Completed: `2026-08-26T15:38:38.285667Z`
+Started: `2026-08-26T16:36:17.160338Z`
+Completed: `2026-08-26T16:36:17.160338Z`
 
 Stdout:
 
 ```text
-JUnit recorded 336 tests; branch-aware coverage is 87.26448011165387% across 1210 branches (minimum 85.00%).
+JUnit recorded 364 tests; branch-aware coverage is 87.62148337595907% across 1252 branches (minimum 85.00%).
 
 ```
 
@@ -433,8 +433,8 @@ Stderr:
 
 Command: `uv run python evals/run_evals.py artifacts/demo/evals/normalized_runs.json --json-output artifacts/tests/eval_report.json --markdown-output artifacts/tests/EVAL_REPORT.md`
 
-Started: `2026-08-26T15:38:38.289707Z`
-Completed: `2026-08-26T15:38:38.830676Z`
+Started: `2026-08-26T16:36:17.164931Z`
+Completed: `2026-08-26T16:36:17.653414Z`
 
 Stdout:
 
@@ -452,8 +452,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/demo --json-output artifacts/tests/artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-26T15:38:38.835824Z`
-Completed: `2026-08-26T15:38:39.829200Z`
+Started: `2026-08-26T16:36:17.658366Z`
+Completed: `2026-08-26T16:36:18.558113Z`
 
 Stdout:
 
@@ -471,8 +471,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/live-gemini-synthetic-failure --json-output artifacts/tests/live_gemini_artifact_verification.json`
 
-Started: `2026-08-26T15:38:39.834506Z`
-Completed: `2026-08-26T15:38:40.279836Z`
+Started: `2026-08-26T16:36:18.562845Z`
+Completed: `2026-08-26T16:36:19.030665Z`
 
 Stdout:
 
@@ -490,8 +490,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official --json-output artifacts/tests/official_artifact_verification.json --allow-live-skipped`
 
-Started: `2026-08-26T15:38:40.285788Z`
-Completed: `2026-08-26T15:38:40.680590Z`
+Started: `2026-08-26T16:36:19.036039Z`
+Completed: `2026-08-26T16:36:19.452677Z`
 
 Stdout:
 
@@ -509,8 +509,8 @@ Stderr:
 
 Command: `uv run python scripts/verify_artifacts.py artifacts/official-type-a --json-output artifacts/tests/official_type_a_artifact_verification.json`
 
-Started: `2026-08-26T15:38:40.685437Z`
-Completed: `2026-08-26T15:38:41.170485Z`
+Started: `2026-08-26T16:36:19.457699Z`
+Completed: `2026-08-26T16:36:19.919573Z`
 
 Stdout:
 
@@ -554,3 +554,5 @@ None.
 | `e060ce7e-69ea-4a5d-b76e-ffd36051d53e` | `2026-08-26T07:35:07.098801Z` | pass | none |
 | `84a4f73a-3c39-4105-a61d-39bdfcde3d7a` | `2026-08-26T15:25:24.694661Z` | pass | none |
 | `13813c39-9743-4be9-91c0-b38cd287a81f` | `2026-08-26T15:34:21.371638Z` | fail | ruff_format |
+| `3b9bdd24-1f55-4770-ad0d-4f3790d122d4` | `2026-08-26T15:37:14.173342Z` | pass | none |
+| `607259bb-d212-42af-9a2f-6f971180d20f` | `2026-08-26T16:32:23.301972Z` | fail | pytest, test_output_validation |

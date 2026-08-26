@@ -21,7 +21,7 @@ def test_product_configuration_is_consistent() -> None:
     assert settings.application.tagline == "Find the why. Choose the way back."
     assert settings.data.source_commit == SOURCE_COMMIT
     assert settings.agent.max_tool_executions == 5
-    assert settings.agent.max_model_decisions == 6
+    assert settings.agent.max_model_decisions == 7
 
 
 def test_gemini_configuration_defaults_and_environment_overrides(

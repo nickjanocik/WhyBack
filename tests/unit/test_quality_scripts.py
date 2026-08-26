@@ -1443,6 +1443,152 @@ def test_artifact_verifier_accepts_live_backend_failure_before_response(
     assert result.execution_modes == ("live", "skipped")
 
 
+def test_artifact_verifier_accepts_sanitized_malformed_action_repair_lifecycle(
+    tmp_path: Path,
+) -> None:
+    """Accept one rejected action followed by one failed finish-only repair call."""
+
+    _write_failed_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    requested = rows[1]
+    rejected = {
+        **requested,
+        "timestamp": "2026-01-01T00:00:01.100000Z",
+        "event": AuditEventName.MODEL_DECISION_REJECTED.value,
+        "details": {
+            "message": (
+                "The model response did not contain exactly one valid permitted action."
+            ),
+            "repair_available": True,
+            "remaining_tool_budget": 5,
+            "remaining_turn_budget": 5,
+        },
+    }
+    repair_requested = {
+        **requested,
+        "timestamp": "2026-01-01T00:00:01.200000Z",
+        "details": {
+            "repair_requested": True,
+            "remaining_tool_budget": 5,
+            "remaining_turn_budget": 5,
+        },
+    }
+    rows[2:2] = [rejected, repair_requested]
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert result.passed, result.issues
+    assert result.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_accepts_rejected_action_then_valid_repair(
+    tmp_path: Path,
+) -> None:
+    """Accept a rejected provider action followed by a valid finish-only repair."""
+
+    _write_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    requested = rows[1]
+    rejected = {
+        **requested,
+        "timestamp": "2026-01-01T00:00:01.100000Z",
+        "event": AuditEventName.MODEL_DECISION_REJECTED.value,
+        "details": {
+            "message": (
+                "The model response did not contain exactly one valid permitted action."
+            ),
+            "repair_available": True,
+            "remaining_tool_budget": 5,
+            "remaining_turn_budget": 5,
+        },
+    }
+    repair_requested = {
+        **requested,
+        "timestamp": "2026-01-01T00:00:01.200000Z",
+        "details": {
+            "repair_requested": True,
+            "remaining_tool_budget": 5,
+            "remaining_turn_budget": 5,
+        },
+    }
+    rows[2:2] = [rejected, repair_requested]
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert result.passed, result.issues
+    assert result.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_rejects_more_than_one_model_action_repair(
+    tmp_path: Path,
+) -> None:
+    """Reject a trace that fabricates a second model-action repair attempt."""
+
+    _write_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    requested = rows[1]
+
+    def rejected(timestamp: str, remaining_turns: int) -> dict[str, object]:
+        """Build one fabricated rejected-decision event for this trace."""
+
+        return {
+            **requested,
+            "timestamp": timestamp,
+            "event": AuditEventName.MODEL_DECISION_REJECTED.value,
+            "details": {
+                "message": (
+                    "The model response did not contain exactly one valid permitted "
+                    "action."
+                ),
+                "repair_available": True,
+                "remaining_tool_budget": 5,
+                "remaining_turn_budget": remaining_turns,
+            },
+        }
+
+    def repair_request(timestamp: str, remaining_turns: int) -> dict[str, object]:
+        """Build one fabricated finish-only repair request for this trace."""
+
+        return {
+            **requested,
+            "timestamp": timestamp,
+            "details": {
+                "repair_requested": True,
+                "remaining_tool_budget": 5,
+                "remaining_turn_budget": remaining_turns,
+            },
+        }
+
+    rows[2:2] = [
+        rejected("2026-01-01T00:00:01.100000Z", 5),
+        repair_request("2026-01-01T00:00:01.200000Z", 5),
+        rejected("2026-01-01T00:00:01.300000Z", 4),
+        repair_request("2026-01-01T00:00:01.400000Z", 4),
+    ]
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert not result.passed
+    assert any(
+        issue.code == "trace_repair_lifecycle_invalid" for issue in result.issues
+    )
+
+
 @pytest.mark.parametrize("provider_id", [None, "", "scripted-001"])
 def test_artifact_verifier_keeps_provider_id_required_for_completed_live_run(
     tmp_path: Path,

@@ -106,6 +106,28 @@ def _finish_decision() -> FinishDecision:
     )
 
 
+def _finish_payload() -> dict[str, Any]:
+    """Create the flat provider payload that maps to the typed finish decision."""
+
+    decision = _finish_decision()
+    driver = decision.final.driver_summary[0]
+    return {
+        "investigation_question": decision.investigation_question,
+        "decision_summary": decision.decision_summary,
+        "driver_summary": driver.summary,
+        "driver_claim_type": driver.claim_type.value,
+        "supporting_evidence_ids": list(driver.supporting_evidence_ids),
+        "counterevidence_ids": list(driver.counterevidence_ids),
+        "counterevidence_assessment": (driver.no_material_counterevidence_reason),
+        "limitations": list(driver.limitations),
+        "proposed_confidence": decision.final.proposed_confidence.value,
+        "next_best_action_id": decision.final.next_best_action_id.value,
+        "rationale": decision.final.rationale,
+        "alternative_explanations": list(decision.final.alternative_explanations),
+        "uncertainties": list(decision.final.uncertainties),
+    }
+
+
 class _FakeInteractions:
     """Test double that provides FakeInteractions behavior."""
 
@@ -261,7 +283,7 @@ def test_gemini_backend_sends_one_strict_function_decision() -> None:
     }
     assert set(request_input) == {"action_catalog", "repair_issues", "state"}
     config = request["generation_config"]
-    assert config.max_output_tokens == 1200
+    assert config.max_output_tokens == 4096
     assert config.thinking_level == "high"
     assert config.thinking_summaries == "none"
     function_config = config.tool_choice.allowed_tools
@@ -326,28 +348,97 @@ def test_gemini_function_schemas_ignore_model_docstrings_only() -> None:
         == "The active household identifier."
     )
     assert "description" not in finish_parameters
+    assert "final" not in finish_parameters["properties"]
+    assert set(finish_parameters["required"]) == set(finish_parameters["properties"])
     assert (
-        finish_parameters["properties"]["final"]["description"]
-        == "Qualitative model proposal whose evidence references are verified in code."
+        finish_parameters["properties"]["driver_summary"]["description"]
+        == "One qualitative primary driver without raw numerical claims."
     )
 
 
 def test_gemini_backend_parses_finish_action() -> None:
     """Verify that gemini backend parses finish action."""
 
-    payload = {
-        "investigation_question": _finish_decision().investigation_question,
-        "decision_summary": _finish_decision().decision_summary,
-        "final": _finish_decision().final.model_dump(mode="json"),
-    }
-    client = _FakeClient(_response("finish_investigation", payload))
+    client = _FakeClient(_response("finish_investigation", _finish_payload()))
     backend = GeminiFunctionCallingBackend(client=client)
 
     result = backend.decide_next_step(_state(), ())
 
     assert result.decision == _finish_decision()
-    declarations = client.interactions.kwargs["tools"]
-    assert len(declarations) == 1
+    request = client.interactions.kwargs
+    declarations = request["tools"]
+    assert [item.name for item in declarations] == ["finish_investigation"]
+    allowed_tools = request["generation_config"].tool_choice.allowed_tools
+    assert request["generation_config"].max_output_tokens == 4096
+    assert allowed_tools.mode == "any"
+    assert allowed_tools.tools == ["finish_investigation"]
+    assert "previous_interaction_id" not in request
+
+
+@pytest.mark.parametrize(
+    ("supporting", "counterevidence", "message"),
+    (
+        (["ev-trend", "ev-trend"], [], "duplicated"),
+        (["ev-trend"], ["ev-counter", "ev-counter"], "duplicated"),
+        (["ev-trend"], ["ev-trend"], "overlapped"),
+        ([], ["ev-counter"], "requires a supported driver"),
+    ),
+)
+def test_gemini_backend_rejects_inconsistent_flat_finish_evidence(
+    supporting: list[str], counterevidence: list[str], message: str
+) -> None:
+    """Reject inconsistent model evidence roles instead of silently editing them."""
+
+    payload = _finish_payload()
+    payload["supporting_evidence_ids"] = supporting
+    payload["counterevidence_ids"] = counterevidence
+    backend = GeminiFunctionCallingBackend(
+        client=_FakeClient(_response("finish_investigation", payload))
+    )
+
+    with pytest.raises(MalformedModelResponse, match=message):
+        backend.decide_next_step(_state(), ())
+
+
+def test_gemini_backend_preserves_counterevidence_and_supplies_safe_limitation() -> (
+    None
+):
+    """Keep valid evidence roles and use a code-owned observational fallback."""
+
+    payload = _finish_payload()
+    payload["counterevidence_ids"] = ["ev-counter"]
+    payload["limitations"] = ["", "   "]
+    backend = GeminiFunctionCallingBackend(
+        client=_FakeClient(_response("finish_investigation", payload))
+    )
+
+    result = backend.decide_next_step(_state(), ())
+
+    assert isinstance(result.decision, FinishDecision)
+    driver = result.decision.final.driver_summary[0]
+    assert driver.counterevidence_ids == ("ev-counter",)
+    assert driver.no_material_counterevidence_reason is None
+    assert driver.limitations == (
+        "The available evidence is observational and does not establish causation.",
+    )
+
+
+def test_gemini_backend_builds_driverless_insufficient_finish() -> None:
+    """Keep an insufficient finish internally valid for deterministic verification."""
+
+    payload = _finish_payload()
+    payload["supporting_evidence_ids"] = []
+    payload["next_best_action_id"] = "INSUFFICIENT_EVIDENCE"
+    backend = GeminiFunctionCallingBackend(
+        client=_FakeClient(_response("finish_investigation", payload))
+    )
+
+    result = backend.decide_next_step(_state(), ())
+
+    assert isinstance(result.decision, FinishDecision)
+    assert result.decision.final.driver_summary == ()
+    assert result.decision.final.supporting_evidence_ids == ()
+    assert result.decision.final.counterevidence_ids == ()
 
 
 def test_gemini_backend_uses_function_call_id_for_stateless_response() -> None:
@@ -495,8 +586,154 @@ def test_gemini_backend_does_not_echo_invalid_provider_payload() -> None:
     assert private_content not in str(caught.value)
 
 
-def test_gemini_backend_sanitizes_provider_request_errors() -> None:
-    """Verify that gemini backend sanitizes provider request errors."""
+@pytest.mark.parametrize(
+    ("status_code", "category"),
+    (
+        (400, "request rejected"),
+        (401, "authentication rejected"),
+        (403, "permission rejected"),
+        (408, "request timed out"),
+        (429, "quota or rate limit reached"),
+        (500, "provider unavailable"),
+        (502, "provider unavailable"),
+        (503, "provider unavailable"),
+        (504, "provider timed out"),
+    ),
+)
+def test_gemini_backend_reports_safe_provider_status_without_leaking_content(
+    status_code: int, category: str
+) -> None:
+    """Expose only application-authored status diagnostics for provider failures."""
+
+    sensitive_marker = "AIza" + "a" * 35
+
+    class _StatusError(RuntimeError):
+        """Provider-style exception carrying both safe status and unsafe content."""
+
+        def __init__(self) -> None:
+            """Attach controlled status metadata and deliberately unsafe prose."""
+
+            super().__init__(f"provider rejected {sensitive_marker}")
+            self.status_code = status_code
+            self.body = {"message": sensitive_marker}
+
+    class _RaisingInteractions:
+        """Raise the controlled provider exception for every request."""
+
+        def create(self, **kwargs: Any) -> object:
+            """Reject the request without inspecting its controlled arguments."""
+
+            del kwargs
+            raise _StatusError
+
+    backend = GeminiFunctionCallingBackend(
+        client=SimpleNamespace(interactions=_RaisingInteractions())
+    )
+
+    with pytest.raises(ModelBackendError) as caught:
+        backend.decide_next_step(_state(), ())
+
+    assert str(caught.value) == (
+        f"Gemini Interactions request failed ({category}; HTTP {status_code})"
+    )
+    assert sensitive_marker not in str(caught.value)
+
+
+def test_gemini_backend_accepts_legacy_numeric_provider_code_safely() -> None:
+    """Classify the legacy SDK's numeric code without exposing its error body."""
+
+    sensitive_marker = "synthetic-sensitive-legacy-provider-marker"
+
+    class _LegacyStatusError(RuntimeError):
+        """Legacy provider-style exception exposing a numeric code attribute."""
+
+        code = 429
+
+    error = _LegacyStatusError(sensitive_marker)
+
+    class _RaisingInteractions:
+        """Raise the controlled legacy provider exception for every request."""
+
+        def create(self, **kwargs: Any) -> object:
+            """Reject the request without inspecting its controlled arguments."""
+
+            del kwargs
+            raise error
+
+    backend = GeminiFunctionCallingBackend(
+        client=SimpleNamespace(interactions=_RaisingInteractions())
+    )
+
+    with pytest.raises(ModelBackendError) as caught:
+        backend.decide_next_step(_state(), ())
+
+    assert str(caught.value) == (
+        "Gemini Interactions request failed (quota or rate limit reached; HTTP 429)"
+    )
+    assert sensitive_marker not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("provider_code", "expected_suffix"),
+    (
+        ("malformed_function_call", "; code malformed_function_call"),
+        ("malformed_tool_call", "; code malformed_tool_call"),
+        ("not-an-allowlisted-provider-value", ""),
+    ),
+)
+def test_gemini_backend_allowlists_structured_interaction_error_codes(
+    provider_code: str, expected_suffix: str
+) -> None:
+    """Retain only documented machine codes from the provider error envelope."""
+
+    sensitive_marker = "synthetic-sensitive-error-message"
+
+    class _StructuredStatusError(RuntimeError):
+        """Provider-style HTTP error with a parsed Interactions envelope."""
+
+        status_code = 400
+
+        def __init__(self) -> None:
+            """Attach one controlled Interactions error envelope for classification."""
+
+            super().__init__(sensitive_marker)
+            self.body = {
+                "error": {
+                    "code": provider_code,
+                    "message": sensitive_marker,
+                }
+            }
+
+    class _RaisingInteractions:
+        """Raise the controlled structured provider exception."""
+
+        def create(self, **kwargs: Any) -> object:
+            """Reject the request without inspecting controlled arguments."""
+
+            del kwargs
+            raise _StructuredStatusError
+
+    backend = GeminiFunctionCallingBackend(
+        client=SimpleNamespace(interactions=_RaisingInteractions())
+    )
+
+    with pytest.raises(ModelBackendError) as caught:
+        backend.decide_next_step(_state(), ())
+
+    assert str(caught.value) == (
+        "Gemini Interactions request failed "
+        f"(request rejected; HTTP 400{expected_suffix})"
+    )
+    assert sensitive_marker not in str(caught.value)
+    if expected_suffix:
+        assert isinstance(caught.value, MalformedModelResponse)
+    else:
+        assert type(caught.value) is ModelBackendError
+        assert provider_code not in str(caught.value)
+
+
+def test_gemini_backend_keeps_unknown_provider_errors_generic() -> None:
+    """Keep unknown provider errors generic and omit provider-authored content."""
 
     sensitive_marker = "synthetic-sensitive-provider-marker"
 
@@ -530,10 +767,10 @@ def test_gemini_backend_requires_a_key_when_no_client_is_injected(
         GeminiFunctionCallingBackend()
 
 
-def test_gemini_backend_passes_gemini_key_explicitly_and_disables_retries(
+def test_gemini_backend_passes_key_and_configures_one_interactions_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify that gemini backend passes gemini key explicitly and disables retries."""
+    """Pass the Gemini key explicitly and bound retryable Interactions failures."""
 
     captured: dict[str, Any] = {}
 
@@ -553,4 +790,16 @@ def test_gemini_backend_passes_gemini_key_explicitly_and_disables_retries(
     http_options = captured["http_options"]
     assert http_options.api_version == "v1"
     assert http_options.timeout == 12_500
-    assert http_options.retry_options.attempts == 1
+    assert http_options.retry_options.attempts == 2
+    assert http_options.retry_options.initial_delay == 5.0
+    assert http_options.retry_options.max_delay == 5.0
+    assert http_options.retry_options.exp_base == 2.0
+    assert http_options.retry_options.jitter == 1.0
+    assert http_options.retry_options.http_status_codes == [
+        408,
+        429,
+        500,
+        502,
+        503,
+        504,
+    ]

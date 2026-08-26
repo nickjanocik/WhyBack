@@ -17,6 +17,7 @@ _TEMPLATE_DIRECTORY: Final = Path(__file__).with_name("templates")
 _EVENT_TITLES: Final = {
     AuditEventName.RUN_STARTED: "Investigation started",
     AuditEventName.MODEL_DECISION_REQUESTED: "Decision requested",
+    AuditEventName.MODEL_DECISION_REJECTED: "Invalid model decision rejected",
     AuditEventName.MODEL_DECISION_RECEIVED: "Decision received",
     AuditEventName.TOOL_REQUESTED: "Analytical tool requested",
     AuditEventName.TOOL_STARTED: "Tool attempt started",
@@ -38,6 +39,7 @@ def _category(name: AuditEventName) -> str:
 
     if name in {
         AuditEventName.MODEL_DECISION_REQUESTED,
+        AuditEventName.MODEL_DECISION_REJECTED,
         AuditEventName.MODEL_DECISION_RECEIVED,
         AuditEventName.FINISH_REQUESTED,
     }:
@@ -175,7 +177,12 @@ def build_trace_view(events: Sequence[AuditEvent]) -> TraceViewData:
         household_id=first.household_id if first else None,
         event_count=len(events),
         decision_count=sum(
-            event.event is AuditEventName.MODEL_DECISION_RECEIVED for event in events
+            event.event
+            in {
+                AuditEventName.MODEL_DECISION_RECEIVED,
+                AuditEventName.MODEL_DECISION_REJECTED,
+            }
+            for event in events
         ),
         tool_attempt_count=sum(
             event.event is AuditEventName.TOOL_STARTED for event in events

@@ -9,11 +9,11 @@ not from asking the model to be careful.
 | Control | Default | Enforcement |
 | --- | ---: | --- |
 | Analytical executions | 5 | Every actual attempt, including a retry, decrements the application-owned budget. It cannot become negative. |
-| Model decisions | 6 | Every backend request consumes one turn, including finish and repair. |
+| Model decisions | 7 | Every backend request consumes one turn, reserving capacity for five tools, finish, and one repair. |
 | Actions per decision | 1 | The live adapter requires tool selection and rejects responses containing anything other than exactly one offered function call, including parallel calls. |
 | Exact duplicate calls | 0 executions | `(tool_name, normalized_arguments)` is hashed and refused before dispatch. |
 | Retryable retries | 1 | Only a result marked `retryable_error` and `retryable=true` can retry. |
-| Finish repairs | 1 | Rejected verification exposes issue codes on one finish-only turn. |
+| Structured repairs | 1 | Rejected verification exposes issue codes, or a malformed action exposes an application-authored issue, on one finish-only turn. |
 | Tool timeout | 30 seconds | Configurable per runner; timeout becomes a typed retryable result. |
 
 Tool and decision budgets are separate. A retry consumes a real analytical

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any, cast
 from uuid import UUID
 
 import pytest
@@ -227,6 +229,147 @@ def _proposal(
         ),
         uncertainties=("The data does not record a direct reason.",),
     )
+
+
+def test_compact_model_context_preserves_evidence_with_shared_limitations() -> None:
+    """Keep every evidence fact while emitting repeated limitation prose once."""
+
+    shared_limitation = "Shared observational limitation. " + "x" * 400
+    history_limitation = "History-only limitation. " + "y" * 200
+    evidence_limitation = "Evidence-only limitation. " + "z" * 200
+    records = (
+        _evidence(
+            "ev-1",
+            limitations=(shared_limitation, evidence_limitation),
+            dimensions={"department": "GROCERY"},
+        ),
+        _evidence(
+            "ev-2",
+            limitations=(shared_limitation,),
+            baseline_value=0.0,
+            recent_value=0.0,
+            value=0.25,
+        ),
+        EvidenceRecord(
+            evidence_id="ev-3",
+            run_id=RUN_ID,
+            household_id="1",
+            source_tool=ToolName.PEER_COMPARISON,
+            source_tool_call_id="call-peer",
+            metric="context_classification",
+            text_value="customer_specific",
+            unit="classification",
+            maximum_claim_type=ClaimType.DESCRIPTIVE,
+            limitations=(shared_limitation,),
+        ),
+    )
+    history = ToolHistoryEntry(
+        decision_number=1,
+        tool_name=ToolName.CUSTOMER_TREND,
+        normalized_signature="customer_trend:1",
+        investigation_question="What changed?",
+        decision_summary="Inspect deterministic behavior.",
+        normalized_arguments={"household_id": "1"},
+        attempts=(
+            ToolAttemptRecord(
+                attempt=1,
+                tool_call_id="call-trend",
+                status=ToolStatus.PARTIAL,
+                limitations=(shared_limitation, history_limitation),
+            ),
+        ),
+        final_status=ToolStatus.PARTIAL,
+        model_summary={"large_deterministic_summary": "S" * 5_000},
+        evidence_ids=tuple(item.evidence_id for item in records),
+        limitations=(shared_limitation, history_limitation),
+    )
+    state = _state(records, (history,))
+    context = cast(dict[str, Any], state.compact_model_context())
+
+    assert context == state.compact_model_context()
+    assert context["limitation_catalog"] == [
+        {"limitation_id": "limitation_001", "text": shared_limitation},
+        {"limitation_id": "limitation_002", "text": history_limitation},
+        {"limitation_id": "limitation_003", "text": evidence_limitation},
+    ]
+    limitation_lookup = {
+        item["limitation_id"]: item["text"] for item in context["limitation_catalog"]
+    }
+    encoded_records = {
+        item["evidence_id"]: item for item in context["evidence_summary"]
+    }
+    assert set(encoded_records) == {item.evidence_id for item in records}
+    for original in records:
+        encoded = encoded_records[original.evidence_id]
+        assert encoded["source_tool"] == original.source_tool.value
+        assert encoded["metric"] == original.metric
+        assert encoded["maximum_claim_type"] == original.maximum_claim_type.value
+        assert (
+            tuple(limitation_lookup[item] for item in encoded["limitation_ids"])
+            == original.limitations
+        )
+        if original.dimensions:
+            assert encoded["dimensions"] == dict(original.dimensions)
+        else:
+            assert "dimensions" not in encoded
+        for field in (
+            "baseline_value",
+            "recent_value",
+            "value",
+            "text_value",
+            "change",
+            "unit",
+        ):
+            expected = getattr(original, field)
+            if expected is None:
+                assert field not in encoded
+            else:
+                assert encoded[field] == expected
+
+    encoded_history = context["completed_tools"][0]
+    assert "summary" not in encoded_history
+    assert (
+        tuple(limitation_lookup[item] for item in encoded_history["limitation_ids"])
+        == history.limitations
+    )
+
+    legacy_payload = {
+        "completed_tools": [
+            {
+                "tool_name": history.tool_name.value,
+                "investigation_question": history.investigation_question,
+                "status": history.final_status.value,
+                "summary": dict(history.model_summary),
+                "evidence_ids": list(history.evidence_ids),
+                "limitations": list(history.limitations),
+            }
+        ],
+        "evidence_summary": [
+            {
+                "evidence_id": item.evidence_id,
+                "source_tool": item.source_tool.value,
+                "metric": item.metric,
+                "dimensions": dict(item.dimensions),
+                "baseline_value": item.baseline_value,
+                "recent_value": item.recent_value,
+                "value": item.value,
+                "text_value": item.text_value,
+                "change": item.change,
+                "unit": item.unit,
+                "maximum_claim_type": item.maximum_claim_type.value,
+                "limitations": list(item.limitations),
+            }
+            for item in records
+        ],
+    }
+    compact_payload = {
+        key: context[key]
+        for key in ("completed_tools", "evidence_summary", "limitation_catalog")
+    }
+    compact_json = json.dumps(compact_payload, sort_keys=True, separators=(",", ":"))
+    legacy_json = json.dumps(legacy_payload, sort_keys=True, separators=(",", ":"))
+    assert compact_json.count(shared_limitation) == 1
+    assert len(compact_json) < len(legacy_json) / 2
 
 
 def test_evidence_ledger_is_immutable_and_checks_ownership() -> None:

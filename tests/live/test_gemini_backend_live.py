@@ -58,3 +58,20 @@ def test_gemini_backend_returns_one_strict_investigation_decision() -> None:
     assert not result.provider_call_id.startswith("resp_")
     assert result.model == backend.model_name
     assert result.decision.kind in {"tool", "finish"}
+
+
+@pytest.mark.timeout(120)
+@pytest.mark.skipif(
+    not _GEMINI_API_KEY_PRESENT,
+    reason="GEMINI_API_KEY is absent; live Gemini execution was not attempted.",
+)
+def test_gemini_backend_returns_finish_from_finish_only_contract() -> None:
+    """Verify the live provider accepts WhyBack's terminal function contract."""
+
+    backend = GeminiFunctionCallingBackend(timeout_seconds=90.0)
+
+    result = backend.decide_next_step(_state(), ())
+
+    assert result.provider_call_id
+    assert result.model == backend.model_name
+    assert result.decision.kind == "finish"

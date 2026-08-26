@@ -279,7 +279,7 @@ class InvestigationState(BaseModel):
         detector_snapshot: DeclineSnapshot,
         *,
         max_tool_executions: int = 5,
-        max_model_decisions: int = 6,
+        max_model_decisions: int = 7,
         run_id: UUID | None = None,
     ) -> InvestigationState:
         """Create the initial immutable state and analysis window for one customer."""
@@ -303,31 +303,61 @@ class InvestigationState(BaseModel):
     def compact_model_context(self) -> dict[str, JsonValue]:
         """Return bounded evidence and state, never an accumulated transcript."""
 
-        evidence = [
-            {
-                "evidence_id": item.evidence_id,
-                "source_tool": item.source_tool.value,
-                "metric": item.metric,
-                "dimensions": item.dimensions,
-                "baseline_value": item.baseline_value,
-                "recent_value": item.recent_value,
-                "value": item.value,
-                "text_value": item.text_value,
-                "change": item.change,
-                "unit": item.unit,
-                "maximum_claim_type": item.maximum_claim_type.value,
-                "limitations": list(item.limitations),
-            }
-            for item in self.evidence_ledger
+        limitation_ids_by_text: dict[str, str] = {}
+        for limitations in (
+            *(item.limitations for item in self.tool_history),
+            *(item.limitations for item in self.evidence_ledger),
+        ):
+            for limitation in limitations:
+                if limitation not in limitation_ids_by_text:
+                    limitation_ids_by_text[limitation] = (
+                        f"limitation_{len(limitation_ids_by_text) + 1:03d}"
+                    )
+
+        limitation_catalog = [
+            {"limitation_id": limitation_id, "text": text}
+            for text, limitation_id in limitation_ids_by_text.items()
         ]
+
+        evidence: list[dict[str, JsonValue]] = []
+        for item in self.evidence_ledger:
+            record = cast(
+                dict[str, JsonValue],
+                {
+                    "evidence_id": item.evidence_id,
+                    "source_tool": item.source_tool.value,
+                    "metric": item.metric,
+                    "maximum_claim_type": item.maximum_claim_type.value,
+                    "limitation_ids": [
+                        limitation_ids_by_text[limitation]
+                        for limitation in item.limitations
+                    ],
+                },
+            )
+            if item.dimensions:
+                record["dimensions"] = dict(item.dimensions)
+            for field in (
+                "baseline_value",
+                "recent_value",
+                "value",
+                "text_value",
+                "change",
+                "unit",
+            ):
+                value = getattr(item, field)
+                if value is not None:
+                    record[field] = value
+            evidence.append(record)
         history = [
             {
                 "tool_name": item.tool_name.value,
                 "investigation_question": item.investigation_question,
                 "status": item.final_status.value,
-                "summary": item.model_summary,
                 "evidence_ids": list(item.evidence_ids),
-                "limitations": list(item.limitations),
+                "limitation_ids": [
+                    limitation_ids_by_text[limitation]
+                    for limitation in item.limitations
+                ],
             }
             for item in self.tool_history
         ]
@@ -339,6 +369,7 @@ class InvestigationState(BaseModel):
                 "decline_snapshot": self.detector_snapshot.model_dump(mode="json"),
                 "completed_tools": history,
                 "evidence_summary": evidence,
+                "limitation_catalog": limitation_catalog,
                 "open_questions": list(self.open_questions),
                 "failed_or_partial_tools": [
                     item.value for item in self.failed_or_partial_tools

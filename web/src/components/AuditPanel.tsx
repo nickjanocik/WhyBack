@@ -32,7 +32,9 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
     () => (showEvidenceEvents ? trace : meaningfulTrace(trace)),
     [showEvidenceEvents, trace],
   );
-  const decisionCount = trace.filter((item) => item.event === "model_decision_received").length;
+  const decisionCount = trace.filter((item) =>
+    ["model_decision_received", "model_decision_rejected"].includes(item.event),
+  ).length;
   const toolCount = trace.filter((item) =>
     ["tool_completed", "tool_partial", "tool_failed"].includes(item.event),
   ).length;

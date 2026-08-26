@@ -43,6 +43,7 @@ const TRACE_DETAIL_KEYS = new Set([
   "remaining_tool_budget",
   "remaining_turn_budget",
   "repair_attempted",
+  "repair_available",
   "repair_requested",
   "resolved_confidence",
   "retryable",

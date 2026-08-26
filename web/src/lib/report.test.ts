@@ -180,7 +180,10 @@ describe("report presentation helpers", () => {
     ).toHaveLength(1);
   });
 
-  it("labels the current retry, partial-tool, and verification events", () => {
+  it("labels rejected decisions, retries, partial tools, and verification", () => {
+    expect(eventLabel("model_decision_rejected")).toBe(
+      "Invalid model decision rejected",
+    );
     expect(eventLabel("retry_scheduled")).toBe("Retry scheduled");
     expect(eventLabel("tool_partial")).toBe("Tool returned partial evidence");
     expect(eventLabel("verification_rejected")).toBe(

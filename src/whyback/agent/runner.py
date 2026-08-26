@@ -16,7 +16,11 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
 from whyback import __version__
 from whyback.agent.actions import ActionCatalog, ActionId
-from whyback.agent.backend import ModelBackend, ModelBackendError
+from whyback.agent.backend import (
+    MalformedModelResponse,
+    ModelBackend,
+    ModelBackendError,
+)
 from whyback.agent.evidence import EvidenceLedger, EvidenceLedgerError
 from whyback.agent.faults import DemoFaultInjector
 from whyback.agent.prompts import PROMPT_HASH, PROMPT_VERSION
@@ -56,6 +60,14 @@ from whyback.tools.contracts import (
     ToolStatus,
 )
 from whyback.tools.registry import ToolRegistry
+
+_MALFORMED_RESPONSE_MESSAGE = (
+    "The model response did not contain exactly one valid permitted action."
+)
+_MALFORMED_RESPONSE_REPAIR_ISSUE = (
+    "invalid_model_action: Return exactly one finish_investigation call matching "
+    "the offered schema."
+)
 
 
 class InvestigationOutcome(BaseModel):
@@ -256,6 +268,45 @@ class InvestigationRunner:
                     state,
                     definitions,
                     repair_issues=repair_issues,
+                )
+            except MalformedModelResponse as error:
+                state = state.model_copy(
+                    update={
+                        "remaining_turn_budget": state.remaining_turn_budget - 1,
+                        "model_usage": state.model_usage.plus(ModelUsage(decisions=1)),
+                        "verification_issues": (_MALFORMED_RESPONSE_REPAIR_ISSUE,),
+                    }
+                )
+                repair_available = (
+                    not repair_attempted and state.remaining_turn_budget > 0
+                )
+                self._emit(
+                    state,
+                    AuditEventName.MODEL_DECISION_REJECTED,
+                    {
+                        "message": _MALFORMED_RESPONSE_MESSAGE,
+                        "repair_available": repair_available,
+                        "remaining_tool_budget": state.remaining_tool_budget,
+                        "remaining_turn_budget": state.remaining_turn_budget,
+                    },
+                )
+                if repair_available:
+                    repair_attempted = True
+                    repair_pending = True
+                    continue
+                failed_state = state.model_copy(update={"run_status": RunStatus.FAILED})
+                self._emit(
+                    failed_state,
+                    AuditEventName.RUN_COMPLETED,
+                    {
+                        "status": failed_state.run_status.value,
+                        "failure_type": type(error).__name__,
+                        "message": _MALFORMED_RESPONSE_MESSAGE,
+                    },
+                )
+                return InvestigationOutcome(
+                    state=failed_state,
+                    failure_reason=_MALFORMED_RESPONSE_MESSAGE,
                 )
             except ModelBackendError as error:
                 public_error = sanitize_public_text(error)

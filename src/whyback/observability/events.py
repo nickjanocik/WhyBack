@@ -29,6 +29,7 @@ class AuditEventName(StrEnum):
 
     RUN_STARTED = "run_started"
     MODEL_DECISION_REQUESTED = "model_decision_requested"
+    MODEL_DECISION_REJECTED = "model_decision_rejected"
     MODEL_DECISION_RECEIVED = "model_decision_received"
     TOOL_REQUESTED = "tool_requested"
     TOOL_STARTED = "tool_started"

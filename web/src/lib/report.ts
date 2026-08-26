@@ -98,6 +98,7 @@ export function eventLabel(event: string): string {
   const labels: Record<string, string> = {
     run_started: "Investigation started",
     model_decision_requested: "Question prepared",
+    model_decision_rejected: "Invalid model decision rejected",
     model_decision_received: "Analytical choice made",
     tool_started: "Tool started",
     tool_completed: "Tool completed",

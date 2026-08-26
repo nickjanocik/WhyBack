@@ -152,6 +152,7 @@ test("allow-lists display details and omits raw, sensitive, and reasoning fields
         details: {
           selected_tool: "customer_trend",
           investigation_question: "Which observed behavior changed?",
+          repair_available: true,
           evidence_ids: ["ev-1", "ev-2"],
           supporting_evidence_ids: ["ev-1", "ev-2"],
           counterevidence_ids: ["ev-3"],
@@ -170,6 +171,7 @@ test("allow-lists display details and omits raw, sensitive, and reasoning fields
   assert.deepEqual(event.details, {
     selected_tool: "customer_trend",
     investigation_question: "Which observed behavior changed?",
+    repair_available: true,
     evidence_count: 2,
     supporting_evidence_count: 2,
     counterevidence_count: 1,

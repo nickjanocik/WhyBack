@@ -223,12 +223,13 @@ exactly one function call. `ScriptedBackend` provides credential-free,
 deterministic decisions for tests and demos. Both pass through the same
 `InvestigationRunner`.
 
-The runner permits at most five actual analytical attempts and six model
+The runner permits at most five actual analytical attempts and seven model
 decisions by default. It rejects exact normalized duplicates, enforces the
 active household, times out tools, retries only `retryable_error` once, removes
 unavailable tools, and exposes only finishing during repair or after budget
-exhaustion. A rejected finish gets at most one structured repair; otherwise the
-system returns `INSUFFICIENT_EVIDENCE` rather than improvising a claim.
+exhaustion. The seventh turn reserves room for one finish-only structured repair
+after either an invalid model action or a rejected finish; otherwise the system
+returns `INSUFFICIENT_EVIDENCE` rather than improvising a claim.
 
 ## Evidence grounding
 

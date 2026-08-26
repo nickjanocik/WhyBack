@@ -10,7 +10,7 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from whyback.agent.actions import ActionId
+from whyback.agent.actions import ActionId, load_action_catalog
 from whyback.agent.runner import InvestigationOutcome
 from whyback.agent.state import (
     ConfidenceLevel,
@@ -186,7 +186,11 @@ def _outcome() -> InvestigationOutcome:
         counterevidence_ids=(COUNTER_ID,),
         next_best_action_id=ActionId.CATEGORY_WINBACK,
         action_description="Recommend a human-reviewed category test.",
-        rationale=proposal.rationale,
+        rationale=(
+            "The cited records satisfy the selected catalog action's "
+            "machine-checkable evidence policy; the recommendation remains a "
+            "human-reviewed test."
+        ),
         alternative_explanations=proposal.alternative_explanations,
         uncertainties=proposal.uncertainties,
         propagated_limitations=("The result retained UNKNOWN mappings.",),
@@ -460,6 +464,50 @@ def test_report_boundary_resolves_evidence_and_preserves_status_limitations() ->
     assert report.likely_drivers[0].claim_type is ClaimType.ASSOCIATIONAL
     with pytest.raises(TypeError, match="immutable"):
         report.supporting_evidence[0].dimensions["category"] = "mutated"
+
+
+def test_report_preserves_code_owned_insufficient_action_prose_exactly() -> None:
+    """Do not apply model-prose rejection to verifier-owned action text."""
+
+    outcome = _outcome()
+    definition = load_action_catalog().get(ActionId.INSUFFICIENT_EVIDENCE)
+    verification = outcome.verification
+    assert verification is not None
+    final = verification.final
+    assert final is not None
+    insufficient_final = final.model_copy(
+        update={
+            "drivers": (),
+            "proposed_confidence": ConfidenceLevel.LOW,
+            "resolved_confidence": ResolvedConfidence.INSUFFICIENT,
+            "confidence_adjustments": final.confidence_adjustments[:1],
+            "supporting_evidence_ids": (),
+            "counterevidence_ids": (),
+            "next_best_action_id": ActionId.INSUFFICIENT_EVIDENCE,
+            "action_description": definition.description,
+            "rationale": (
+                "Available verified evidence does not support a customer action."
+            ),
+            "recommended_success_metric": definition.success_metric.description,
+            "suggested_experiment": definition.experiment.description,
+        }
+    )
+    state = outcome.state.model_copy(
+        update={
+            "run_status": RunStatus.INSUFFICIENT_EVIDENCE,
+            "resolved_confidence": ResolvedConfidence.INSUFFICIENT,
+        }
+    )
+    verification = verification.model_copy(update={"final": insufficient_final})
+
+    report = build_report_data(
+        outcome.model_copy(update={"state": state, "verification": verification})
+    )
+
+    assert report.action is not None
+    assert "because" in definition.description
+    assert report.action.description == definition.description
+    assert report.action.rationale == insufficient_final.rationale
 
 
 def test_json_and_markdown_have_required_sections_and_no_model_numbers() -> None:
@@ -856,18 +904,26 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
     events = (
         _trace_event(AuditEventName.RUN_STARTED, 0, {"status": "running"}),
         _trace_event(
-            AuditEventName.MODEL_DECISION_RECEIVED,
+            AuditEventName.MODEL_DECISION_REJECTED,
             1,
+            {
+                "message": "The model returned an invalid permitted action.",
+                "repair_available": True,
+            },
+        ),
+        _trace_event(
+            AuditEventName.MODEL_DECISION_RECEIVED,
+            2,
             {"decision_kind": "tool", "summary": "<script>bad()</script>"},
         ),
         _trace_event(
             AuditEventName.TOOL_STARTED,
-            2,
+            3,
             {"tool_name": "category_decomposition", "attempt": 1},
         ),
         _trace_event(
             AuditEventName.TOOL_FAILED,
-            3,
+            4,
             {
                 "tool_name": "category_decomposition",
                 "status": "retryable_error",
@@ -876,17 +932,17 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
         ),
         _trace_event(
             AuditEventName.RETRY_SCHEDULED,
-            4,
+            5,
             {"tool_name": "category_decomposition", "next_attempt": 2},
         ),
         _trace_event(
             AuditEventName.TOOL_STARTED,
-            5,
+            6,
             {"tool_name": "category_decomposition", "attempt": 2},
         ),
         _trace_event(
             AuditEventName.TOOL_PARTIAL,
-            6,
+            7,
             {
                 "tool_name": "category_decomposition",
                 "status": "partial",
@@ -896,12 +952,12 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
         ),
         _trace_event(
             AuditEventName.VERIFICATION_PASSED,
-            7,
+            8,
             {"next_best_action_id": "CATEGORY_WINBACK", "status": "passed"},
         ),
         _trace_event(
             AuditEventName.RUN_COMPLETED,
-            8,
+            9,
             {"run_status": "completed", "final_action": "CATEGORY_WINBACK"},
         ),
     )
@@ -914,7 +970,13 @@ def test_trace_viewer_reads_jsonl_and_exposes_chronology_and_controls(
         trace_view.events[0].details["new"] = "mutated"
     html = render_trace_html(trace_path)
 
-    assert html.index("Investigation started") < html.index("Decision received")
+    assert (
+        html.index("Investigation started")
+        < html.index("Invalid model decision rejected")
+        < html.index("Decision received")
+    )
+    assert trace_view.decision_count == 2
+    assert trace_view.events[1].category == "decision"
     assert html.index("Bounded retry scheduled") < html.index(
         "Tool returned partial evidence"
     )

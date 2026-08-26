@@ -83,7 +83,7 @@ class ScenarioDefinition(BaseModel):
     requires_broad_context_warning: bool = False
     requires_causal_rejection: bool = False
     max_tool_executions: int = Field(default=5, ge=1)
-    max_model_decisions: int = Field(default=6, ge=1)
+    max_model_decisions: int = Field(default=7, ge=1)
 
     @model_validator(mode="after")
     def validate_tool_expectations(self) -> Self:

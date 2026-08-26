@@ -245,6 +245,121 @@ def test_verifier_allows_exactly_one_structured_repair(tmp_path: Path) -> None:
     assert backend.calls[1].repair_issues
 
 
+def test_malformed_model_action_gets_one_sanitized_finish_only_repair(
+    tmp_path: Path,
+) -> None:
+    """Consume one malformed action and repair it without auditing provider text."""
+
+    private_marker = "provider-private-marker-must-not-be-audited"
+    malformed = {
+        "kind": "tool",
+        "investigation_question": private_marker,
+        "decision_summary": "Return an invalid tool selection.",
+        "selected_tool": "not_an_offered_tool",
+        "arguments": {},
+    }
+    repaired = _finish(
+        evidence_ids=(),
+        action=ActionId.INSUFFICIENT_EVIDENCE,
+    )
+    backend = ScriptedBackend([malformed, repaired])
+    trace_path = tmp_path / "malformed-repair.trace.jsonl"
+
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(
+            tmp_path / "prepared",
+            backend,
+            audit_writer=writer,
+        )
+
+    events = read_audit_events(trace_path)
+    rejected = [
+        event
+        for event in events
+        if event.event is AuditEventName.MODEL_DECISION_REJECTED
+    ]
+    assert outcome.state.run_status is RunStatus.INSUFFICIENT_EVIDENCE
+    assert outcome.state.model_usage.decisions == 2
+    assert outcome.state.remaining_turn_budget == 5
+    assert backend.calls[1].allowed_tools == ()
+    assert backend.calls[1].repair_issues == (
+        "invalid_model_action: Return exactly one finish_investigation call "
+        "matching the offered schema.",
+    )
+    assert len(rejected) == 1
+    assert rejected[0].details == {
+        "message": (
+            "The model response did not contain exactly one valid permitted action."
+        ),
+        "repair_available": True,
+        "remaining_tool_budget": 5,
+        "remaining_turn_budget": 6,
+    }
+    assert private_marker not in trace_path.read_text(encoding="utf-8")
+
+
+def test_second_malformed_model_action_fails_without_another_repair(
+    tmp_path: Path,
+) -> None:
+    """Fail closed when the single finish-only malformed-action repair is invalid."""
+
+    backend = ScriptedBackend([{}, {}])
+    trace_path = tmp_path / "malformed-twice.trace.jsonl"
+
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(
+            tmp_path / "prepared",
+            backend,
+            audit_writer=writer,
+        )
+
+    events = read_audit_events(trace_path)
+    rejected = [
+        event
+        for event in events
+        if event.event is AuditEventName.MODEL_DECISION_REJECTED
+    ]
+    assert outcome.state.run_status is RunStatus.FAILED
+    assert outcome.state.model_usage.decisions == 2
+    assert len(backend.calls) == 2
+    assert backend.calls[1].allowed_tools == ()
+    assert backend.calls[1].repair_issues
+    assert [event.details["repair_available"] for event in rejected] == [True, False]
+    assert events[-1].event is AuditEventName.RUN_COMPLETED
+    assert events[-1].details == {
+        "status": "failed",
+        "failure_type": "MalformedModelResponse",
+        "message": (
+            "The model response did not contain exactly one valid permitted action."
+        ),
+    }
+
+
+def test_generic_model_backend_error_remains_terminal(tmp_path: Path) -> None:
+    """Do not retry a provider request failure that yielded no malformed action."""
+
+    backend = ScriptedBackend([])
+    trace_path = tmp_path / "backend-error.trace.jsonl"
+
+    with AuditJsonlWriter(trace_path) as writer:
+        outcome = _run(
+            tmp_path / "prepared",
+            backend,
+            audit_writer=writer,
+        )
+
+    events = read_audit_events(trace_path)
+    assert outcome.state.run_status is RunStatus.FAILED
+    assert outcome.state.model_usage.decisions == 1
+    assert len(backend.calls) == 0
+    assert [event.event for event in events] == [
+        AuditEventName.RUN_STARTED,
+        AuditEventName.MODEL_DECISION_REQUESTED,
+        AuditEventName.RUN_COMPLETED,
+    ]
+    assert events[-1].details["failure_type"] == "ModelBackendError"
+
+
 def test_repair_cannot_upgrade_observational_evidence_to_causal(
     tmp_path: Path,
 ) -> None:

@@ -645,14 +645,12 @@ def build_report_data(outcome: InvestigationOutcome) -> ReportData:
         limitations.extend(uncertainties)
         action = ActionReportData(
             action_id=final.next_best_action_id,
-            description=_qualitative(
-                final.action_description,
-                fallback="Use the verifier-approved catalog action.",
-            ),
-            rationale=_qualitative(
-                final.rationale,
-                fallback="The rationale is grounded by the cited evidence records.",
-            ),
+            # Verification replaces model-authored action prose with the exact
+            # code-owned catalog description and deterministic rationale.  Keep
+            # those authoritative strings intact; the qualitative filter above
+            # remains the boundary for model-authored report fields.
+            description=final.action_description,
+            rationale=final.rationale,
             resolved_confidence=final.resolved_confidence,
             confidence_cap_applied=final.confidence_cap_applied,
             confidence_adjustments=tuple(

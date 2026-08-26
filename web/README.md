@@ -64,7 +64,7 @@ uv run whyback demo --customers <3-24> --backend gemini \
 The supported range is inclusive from three through 24 households. The launch
 control defaults to five, so both the 3–4-customer exercise and the committed
 five-result deliverable remain reproducible. Every household
-can make up to six real model decisions, so larger batches take longer and can
+can make up to seven real model decisions, so larger batches take longer and can
 consume more provider quota.
 
 Before startup, put a rotated credential in the ignored repository-root `.env`
