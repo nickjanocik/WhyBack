@@ -73,6 +73,7 @@ test("loads collection summaries from canonical report artifacts", async (contex
   context.after(() => rm(root, { recursive: true, force: true }));
 
   const workspace = await loadWorkspace(root);
+  assert.deepEqual(workspace.demoCustomerLimits, { minimum: 5, maximum: 24 });
   assert.equal(workspace.collections.length, 1);
   assert.equal(workspace.collections[0].id, "demo");
   assert.equal(workspace.collections[0].reports[0].householdId, "7");

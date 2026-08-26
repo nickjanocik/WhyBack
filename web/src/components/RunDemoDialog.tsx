@@ -2,17 +2,27 @@ import { LoaderCircle, Play, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+import type { DemoCustomerLimits } from "../types";
+
 interface RunDemoDialogProps {
   open: boolean;
   running: boolean;
   error: string | null;
+  customerLimits: DemoCustomerLimits;
   onClose: () => void;
   onRun: (customers: number) => Promise<void>;
 }
 
-export function RunDemoDialog({ open, running, error, onClose, onRun }: RunDemoDialogProps) {
+export function RunDemoDialog({
+  open,
+  running,
+  error,
+  customerLimits,
+  onClose,
+  onRun,
+}: RunDemoDialogProps) {
   const reduceMotion = useReducedMotion();
-  const [customers, setCustomers] = useState(5);
+  const [customers, setCustomers] = useState(customerLimits.minimum);
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   const runningRef = useRef(running);
@@ -104,9 +114,11 @@ export function RunDemoDialog({ open, running, error, onClose, onRun }: RunDemoD
             </p>
 
             <fieldset disabled={running}>
-              <legend>Households to investigate</legend>
+              <legend>
+                Households to investigate ({customerLimits.minimum}–{customerLimits.maximum})
+              </legend>
               <div className="count-picker">
-                {[1, 2, 3, 4, 5].map((count) => (
+                {batchSizeOptions(customerLimits).map((count) => (
                   <button
                     type="button"
                     className={count === customers ? "active" : ""}
@@ -135,4 +147,11 @@ export function RunDemoDialog({ open, running, error, onClose, onRun }: RunDemoD
       )}
     </AnimatePresence>
   );
+}
+
+function batchSizeOptions({ minimum, maximum }: DemoCustomerLimits): number[] {
+  const options = [];
+  for (let count = minimum; count < maximum; count += 5) options.push(count);
+  if (options.at(-1) !== maximum) options.push(maximum);
+  return options;
 }

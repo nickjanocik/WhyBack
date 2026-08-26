@@ -1,6 +1,8 @@
 import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
+import { DEMO_CUSTOMER_LIMITS } from "./demo-limits.mjs";
+
 const COLLECTIONS = [
   {
     id: "dashboard",
@@ -223,6 +225,7 @@ export async function loadWorkspace(repositoryRoot) {
   return {
     schemaVersion: 1,
     productName: "WhyBack",
+    demoCustomerLimits: DEMO_CUSTOMER_LIMITS,
     collectionWarnings,
     collections,
   };

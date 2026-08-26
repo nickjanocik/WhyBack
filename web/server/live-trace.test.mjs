@@ -341,6 +341,58 @@ test("a successful published scan clears a transient staging warning", async (co
   assert.equal(completed.events.at(-1).event, "run_completed");
 });
 
+test("manager reports its capacity and drops only the oldest retained events", async (context) => {
+  const root = await makeRoot(context);
+  const run = deferred();
+  const executeStarted = deferred();
+  const manager = createDemoRunManager({
+    repositoryRoot: root,
+    execute: async () => {
+      const staging = await makeStaging(root);
+      await writeCustomerTrace(
+        staging,
+        "7",
+        asJsonl(
+          auditEvent(),
+          auditEvent({
+            event: "model_decision_requested",
+            timestamp: "2026-08-25T12:00:01.000Z",
+          }),
+          auditEvent({
+            event: "run_completed",
+            timestamp: "2026-08-25T12:00:02.000Z",
+          }),
+        ),
+      );
+      executeStarted.resolve();
+      return run.promise;
+    },
+    intervalMs: 60_000,
+    maxEvents: 2,
+  });
+  context.after(() => manager.dispose());
+
+  const started = manager.start(5);
+  assert.equal(started.eventCapacity, 2);
+  await executeStarted.promise;
+  await manager.refresh(started.jobId);
+
+  const current = manager.status(started.jobId);
+  assert.equal(current.eventCapacity, 2);
+  assert.equal(current.eventCount, 3);
+  assert.equal(current.droppedEventCount, 1);
+  assert.deepEqual(
+    current.events.map((event) => [event.cursor, event.event]),
+    [
+      [2, "model_decision_requested"],
+      [3, "run_completed"],
+    ],
+  );
+
+  run.resolve({});
+  await waitForStatus(manager, started.jobId, "completed");
+});
+
 test("manager gates concurrent starts, exposes cursor deltas, and releases after completion", async (context) => {
   const root = await makeRoot(context);
   const first = auditEvent();

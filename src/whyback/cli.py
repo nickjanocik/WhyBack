@@ -13,6 +13,7 @@ from rich.table import Table
 
 from whyback import __version__
 from whyback.config import load_settings
+from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
 
 app = typer.Typer(
     name="whyback",
@@ -282,8 +283,15 @@ def investigate(
 def demo(
     customers: Annotated[
         int,
-        typer.Option(min=1, max=5, help="Number of top-ranked households."),
-    ] = 5,
+        typer.Option(
+            min=MIN_DEMO_CUSTOMERS,
+            max=MAX_DEMO_CUSTOMERS,
+            help=(
+                "Number of top-ranked households "
+                f"({MIN_DEMO_CUSTOMERS}-{MAX_DEMO_CUSTOMERS})."
+            ),
+        ),
+    ] = MIN_DEMO_CUSTOMERS,
     backend: Annotated[
         str,
         typer.Option(help="scripted uses synthetic data; gemini uses official data."),
@@ -293,7 +301,7 @@ def demo(
         typer.Option(help="Override the reviewer-artifact directory."),
     ] = None,
 ) -> None:
-    """Build the complete scripted demo or run the official live top five."""
+    """Build a scripted or official batch for top-ranked households."""
 
     from whyback.demo import build_official_demo, build_synthetic_demo
 

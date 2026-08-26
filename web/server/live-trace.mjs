@@ -6,6 +6,7 @@ import { StringDecoder } from "node:string_decoder";
 import { clearInterval, setInterval } from "node:timers";
 
 import { normalizeTraceEvent } from "./artifacts.mjs";
+import { MAX_LIVE_TRACE_EVENTS } from "./demo-limits.mjs";
 
 const STAGING_NAME = /^\.dashboard\.staging-[A-Za-z0-9._-]+$/u;
 const CUSTOMER_NAME = /^customer_([A-Za-z0-9_-]+)$/u;
@@ -15,7 +16,6 @@ const OWNERSHIP_DOCUMENT = {
   product: "WhyBack",
   scope: "replaceable_generated_artifact_tree",
 };
-const MAX_EVENTS = 1_500;
 const MAX_JOB_HISTORY = 8;
 
 async function isRealDirectory(directory) {
@@ -275,7 +275,7 @@ function traceWarningMessage() {
   return "Some live audit events could not be read. The generated report remains authoritative.";
 }
 
-function idleStatus() {
+function idleStatus(eventCapacity) {
   return {
     jobId: null,
     status: "idle",
@@ -285,6 +285,7 @@ function idleStatus() {
     completedAt: null,
     cursor: 0,
     eventCount: 0,
+    eventCapacity,
     droppedEventCount: 0,
     events: [],
     error: null,
@@ -297,6 +298,7 @@ export function createDemoRunManager({
   repositoryRoot,
   execute,
   intervalMs = 250,
+  maxEvents = MAX_LIVE_TRACE_EVENTS,
   now = () => Date.now(),
 }) {
   const jobs = new Map();
@@ -317,7 +319,7 @@ export function createDemoRunManager({
       : latestJobId
         ? jobs.get(latestJobId)
         : null;
-    if (!target) return jobId ? null : idleStatus();
+    if (!target) return jobId ? null : idleStatus(maxEvents);
     return {
       jobId: target.jobId,
       status: target.status,
@@ -327,6 +329,7 @@ export function createDemoRunManager({
       completedAt: target.completedAt,
       cursor: target.cursor,
       eventCount: target.cursor,
+      eventCapacity: maxEvents,
       droppedEventCount: target.droppedEventCount,
       events: target.events.filter((event) => event.cursor > after),
       error: target.error,
@@ -348,10 +351,10 @@ export function createDemoRunManager({
           target.cursor += 1;
           target.events.push({ ...event, cursor: target.cursor });
         }
-        if (target.events.length > MAX_EVENTS) {
+        if (target.events.length > maxEvents) {
           const removed = target.events.splice(
             0,
-            target.events.length - MAX_EVENTS,
+            target.events.length - maxEvents,
           );
           target.droppedEventCount += removed.length;
         }

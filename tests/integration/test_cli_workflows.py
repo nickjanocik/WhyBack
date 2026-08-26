@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 from whyback.cli import app
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.demo import synthetic_demo_frames
+from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
 
 
 def _prepared_fixture(tmp_path: Path) -> tuple[Path, dict[str, str]]:
@@ -87,7 +88,13 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
 
     demo_result = runner.invoke(
         app,
-        ["demo", "--customers", "1", "--output-dir", str(demo_output)],
+        [
+            "demo",
+            "--customers",
+            str(MIN_DEMO_CUSTOMERS),
+            "--output-dir",
+            str(demo_output),
+        ],
         env=environment,
     )
     invalid_demo = runner.invoke(
@@ -102,12 +109,32 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
     )
 
     assert demo_result.exit_code == 0, demo_result.output
-    assert "Generated 1 reports for 101" in demo_result.stdout
+    assert "Generated 5 reports for 101, 102, 103, 104, 105" in demo_result.stdout
     assert (demo_output / "manifest.json").is_file()
     assert invalid_demo.exit_code == 2
     assert "backend must be" in invalid_demo.stderr
     assert invalid_investigation.exit_code == 2
     assert "backend must be" in invalid_investigation.stderr
+
+
+def test_cli_demo_enforces_the_shared_customer_boundaries(tmp_path: Path) -> None:
+    runner = CliRunner()
+
+    for customers in (MIN_DEMO_CUSTOMERS - 1, MAX_DEMO_CUSTOMERS + 1):
+        result = runner.invoke(
+            app,
+            [
+                "demo",
+                "--customers",
+                str(customers),
+                "--output-dir",
+                str(tmp_path / str(customers)),
+            ],
+        )
+
+        assert result.exit_code == 2
+        assert "5" in result.stderr
+        assert "24" in result.stderr
 
 
 def test_cli_rejects_retired_openai_backend(tmp_path: Path) -> None:

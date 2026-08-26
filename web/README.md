@@ -53,9 +53,12 @@ Open <http://127.0.0.1:4173>.
 not a shell string:
 
 ```bash
-uv run whyback demo --customers <1-5> --backend scripted \
+uv run whyback demo --customers <5-24> --backend scripted \
   --output-dir artifacts/local/dashboard
 ```
+
+The range is inclusive: five is the minimum batch and 24 is the full current
+synthetic household population.
 
 The run API is asynchronous:
 
@@ -67,9 +70,9 @@ The run API is asynchronous:
 - The live-activity drawer labels events by household and shows investigation
   questions, selected tools, public decision summaries, tool status, evidence
   writes, retries, verification, and the terminal run state.
-- The event buffer is bounded. The response reports if older events were
-  dropped, and the completed investigation remains available in the normal
-  audit view.
+- The event buffer retains up to 5,000 sanitized audit events. The response
+  reports if older events were dropped, and the completed investigation remains
+  available in the normal audit view.
 
 Live activity is an external decision and execution record, not model
 chain-of-thought. Private chain-of-thought is neither requested nor stored, and

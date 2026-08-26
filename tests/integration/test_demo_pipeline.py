@@ -10,8 +10,10 @@ from scripts.verify_artifacts import verify_artifact_tree
 from whyback.demo import (
     _gemini_api_key_present,
     _initialize_live_official_output,
+    build_official_demo,
     build_synthetic_demo,
 )
+from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
 from whyback.observability import read_audit_events
 
 
@@ -60,11 +62,11 @@ def _normalized_trace(path: Path) -> dict[str, object]:
 def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     tmp_path: Path,
 ) -> None:
-    summary = build_synthetic_demo(tmp_path, customers=1)
+    summary = build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
 
-    assert summary.selected_household_ids == ("101",)
-    assert summary.completed_household_ids == ("101",)
-    assert summary.report_count == 1
+    assert summary.selected_household_ids == ("101", "102", "103", "104", "105")
+    assert summary.completed_household_ids == ("101", "102", "103", "104", "105")
+    assert summary.report_count == MIN_DEMO_CUSTOMERS
     standard = json.loads(
         (tmp_path / "customer_101" / "report.json").read_text(encoding="utf-8")
     )
@@ -114,8 +116,21 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     assert verification.passed, verification.issues
 
 
+def test_synthetic_demo_supports_the_full_customer_maximum(tmp_path: Path) -> None:
+    summary = build_synthetic_demo(tmp_path, customers=MAX_DEMO_CUSTOMERS)
+    expected_ids = tuple(str(identifier) for identifier in range(101, 125))
+
+    assert summary.selected_household_ids == expected_ids
+    assert summary.completed_household_ids == expected_ids
+    assert summary.report_count == MAX_DEMO_CUSTOMERS
+    assert all(
+        (tmp_path / f"customer_{household_id}" / "report.json").is_file()
+        for household_id in expected_ids
+    )
+
+
 def test_persistent_failure_trace_matches_normalized_golden(tmp_path: Path) -> None:
-    build_synthetic_demo(tmp_path, customers=1)
+    build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
     actual = _normalized_trace(tmp_path / "failure_example" / "trace.jsonl")
     golden = json.loads(
         Path("tests/golden/failure_trace.normalized.json").read_text(encoding="utf-8")
@@ -125,15 +140,15 @@ def test_persistent_failure_trace_matches_normalized_golden(tmp_path: Path) -> N
 
 
 def test_synthetic_demo_rerun_replaces_the_exact_owned_tree(tmp_path: Path) -> None:
-    build_synthetic_demo(tmp_path, customers=2)
-    assert (tmp_path / "customer_102").is_dir()
+    build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS + 1)
+    assert (tmp_path / "customer_106").is_dir()
 
-    summary = build_synthetic_demo(tmp_path, customers=1)
+    summary = build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
 
-    assert summary.selected_household_ids == ("101",)
-    assert not (tmp_path / "customer_102").exists()
-    assert all("customer_102/" not in path for path in manifest["files"])
+    assert summary.selected_household_ids == ("101", "102", "103", "104", "105")
+    assert not (tmp_path / "customer_106").exists()
+    assert all("customer_106/" not in path for path in manifest["files"])
 
 
 def test_synthetic_demo_refuses_to_replace_an_unowned_directory(
@@ -145,9 +160,30 @@ def test_synthetic_demo_refuses_to_replace_an_unowned_directory(
     note.write_text("must survive", encoding="utf-8")
 
     with pytest.raises(ValueError, match="not marked"):
-        build_synthetic_demo(destination, customers=1)
+        build_synthetic_demo(destination, customers=MIN_DEMO_CUSTOMERS)
 
     assert note.read_text(encoding="utf-8") == "must survive"
+
+
+@pytest.mark.parametrize("customers", [MIN_DEMO_CUSTOMERS - 1, MAX_DEMO_CUSTOMERS + 1])
+def test_demo_boundaries_fail_before_creating_output(
+    tmp_path: Path,
+    customers: int,
+) -> None:
+    synthetic_output = tmp_path / "synthetic"
+    official_output = tmp_path / "official"
+
+    with pytest.raises(ValueError, match="between 5 and 24"):
+        build_synthetic_demo(synthetic_output, customers=customers)
+    with pytest.raises(ValueError, match="between 5 and 24"):
+        build_official_demo(
+            tmp_path / "missing-prepared-data",
+            official_output,
+            customers=customers,
+        )
+
+    assert not synthetic_output.exists()
+    assert not official_output.exists()
 
 
 def test_live_official_transition_exactly_replaces_an_owned_skipped_tree(

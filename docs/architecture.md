@@ -111,8 +111,8 @@ arbitrary files or parse R objects.
 The decline detector aggregates from `household_week`, anchors two eight-week
 windows to maximum observed week, applies declared eligibility, and calculates
 the exact weighted score in Python. Results are sorted by score descending and
-then normalized household ID, making the top-five selection stable. The full
-source resolves to baseline weeks 38–45 and recent weeks 46–53.
+then normalized household ID, making any bounded top-ranked selection stable.
+The full source resolves to baseline weeks 38–45 and recent weeks 46–53.
 
 ## Analytical tool plane
 

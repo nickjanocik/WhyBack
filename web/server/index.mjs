@@ -13,6 +13,7 @@ import {
   loadWorkspace,
   resolveArtifactFile,
 } from "./artifacts.mjs";
+import { demoCustomerCountError } from "./demo-limits.mjs";
 import { createDemoRunManager, DemoRunError } from "./live-trace.mjs";
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -243,8 +244,9 @@ async function handleApi(request, response, url) {
     }
     const body = await readJsonBody(request);
     const customers = body?.customers;
-    if (!Number.isInteger(customers) || customers < 1 || customers > 5) {
-      sendError(response, 400, "customers must be an integer from 1 through 5.");
+    const customerCountError = demoCustomerCountError(customers);
+    if (customerCountError) {
+      sendError(response, 400, customerCountError);
       return;
     }
     sendJson(response, 202, demoManager.start(customers));

@@ -31,9 +31,15 @@ export interface ArtifactCollection {
   reports: ReportSummary[];
 }
 
+export interface DemoCustomerLimits {
+  minimum: number;
+  maximum: number;
+}
+
 export interface Workspace {
   schemaVersion: 1;
   productName: "WhyBack";
+  demoCustomerLimits: DemoCustomerLimits;
   collectionWarnings: string[];
   collections: ArtifactCollection[];
 }
@@ -246,6 +252,7 @@ export interface DemoStatusResponse {
   completedAt: string | null;
   cursor: number;
   eventCount: number;
+  eventCapacity: number;
   droppedEventCount: number;
   events: LiveTraceEvent[];
   error: string | null;

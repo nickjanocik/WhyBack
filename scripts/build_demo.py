@@ -9,11 +9,17 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from whyback.demo import build_official_demo, build_synthetic_demo
+from whyback.demo_limits import MAX_DEMO_CUSTOMERS, MIN_DEMO_CUSTOMERS
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--customers", type=int, default=5)
+    parser.add_argument(
+        "--customers",
+        type=int,
+        choices=range(MIN_DEMO_CUSTOMERS, MAX_DEMO_CUSTOMERS + 1),
+        default=MIN_DEMO_CUSTOMERS,
+    )
     parser.add_argument("--demo-output", type=Path, default=Path("artifacts/demo"))
     parser.add_argument(
         "--official-output", type=Path, default=Path("artifacts/official")

@@ -70,6 +70,8 @@ const collections: ArtifactCollection[] = [
   },
 ];
 
+const demoCustomerLimits = { minimum: 5, maximum: 24 };
+
 const idleStatus: DemoStatusResponse = {
   jobId: null,
   status: "idle",
@@ -79,6 +81,7 @@ const idleStatus: DemoStatusResponse = {
   completedAt: null,
   cursor: 0,
   eventCount: 0,
+  eventCapacity: 5_000,
   droppedEventCount: 0,
   events: [],
   error: null,
@@ -141,15 +144,18 @@ describe("dashboard interactions", () => {
         open
         running={false}
         error={null}
+        customerLimits={demoCustomerLimits}
         onClose={vi.fn()}
         onRun={onRun}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "3" }));
-    expect(screen.getByRole("button", { name: "3" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "4" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "24" }));
+    expect(screen.getByRole("button", { name: "24" })).toHaveAttribute("aria-pressed", "true");
     await user.click(screen.getByRole("button", { name: /start run/i }));
-    expect(onRun).toHaveBeenCalledWith(3);
+    expect(onRun).toHaveBeenCalledWith(24);
   });
 
   it("keeps the safety boundary visible in the run dialog", () => {
@@ -158,6 +164,7 @@ describe("dashboard interactions", () => {
         open
         running={false}
         error={null}
+        customerLimits={demoCustomerLimits}
         onClose={vi.fn()}
         onRun={vi.fn()}
       />,
@@ -180,6 +187,7 @@ describe("dashboard interactions", () => {
       completedAt: null,
       cursor: 2,
       eventCount: 2,
+      eventCapacity: 5_000,
       droppedEventCount: 4,
       events: [
         {
@@ -330,6 +338,7 @@ describe("dashboard interactions", () => {
     const props = {
       running: false,
       error: null,
+      customerLimits: demoCustomerLimits,
       onClose: vi.fn(),
       onRun: vi.fn(),
     };

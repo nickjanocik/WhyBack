@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import shutil
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
@@ -25,6 +26,7 @@ from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY, load_settings
 from whyback.data.manifest import DataManifest
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
+from whyback.demo_limits import MIN_DEMO_CUSTOMERS, validate_demo_customer_count
 from whyback.detection.decline import (
     DeclineSnapshot,
     candidates_frame,
@@ -69,6 +71,22 @@ class DemoBuildSummary(BaseModel):
     live_model_executed: bool
     manifest_path: Path
     report_count: int = Field(ge=0)
+
+
+def _select_requested_households(
+    flagged: Sequence[DeclineSnapshot],
+    customers: int,
+    *,
+    dataset_label: str,
+) -> tuple[DeclineSnapshot, ...]:
+    """Return an exact top-ranked batch or fail instead of silently truncating."""
+
+    if len(flagged) < customers:
+        raise ValueError(
+            f"{dataset_label} contains {len(flagged)} flagged households; "
+            f"cannot satisfy the requested batch of {customers}"
+        )
+    return tuple(flagged[:customers])
 
 
 def _sha256(path: Path) -> str:
@@ -676,13 +694,12 @@ def _write_demo_index(
 def _build_synthetic_demo_contents(
     output_directory: Path,
     *,
-    customers: int = 5,
+    customers: int = MIN_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
 ) -> DemoBuildSummary:
     """Generate deterministic no-credential reports plus failure/partial examples."""
 
-    if customers < 1 or customers > 5:
-        raise ValueError("Synthetic demos support between one and five customers")
+    validate_demo_customer_count(customers)
     if backend == "gemini":
         raise ValueError("The Gemini demo must use official prepared data")
     output_directory.mkdir(parents=True, exist_ok=True)
@@ -700,7 +717,12 @@ def _build_synthetic_demo_contents(
                 baseline_weeks=settings.data.baseline_weeks,
                 recent_weeks=settings.data.recent_weeks,
             )
-        selected = tuple(item for item in candidates if item.flagged)[:customers]
+        flagged = tuple(item for item in candidates if item.flagged)
+        selected = _select_requested_households(
+            flagged,
+            customers,
+            dataset_label="Synthetic data",
+        )
         candidates_frame(candidates).to_csv(
             output_directory / "decline_candidates.csv", index=False
         )
@@ -820,11 +842,12 @@ def _publish_staged_directory(staging: Path, destination: Path) -> None:
 def build_synthetic_demo(
     output_directory: Path,
     *,
-    customers: int = 5,
+    customers: int = MIN_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
 ) -> DemoBuildSummary:
     """Build an exact synthetic artifact tree in staging, then publish it."""
 
+    validate_demo_customer_count(customers)
     output_directory.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(
         mkdtemp(
@@ -855,13 +878,12 @@ def _build_official_demo_contents(
     prepared_dir: Path,
     output_directory: Path,
     *,
-    customers: int = 5,
+    customers: int = MIN_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Select the official top households and optionally run the live backend."""
 
-    if customers < 1:
-        raise ValueError("customers must be positive")
+    validate_demo_customer_count(customers)
     output_directory.mkdir(parents=True, exist_ok=True)
     _write_ownership_marker(output_directory)
     settings = load_settings()
@@ -875,7 +897,11 @@ def _build_official_demo_contents(
             recent_weeks=settings.data.recent_weeks,
         )
     flagged = tuple(item for item in candidates if item.flagged)
-    selected = flagged[:customers]
+    selected = _select_requested_households(
+        flagged,
+        customers,
+        dataset_label="Official data",
+    )
     candidates_frame(flagged).to_csv(
         output_directory / "decline_candidates.csv", index=False
     )
@@ -901,7 +927,9 @@ def _build_official_demo_contents(
                 ),
                 "model": load_settings().model,
                 "selected_household_ids": selected_ids,
-                "exact_command": ("uv run whyback demo --customers 5 --backend gemini"),
+                "exact_command": (
+                    f"uv run whyback demo --customers {customers} --backend gemini"
+                ),
                 "reports_generated": False,
             },
         )
@@ -991,11 +1019,12 @@ def build_official_demo(
     prepared_dir: Path,
     output_directory: Path,
     *,
-    customers: int = 5,
+    customers: int = MIN_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
 ) -> DemoBuildSummary:
     """Build official status artifacts without overwriting any prior run audit."""
 
+    validate_demo_customer_count(customers)
     if _has_preserved_run_artifacts(output_directory):
         raise FileExistsError(
             "Official run artifacts already exist; choose a new output directory "

@@ -40,6 +40,7 @@ const emptyLiveStatus: DemoStatusResponse = {
   completedAt: null,
   cursor: 0,
   eventCount: 0,
+  eventCapacity: 0,
   droppedEventCount: 0,
   events: [],
   error: null,
@@ -277,6 +278,7 @@ export default function App() {
 
   const demoRunning = liveStatus.status === "running";
   const demoBusy = demoStarting || demoRunning;
+  const demoCustomerLimits = workspace?.demoCustomerLimits;
 
   return (
     <div className="app-shell">
@@ -311,7 +313,7 @@ export default function App() {
             <button
               className="run-button"
               type="button"
-              disabled={demoBusy}
+              disabled={demoBusy || !demoCustomerLimits}
               onClick={() => { setDemoError(null); setDialogOpen(true); }}
               aria-label={demoRunning ? "Scripted batch running" : "Run scripted batch"}
             >
@@ -402,7 +404,16 @@ export default function App() {
         />
       </div>
 
-      <RunDemoDialog open={dialogOpen} running={demoStarting} error={demoError} onClose={() => !demoStarting && setDialogOpen(false)} onRun={handleRunDemo} />
+      {demoCustomerLimits && (
+        <RunDemoDialog
+          open={dialogOpen}
+          running={demoStarting}
+          error={demoError}
+          customerLimits={demoCustomerLimits}
+          onClose={() => !demoStarting && setDialogOpen(false)}
+          onRun={handleRunDemo}
+        />
+      )}
       <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}><CircleCheck size={18} /><span>{toast}</span></motion.div>}</AnimatePresence>
     </div>
   );
@@ -432,6 +443,6 @@ function mergeLiveStatus(
   const events = [
     ...current.events,
     ...update.events.filter((event) => !ids.has(event.id)),
-  ].slice(-1_500);
+  ].slice(-Math.max(1, update.eventCapacity));
   return { ...update, events };
 }
