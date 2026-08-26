@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -209,7 +209,7 @@ test("accepts only a customer count from the browser", () => {
     liveRunRequestError({ customers: 5, apiKey: "browser-key" }),
     "The live run request may contain only customers.",
   );
-  assert.match(liveRunRequestError({ customers: 2 }), /3 through 24/u);
+  assert.match(liveRunRequestError({ customers: 4 }), /5 through 24/u);
 });
 
 test("constructs only the fixed Gemini command in a unique live collection", () => {
@@ -221,10 +221,20 @@ test("constructs only the fixed Gemini command in a unique live collection", () 
       RETENTION_MODEL: "gemini-test-model",
     },
   });
-  assert.deepEqual(
-    liveDemoArguments(24, descriptor.relativePath),
-    descriptor.args,
-  );
+  const exactArguments = [
+    "run",
+    "whyback",
+    "demo",
+    "--customers",
+    "24",
+    "--backend",
+    "gemini",
+    "--output-dir",
+    "artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
+  ];
+  assert.deepEqual(descriptor.args, exactArguments);
+  assert.deepEqual(liveDemoArguments(24, descriptor.relativePath), exactArguments);
+  assert.equal(descriptor.command, `uv ${exactArguments.join(" ")}`);
   assert.match(descriptor.collectionId, /^live-/u);
   assert.equal(descriptor.backend, "gemini");
   assert.equal(descriptor.model, "gemini-test-model");
@@ -273,23 +283,24 @@ test("uses bounded live timeouts and the configured Gemini model", () => {
   assert.equal(liveRunTimeoutMs({ WHYBACK_LIVE_TIMEOUT_MS: "not-a-number" }), 14_400_000);
 });
 
-test("runs the fixed Gemini process and accepts only verified owned output", async (context) => {
+test("publishes independently verified terminal output after a nonzero CLI exit", async (context) => {
   const root = await makeRoot(context);
   const descriptor = describeLiveRun(
-    2,
+    5,
     "123e4567-e89b-42d3-a456-426614174000",
     { root, environment: { RETENTION_MODEL: "gemini-test-model" } },
   );
-  await writeVerifiedLiveOutput(descriptor, ["7", "8"]);
+  await writeVerifiedLiveOutput(descriptor, ["7", "8", "9", "10", "11"]);
   const secret = "child-only-sentinel";
   const spawnCalls = [];
-  const completed = runLiveDemo(2, descriptor, {
+  const completed = runLiveDemo(5, descriptor, {
     environment: { GEMINI_API_KEY: secret },
     spawnProcess: (command, args, options) => {
       const child = new EventEmitter();
       child.kill = () => true;
+      const exitCode = spawnCalls.length === 0 ? 9 : 0;
       spawnCalls.push({ command, args, options });
-      setImmediate(() => child.emit("close", 0));
+      setImmediate(() => child.emit("close", exitCode));
       return child;
     },
     timeoutMs: 60_000,
@@ -298,18 +309,108 @@ test("runs the fixed Gemini process and accepts only verified owned output", asy
   const result = await completed;
   assert.equal(spawnCalls.length, 2);
   assert.equal(spawnCalls[0].command, "uv");
-  assert.deepEqual(spawnCalls[0].args, descriptor.args);
+  assert.deepEqual(spawnCalls[0].args, [
+    "run",
+    "whyback",
+    "demo",
+    "--customers",
+    "5",
+    "--backend",
+    "gemini",
+    "--output-dir",
+    "artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
+  ]);
   assert.equal(spawnCalls[0].options.shell, false);
   assert.equal(spawnCalls[0].options.stdio, "ignore");
   assert.equal(spawnCalls[0].options.env.GEMINI_API_KEY, secret);
-  assert.deepEqual(spawnCalls[1].args.slice(0, 3), [
+  assert.deepEqual(spawnCalls[1].args, [
     "run",
     "python",
     "scripts/verify_artifacts.py",
+    "artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
   ]);
   assert.equal(spawnCalls[1].options.env.GEMINI_API_KEY, undefined);
   assert.equal(result.command.includes(secret), false);
   assert.match(result.command, /--backend gemini/u);
+  const seal = JSON.parse(
+    await readFile(
+      path.join(descriptor.directory, ".whyback-live-verification.json"),
+      "utf8",
+    ),
+  );
+  assert.equal(seal.status, "verified_live_gemini");
+});
+
+test("rejects a nonzero CLI exit when its terminal output is missing", async (context) => {
+  const root = await makeRoot(context);
+  const descriptor = describeLiveRun(
+    5,
+    "223e4567-e89b-42d3-b456-426614174000",
+    { root },
+  );
+  const spawnCalls = [];
+
+  await assert.rejects(
+    runLiveDemo(5, descriptor, {
+      environment: { GEMINI_API_KEY: "sentinel" },
+      spawnProcess: (command, args, options) => {
+        const child = new EventEmitter();
+        child.kill = () => true;
+        spawnCalls.push({ command, args, options });
+        setImmediate(() => child.emit("close", 7));
+        return child;
+      },
+      timeoutMs: 60_000,
+    }),
+    /did not publish a verified live artifact collection/u,
+  );
+  assert.equal(spawnCalls.length, 1);
+  assert.deepEqual(spawnCalls[0].args, [
+    "run",
+    "whyback",
+    "demo",
+    "--customers",
+    "5",
+    "--backend",
+    "gemini",
+    "--output-dir",
+    "artifacts/local/live-runs/live-223e4567-e89b-42d3-b456-426614174000",
+  ]);
+});
+
+test("does not seal terminal output when independent verification fails", async (context) => {
+  const root = await makeRoot(context);
+  const descriptor = describeLiveRun(
+    5,
+    "323e4567-e89b-42d3-8456-426614174000",
+    { root },
+  );
+  await writeVerifiedLiveOutput(descriptor, ["7", "8", "9", "10", "11"]);
+  const secret = "verifier-secret-sentinel";
+  const spawnCalls = [];
+
+  await assert.rejects(
+    runLiveDemo(5, descriptor, {
+      environment: { GEMINI_API_KEY: secret },
+      spawnProcess: (command, args, options) => {
+        const child = new EventEmitter();
+        child.kill = () => true;
+        const exitCode = spawnCalls.length === 0 ? 4 : 1;
+        spawnCalls.push({ command, args, options });
+        setImmediate(() => child.emit("close", exitCode));
+        return child;
+      },
+      timeoutMs: 60_000,
+    }),
+    /failed deterministic verification/u,
+  );
+  assert.equal(spawnCalls.length, 2);
+  assert.equal(spawnCalls[0].options.env.GEMINI_API_KEY, secret);
+  assert.equal(spawnCalls[1].options.env.GEMINI_API_KEY, undefined);
+  await assert.rejects(
+    readFile(path.join(descriptor.directory, ".whyback-live-verification.json")),
+    (error) => error?.code === "ENOENT",
+  );
 });
 
 test("terminates a timed-out live process before rejecting", async (context) => {
@@ -363,15 +464,15 @@ test("keeps a post-spawn process error failed until the child closes", async (co
 test("does not start artifact verification after shutdown begins", async (context) => {
   const root = await makeRoot(context);
   const descriptor = describeLiveRun(
-    2,
+    5,
     "123e4567-e89b-42d3-a456-426614174000",
     { root },
   );
-  await writeVerifiedLiveOutput(descriptor, ["7", "8"]);
+  await writeVerifiedLiveOutput(descriptor, ["7", "8", "9", "10", "11"]);
   let acceptingProcesses = true;
   let spawnCount = 0;
 
-  const running = runLiveDemo(2, descriptor, {
+  const running = runLiveDemo(5, descriptor, {
     environment: { GEMINI_API_KEY: "sentinel" },
     canStartProcess: () => acceptingProcesses,
     spawnProcess: () => {

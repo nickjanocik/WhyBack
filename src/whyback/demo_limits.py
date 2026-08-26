@@ -2,7 +2,7 @@
 
 from typing import Final
 
-MIN_DEMO_CUSTOMERS: Final = 3
+MIN_DEMO_CUSTOMERS: Final = 5
 DEFAULT_DEMO_CUSTOMERS: Final = 5
 MAX_DEMO_CUSTOMERS: Final = 24
 

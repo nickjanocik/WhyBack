@@ -1,6 +1,6 @@
 /** Lets reviewers choose an artifact collection and ranked household investigation. */
 
-import { AlertTriangle, Check, ChevronDown, Database, Search } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, History, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { formatPercent, humanize } from "../lib/report";
@@ -14,7 +14,7 @@ interface CandidateRailProps {
   onHouseholdChange: (householdId: string) => void;
 }
 
-/** Renders the searchable collection and household navigation rail. */
+/** Renders verified CLI history and ranked household navigation. */
 export function CandidateRail({
   collections,
   collectionId,
@@ -41,9 +41,9 @@ export function CandidateRail({
   return (
     <aside className="candidate-rail" id="candidate-rail">
       <div className="collection-picker">
-        <label htmlFor="collection">Artifact collection</label>
+        <label htmlFor="collection">CLI run</label>
         <div className="select-wrap">
-          <Database size={15} aria-hidden="true" />
+          <History size={15} aria-hidden="true" />
           <select
             id="collection"
             value={collectionId}
@@ -59,16 +59,15 @@ export function CandidateRail({
         </div>
         {collection && (
           <p className="collection-meta" aria-label="Collection metadata">
-            <span>Dataset: {humanize(collection.datasetKind)}</span>
-            <span>Execution: {humanize(collection.executionMode)}</span>
+            Official data · {humanize(collection.backend)} · {collection.completedCount} completed
           </p>
         )}
       </div>
 
       <div className="rail-heading">
         <div>
-          <span className="eyebrow">Flagged households</span>
-          <strong>{collection?.reportCount ?? 0} investigations</strong>
+          <strong>Households</strong>
+          <span>{collection?.reportCount ?? 0} investigations</span>
         </div>
       </div>
 
@@ -78,7 +77,7 @@ export function CandidateRail({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find household"
+          placeholder="Find household or action"
         />
       </label>
 

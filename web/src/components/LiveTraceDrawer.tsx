@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  ChevronDown,
   CircleAlert,
   CircleCheck,
   LoaderCircle,
@@ -20,8 +19,9 @@ import { TraceEventRow } from "./TraceEventRow";
 interface LiveTraceDrawerProps {
   open: boolean;
   status: DemoStatusResponse;
+  hasVisibleReport: boolean;
   onClose: () => void;
-  onOpenResults: () => void;
+  onRefreshReports: () => void;
   onStartRun: () => void;
 }
 
@@ -29,8 +29,9 @@ interface LiveTraceDrawerProps {
 export function LiveTraceDrawer({
   open,
   status,
+  hasVisibleReport,
   onClose,
-  onOpenResults,
+  onRefreshReports,
   onStartRun,
 }: LiveTraceDrawerProps) {
   const reduceMotion = useReducedMotion();
@@ -144,8 +145,8 @@ export function LiveTraceDrawer({
         >
           <header className="live-trace-header">
             <div>
-              <span className="eyebrow">Agent activity</span>
-              <h2 id="live-trace-title">Live audit trace</h2>
+              <span className="eyebrow">WhyBack CLI</span>
+              <h2 id="live-trace-title">Live run activity</h2>
             </div>
             <button
               ref={closeRef}
@@ -172,14 +173,17 @@ export function LiveTraceDrawer({
           </div>
 
           <p className="live-trace-boundary">
-            Shows sanitized questions, decisions, tool activity, evidence writes, and verification. Private model reasoning is not collected.
+            Sanitized questions, decisions, deterministic tool activity, and verification from the running CLI. Private model reasoning is not collected.
           </p>
 
+          {status.status === "running" && hasVisibleReport && (
+            <p className="live-trace-context" role="status">
+              The existing verified report remains visible until this CLI run passes verification.
+            </p>
+          )}
+
           {status.jobId && (
-            <details className="live-run-details">
-              <summary>
-                <ChevronDown size={12} aria-hidden="true" /> Run details
-              </summary>
+            <section className="live-run-details" aria-label="CLI execution details">
               <dl>
                 <div><dt>Backend</dt><dd>{humanize(status.backend)}</dd></div>
                 <div><dt>Model</dt><dd><code>{status.model || "—"}</code></dd></div>
@@ -187,8 +191,8 @@ export function LiveTraceDrawer({
                 <div><dt>Started</dt><dd>{formatTimestamp(status.startedAt)}</dd></div>
                 <div><dt>Job</dt><dd><code>{status.jobId.slice(0, 8)}</code></dd></div>
               </dl>
-              {status.command && <code>{status.command}</code>}
-            </details>
+              {status.command && <div className="live-run-command"><small>Command</small><code>{status.command}</code></div>}
+            </section>
           )}
 
           <div className="live-trace-controls">
@@ -215,7 +219,13 @@ export function LiveTraceDrawer({
           {(status.error || status.traceWarning) && (
             <div className="live-trace-error" role="alert">
               <CircleAlert size={16} />
-              <span>{status.error || status.traceWarning}</span>
+              <span>
+                {status.status === "failed" && <strong>CLI run not published. </strong>}
+                {status.error || status.traceWarning}
+                {status.status === "failed" && hasVisibleReport
+                  ? " The visible report is unchanged."
+                  : ""}
+              </span>
             </div>
           )}
 
@@ -243,7 +253,7 @@ export function LiveTraceDrawer({
               <div className="live-trace-empty">
                 <Activity size={20} />
                 <strong>No run activity</strong>
-                <span>Start a live Gemini run to populate this trace.</span>
+                <span>Start the WhyBack CLI to populate this audit stream.</span>
               </div>
             )}
             {events.length === 0 && status.status === "running" && (
@@ -253,27 +263,22 @@ export function LiveTraceDrawer({
                 <span>The CLI is preparing the run workspace.</span>
               </div>
             )}
-            {status.status === "running" && events.length > 0 && (
-              <div className="live-trace-waiting">
-                <LoaderCircle className="spin" size={14} /> Waiting for the next event
-              </div>
-            )}
             <div ref={endRef} />
           </div>
 
-          <footer className="live-trace-footer">
-            {status.status === "completed" ? (
-              <button type="button" onClick={onOpenResults}>
-                <CircleCheck size={16} /> Open generated reports
-              </button>
-            ) : status.status === "running" ? (
-              <span><LoaderCircle className="spin" size={14} /> Run in progress</span>
-            ) : (
-              <button type="button" onClick={onStartRun}>
-                <Play size={15} /> {status.status === "failed" ? "Run live again" : "Start live run"}
-              </button>
-            )}
-          </footer>
+          {status.status !== "running" && (
+            <footer className="live-trace-footer">
+              {status.status === "completed" ? (
+                <button type="button" onClick={onRefreshReports}>
+                  <CircleCheck size={15} /> Refresh verified reports
+                </button>
+              ) : (
+                <button type="button" onClick={onStartRun}>
+                  <Play size={15} /> {status.status === "failed" ? "Configure another run" : "Configure CLI run"}
+                </button>
+              )}
+            </footer>
+          )}
         </motion.aside>
       )}
     </AnimatePresence>
@@ -282,8 +287,10 @@ export function LiveTraceDrawer({
 
 /** Converts the machine live-run phase into its compact display label. */
 function phaseLabel(status: DemoStatusResponse["status"]): string {
-  if (status === "idle") return "Idle";
-  return humanize(status);
+  if (status === "idle") return "Not started";
+  if (status === "running") return "CLI running";
+  if (status === "completed") return "Verified and published";
+  return "CLI failed";
 }
 
 /** Formats a live timestamp as local time and handles missing or invalid values. */

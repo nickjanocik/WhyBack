@@ -65,6 +65,8 @@ ArtifactIdentity = tuple[str, str]
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _REPORT_NAMES = frozenset({"report.json", "customer_report.json"})
 _OPERATIONAL_SEAL_NAMES = frozenset({".whyback-live-verification.json"})
+_LIVE_BACKEND_FAILURE_TYPES = frozenset({"MalformedModelResponse", "ModelBackendError"})
+_LIVE_BACKEND_FAILURE_FIELDS = frozenset({"status", "failure_type", "message"})
 _BRANDING = (
     "WhyBack",
     "Find the why. Choose the way back.",
@@ -1308,12 +1310,15 @@ def _validate_trace(
             for event in events
             if event.event is AuditEventName.MODEL_DECISION_RECEIVED
         ]
+        failed_before_response = _is_failed_live_request_without_response(events)
         if (
             not isinstance(model, str)
             or model.startswith("scripted/")
-            or not provider_ids
+            or (not provider_ids and not failed_before_response)
             or any(
-                not isinstance(value, str) or not value.strip()
+                not isinstance(value, str)
+                or not value.strip()
+                or value.strip().startswith("scripted-")
                 for value in provider_ids
             )
         ):
@@ -1322,7 +1327,9 @@ def _validate_trace(
                     path,
                     root,
                     "unsubstantiated_live_trace",
-                    "A live trace needs non-scripted provider call identifiers",
+                    "A live trace needs provider response identifiers unless its "
+                    "first model request ends in a sanitized backend failure before "
+                    "any decision or evidence",
                 )
             )
     return TraceValidation(
@@ -1333,6 +1340,29 @@ def _validate_trace(
         evidence=tuple(reconstructed),
         evidence_added_ids=tuple(evidence_added_ids),
         issues=tuple(issues),
+    )
+
+
+def _is_failed_live_request_without_response(events: Sequence[AuditEvent]) -> bool:
+    """Recognize one request that failed safely before any live response claim."""
+
+    if len(events) != 3:
+        return False
+    started, requested, completion = events
+    if (
+        started.event is not AuditEventName.RUN_STARTED
+        or requested.event is not AuditEventName.MODEL_DECISION_REQUESTED
+        or completion.event is not AuditEventName.RUN_COMPLETED
+        or frozenset(completion.details) != _LIVE_BACKEND_FAILURE_FIELDS
+        or completion.details.get("status") != "failed"
+        or completion.details.get("failure_type") not in _LIVE_BACKEND_FAILURE_TYPES
+    ):
+        return False
+    message = completion.details.get("message")
+    return (
+        isinstance(message, str)
+        and bool(message.strip())
+        and message == sanitize_public_text(message)
     )
 
 

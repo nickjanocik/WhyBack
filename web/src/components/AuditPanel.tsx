@@ -40,30 +40,24 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
 
   return (
     <div className="panel-stack">
-      <section className="surface audit-heading">
-        <span className="eyebrow">Audit trail</span>
-        <h1>Recorded run events</h1>
-        <p>
-          Model decisions, deterministic tool calls, and verification for this{" "}
-          {report.action ? "recommendation" : "terminal investigation outcome"}.
-        </p>
-      </section>
-
-      <section className="audit-stats" aria-label="Audit summary">
-        <AuditStat icon={<Route size={18} />} label="Model decisions" value={decisionCount} />
-        <AuditStat icon={<Hammer size={18} />} label="Tool outcomes" value={toolCount} />
-        <AuditStat icon={<CircleAlert size={18} />} label="Retries" value={retryCount} />
-      </section>
-
       <div className="audit-layout">
         <section className="surface trace-surface">
           <div className="section-heading">
-            <div><span className="eyebrow">Chronological replay</span><h2>{events.length} audit events</h2></div>
+            <div>
+              <span className="eyebrow">Durable CLI trace</span>
+              <h1>Recorded run events</h1>
+              <p>{events.length} sanitized events for this household investigation.</p>
+            </div>
             <label className="switch-label">
               <input type="checkbox" checked={showEvidenceEvents} onChange={(event) => setShowEvidenceEvents(event.target.checked)} />
               <span aria-hidden="true" />
               Include evidence writes
             </label>
+          </div>
+          <div className="audit-inline-stats" aria-label="Audit summary">
+            <span><Route size={14} /> {decisionCount} decisions</span>
+            <span><Hammer size={14} /> {toolCount} tool outcomes</span>
+            <span><CircleAlert size={14} /> {retryCount} retries</span>
           </div>
           <div className="trace-list">
             {events.map((event, index) => <TraceEventRow event={event} key={`${event.timestamp}-${event.event}-${index}`} />)}
@@ -93,11 +87,6 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
       </div>
     </div>
   );
-}
-
-/** Displays one compact numeric summary above the replay timeline. */
-function AuditStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return <div>{icon}<span><strong>{value}</strong><small>{label}</small></span></div>;
 }
 
 /** Displays one immutable provenance field with its identifying icon. */

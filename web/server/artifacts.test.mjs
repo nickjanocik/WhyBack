@@ -2,7 +2,6 @@
 
 import assert from "node:assert/strict";
 import {
-  copyFile,
   mkdir,
   mkdtemp,
   rm,
@@ -34,62 +33,9 @@ const OWNERSHIP = {
 const FIRST_LIVE_JOB = "123e4567-e89b-42d3-a456-426614174000";
 const SECOND_LIVE_JOB = "223e4567-e89b-42d3-b456-426614174000";
 
-/** Creates a disposable repository-shaped tree with representative artifact layouts. */
+/** Creates a disposable repository root for sealed live-run fixtures. */
 async function fixtureRoot() {
-  const root = await mkdtemp(path.join(os.tmpdir(), "whyback-dashboard-test-"));
-  const collection = path.join(root, "artifacts", "demo");
-  const customer = path.join(collection, "customer_7");
-  await mkdir(customer, { recursive: true });
-  const report = {
-    schema_version: 2,
-    run_id: "run-7",
-    household_id: "7",
-    run_status: "completed",
-    decline: {
-      decline_score: 0.8,
-      sales_drop: 0.9,
-      trip_drop: 0.7,
-      active_week_drop: 0.6,
-      baseline_retailer_sales_value: 100,
-      recent_retailer_sales_value: 10,
-    },
-    action: {
-      action_id: "VISIT_FREQUENCY_REACTIVATION",
-      resolved_confidence: "high",
-    },
-    evidence_ledger: [{ evidence_id: "ev-1" }],
-    tool_warnings: [],
-    provenance: { generated_at: "2026-08-25T00:00:00Z" },
-  };
-  await writeFile(path.join(customer, "report.json"), JSON.stringify(report));
-  await writeFile(path.join(customer, "report.html"), "<h1>WhyBack</h1>");
-  await writeFile(
-    path.join(customer, "trace.jsonl"),
-    `${JSON.stringify({
-      schema_version: 1,
-      timestamp: "2026-08-25T00:00:00Z",
-      event: "tool_completed",
-      run_id: "run-7",
-      household_id: "7",
-      details: {
-        tool_name: "customer_trend",
-        status: "ok",
-        detector_snapshot: { raw: "must not cross bridge" },
-      },
-    })}\n`,
-  );
-  await writeFile(
-    path.join(collection, "manifest.json"),
-    JSON.stringify({
-      dataset_kind: "synthetic",
-      execution_mode: "scripted",
-      backend: "scripted",
-      human_review_required: true,
-      selected_household_ids: ["7"],
-      completed_household_ids: ["7"],
-    }),
-  );
-  return root;
+  return mkdtemp(path.join(os.tmpdir(), "whyback-dashboard-test-"));
 }
 
 /** Writes a sealed live collection fixture, with optional deliberate tampering. */
@@ -165,78 +111,84 @@ async function writeLiveCollection(
   return { ...descriptor, customer };
 }
 
-test("loads collection summaries from canonical report artifacts", async (context) => {
+test("loads summaries only from sealed CLI artifacts", async (context) => {
   const root = await fixtureRoot();
   context.after(() => rm(root, { recursive: true, force: true }));
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+  });
 
   const workspace = await loadWorkspace(root);
   assert.deepEqual(workspace.demoCustomerLimits, { minimum: 3, maximum: 24 });
   assert.equal(workspace.collections.length, 1);
-  assert.equal(workspace.collections[0].id, "demo");
+  assert.equal(workspace.collections[0].id, live.collectionId);
   assert.equal(workspace.collections[0].reports[0].householdId, "7");
-  assert.equal(workspace.collections[0].reports[0].declineScore, 0.8);
+  assert.equal(workspace.collections[0].reports[0].declineScore, 0.7);
   assert.equal(workspace.collections[0].humanReviewRequired, true);
 });
 
 test("loads a report and emits only allow-listed trace detail", async (context) => {
   const root = await fixtureRoot();
   context.after(() => rm(root, { recursive: true, force: true }));
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+  });
 
-  const investigation = await loadInvestigation(root, "demo", "7");
-  assert.equal(investigation.report.run_id, "run-7");
+  const investigation = await loadInvestigation(root, live.collectionId, "7");
+  assert.equal(investigation.report.run_id, "live-run-7");
   assert.deepEqual(investigation.trace[0].details, {
-    tool_name: "customer_trend",
-    status: "ok",
+    model: "gemini-3.7-flash",
+    selected_tool: "customer_trend",
   });
 });
 
 test("rejects traversal-shaped IDs and non-allow-listed artifact files", async (context) => {
   const root = await fixtureRoot();
   context.after(() => rm(root, { recursive: true, force: true }));
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+  });
 
   assert.equal(validateHouseholdId("../7"), false);
-  assert.equal(await loadInvestigation(root, "demo", "../7"), null);
-  assert.equal(
-    await resolveArtifactFile(root, "demo", "7", "../../manifest.json"),
-    null,
-  );
-  assert.equal(
-    await resolveArtifactFile(root, "demo", "7", "report.html"),
-    path.join(root, "artifacts", "demo", "customer_7", "report.html"),
-  );
-});
-
-test("loads preserved flat-layout boundary artifacts", async (context) => {
-  const root = await fixtureRoot();
-  context.after(() => rm(root, { recursive: true, force: true }));
-  const source = path.join(root, "artifacts", "demo", "customer_7");
-  const flat = path.join(root, "artifacts", "live-gemini-synthetic-failure");
-  await mkdir(flat, { recursive: true });
-  await Promise.all(
-    ["report.json", "report.html", "trace.jsonl"].map((fileName) =>
-      copyFile(path.join(source, fileName), path.join(flat, fileName)),
-    ),
-  );
-
-  const workspace = await loadWorkspace(root);
-  const collection = workspace.collections.find(
-    (item) => item.id === "live-gemini-synthetic-failure",
-  );
-  assert.equal(collection.reports[0].householdId, "7");
-  assert.equal(
-    (await loadInvestigation(root, "live-gemini-synthetic-failure", "7")).report
-      .run_id,
-    "run-7",
-  );
+  assert.equal(await loadInvestigation(root, live.collectionId, "../7"), null);
   assert.equal(
     await resolveArtifactFile(
       root,
-      "live-gemini-synthetic-failure",
+      live.collectionId,
       "7",
-      "report.html",
+      "../../manifest.json",
     ),
-    path.join(flat, "report.html"),
+    null,
   );
+  assert.equal(
+    await resolveArtifactFile(root, live.collectionId, "7", "report.html"),
+    path.join(live.customer, "report.html"),
+  );
+});
+
+test("does not expose bundled examples or boundary fixtures", async (context) => {
+  const root = await fixtureRoot();
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const example = path.join(root, "artifacts", "demo", "customer_7");
+  await mkdir(example, { recursive: true });
+  await writeFile(path.join(example, "report.json"), "{}\n");
+  await writeFile(path.join(example, "report.html"), "<h1>Example</h1>\n");
+  await writeFile(path.join(example, "trace.jsonl"), "{}\n");
+
+  const workspace = await loadWorkspace(root);
+  assert.deepEqual(workspace.collections, []);
+  assert.equal(await resolveCollection(root, "demo"), null);
+  assert.equal(await loadInvestigation(root, "demo", "7"), null);
+  assert.equal(await resolveArtifactFile(root, "demo", "7", "report.html"), null);
 });
 
 test("discovers and loads preserved Live Gemini collections newest first", async (context) => {
@@ -258,11 +210,11 @@ test("discovers and loads preserved Live Gemini collections newest first", async
   const workspace = await loadWorkspace(root);
   assert.deepEqual(
     workspace.collections.map((item) => item.id),
-    [newer.collectionId, older.collectionId, "demo"],
+    [newer.collectionId, older.collectionId],
   );
   assert.deepEqual(
     workspace.collections.slice(0, 2).map((item) => item.title),
-    ["Live Gemini · 223e4567", "Live Gemini · 123e4567"],
+    ["Run · 223e4567", "Run · 123e4567"],
   );
   assert.equal(workspace.collections[0].backend, "gemini");
   assert.equal(workspace.collections[0].executionMode, "live");
@@ -284,7 +236,7 @@ test("discovers and loads preserved Live Gemini collections newest first", async
   );
 });
 
-test("rejects unsafe dynamic collections and files without affecting fixed history", async (context) => {
+test("rejects unsafe dynamic collections and files", async (context) => {
   const root = await fixtureRoot();
   context.after(() => rm(root, { recursive: true, force: true }));
   const valid = await writeLiveCollection(root, {
@@ -315,10 +267,7 @@ test("rejects unsafe dynamic collections and files without affecting fixed histo
   await symlink(outside, linked.directory);
 
   const workspace = await loadWorkspace(root);
-  assert.deepEqual(
-    workspace.collections.map((item) => item.id),
-    ["demo"],
-  );
+  assert.deepEqual(workspace.collections, []);
   assert.equal(await resolveCollection(root, valid.collectionId), null);
   assert.equal(await resolveCollection(root, `live-../${FIRST_LIVE_JOB}`), null);
   assert.equal(await resolveCollection(root, malformed.collectionId), null);
@@ -333,5 +282,5 @@ test("rejects unsafe dynamic collections and files without affecting fixed histo
     path.join(valid.customer, "trace.jsonl"),
   );
   assert.equal(await loadInvestigation(root, valid.collectionId, "181"), null);
-  assert.equal((await loadInvestigation(root, "demo", "7")).report.run_id, "run-7");
+  assert.equal(await loadInvestigation(root, "demo", "7"), null);
 });

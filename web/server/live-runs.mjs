@@ -202,14 +202,14 @@ export function createLiveRunDescriptor(repositoryRoot, jobId) {
   };
 }
 
-/** Builds display metadata for a valid live-run collection. */
+/** Builds compact display metadata for a valid CLI-run collection. */
 export function liveRunCollectionDefinition(collectionId, modifiedAtMs = 0) {
   const uuid = collectionUuid(collectionId);
   if (!uuid) return null;
   return {
     id: collectionId,
     relativePath: path.join(LIVE_RUN_RELATIVE_ROOT, collectionId),
-    title: `Live Gemini · ${uuid.slice(0, 8)}`,
+    title: `Run · ${uuid.slice(0, 8)}`,
     liveRun: true,
     modifiedAtMs,
   };

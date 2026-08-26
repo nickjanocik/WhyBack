@@ -390,6 +390,7 @@ export async function stopActiveLiveProcesses({
 
 /** Runs a fixed argv child with timeout, shutdown, and close-event guarantees. */
 function runBoundedChild({
+  acceptNonzeroExit = false,
   args,
   canStartProcess,
   environment,
@@ -466,7 +467,11 @@ function runBoundedChild({
           // The close event is authoritative: no process remains to gate.
         }
         rejectOnce(new DemoRunError(timeoutMessage));
-      } else if (processError || code !== 0) {
+      } else if (
+        processError ||
+        !Number.isInteger(code) ||
+        (code !== 0 && !acceptNonzeroExit)
+      ) {
         rejectOnce(new DemoRunError(failureMessage));
       } else {
         settled = true;
@@ -518,6 +523,10 @@ export async function runLiveDemo(
 ) {
   const root = descriptor.repositoryRoot ?? repositoryRoot;
   await runBoundedChild({
+    // A terminal CLI collection can contain per-household failures and still be
+    // complete. Treat its files and the independent verifier—not exit zero—as
+    // the publication boundary.
+    acceptNonzeroExit: true,
     args: descriptor.args,
     canStartProcess,
     environment,

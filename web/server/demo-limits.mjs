@@ -1,6 +1,6 @@
 /** Shares the bounded live-batch sizes and trace capacity across the web bridge. */
 
-export const MIN_DEMO_CUSTOMERS = 3;
+export const MIN_DEMO_CUSTOMERS = 5;
 export const DEFAULT_DEMO_CUSTOMERS = 5;
 export const MAX_DEMO_CUSTOMERS = 24;
 export const MAX_LIVE_TRACE_EVENTS = 5_000;

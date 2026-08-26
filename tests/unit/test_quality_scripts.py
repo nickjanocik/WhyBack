@@ -760,6 +760,69 @@ def _write_live_artifacts(root: Path) -> None:
     _rehash_manifest(root)
 
 
+def _write_failed_live_artifacts(root: Path) -> None:
+    """Write a live request that failed before receiving a provider response."""
+
+    _write_valid_artifacts(root)
+    report_path = root / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["provenance"].update(
+        {
+            "backend": "gemini",
+            "execution_mode": "live_gemini",
+            "model": "gemini-3.7-flash",
+        }
+    )
+    _write_exact_report_bundle(report_path, report)
+
+    started = datetime(2026, 1, 1, tzinfo=UTC)
+    common = {"run_id": RUN_ID, "household_id": "77"}
+    events = (
+        AuditEvent(
+            timestamp=started,
+            event=AuditEventName.RUN_STARTED,
+            details={
+                "model": "gemini-3.7-flash",
+                "prompt_version": PROMPT_VERSION,
+                "prompt_hash": PROMPT_HASH,
+                "dataset_kind": "synthetic",
+                "dataset_source_repository": "whyback/tests",
+                "dataset_source_commit": "whyback-test-fixture-v1",
+                "application_version": __version__,
+                "timing_mode": "actual_utc_and_monotonic",
+                "decline_score": 0.5,
+                "detector_snapshot": _detector_snapshot(),
+                "remaining_tool_budget": 5,
+                "remaining_turn_budget": 6,
+            },
+            **common,
+        ),
+        AuditEvent(
+            timestamp=started + timedelta(seconds=1),
+            event=AuditEventName.MODEL_DECISION_REQUESTED,
+            details={"remaining_tool_budget": 5, "remaining_turn_budget": 6},
+            **common,
+        ),
+        AuditEvent(
+            timestamp=started + timedelta(seconds=2),
+            event=AuditEventName.RUN_COMPLETED,
+            details={
+                "status": "failed",
+                "failure_type": "ModelBackendError",
+                "message": "The fixture intentionally records a failed run.",
+            },
+            **common,
+        ),
+    )
+    _write_audit_events(root / "customer_77" / "trace.jsonl", events)
+    manifest_path = root / "artifact_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest.update({"backend": "gemini", "execution_mode": "live"})
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _write_results_files(root)
+    _rehash_manifest(root)
+
+
 def _write_official_provenance_artifacts(root: Path) -> None:
     """Write official provenance artifacts for this test."""
 
@@ -1365,6 +1428,86 @@ def test_live_history_and_skip_are_credential_independent(
     assert without_current_key.passed, without_current_key.issues
     assert with_current_key.passed, with_current_key.issues
     assert with_current_key.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_accepts_live_backend_failure_before_response(
+    tmp_path: Path,
+) -> None:
+    """Accept an unanswered live request with one sanitized backend failure."""
+
+    _write_failed_live_artifacts(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert result.passed, result.issues
+    assert result.execution_modes == ("live", "skipped")
+
+
+@pytest.mark.parametrize("provider_id", [None, "", "scripted-001"])
+def test_artifact_verifier_keeps_provider_id_required_for_completed_live_run(
+    tmp_path: Path,
+    provider_id: str | None,
+) -> None:
+    """Reject completed live decisions without a genuine provider response ID."""
+
+    _write_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    received = next(row for row in rows if row["event"] == "model_decision_received")
+    if provider_id is None:
+        del received["details"]["provider_call_id"]
+    else:
+        received["details"]["provider_call_id"] = provider_id
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert "unsubstantiated_live_trace" in {item.code for item in result.issues}
+
+
+@pytest.mark.parametrize(
+    "tampering",
+    ["missing_request", "wrong_failure_type", "decision_claim", "evidence_claim"],
+)
+def test_artifact_verifier_rejects_unsubstantiated_live_failure_exception(
+    tmp_path: Path,
+    tampering: str,
+) -> None:
+    """Reject a no-response exception unless its failure lifecycle is exact."""
+
+    _write_failed_live_artifacts(tmp_path)
+    trace_path = tmp_path / "customer_77" / "trace.jsonl"
+    rows = [
+        json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()
+    ]
+    if tampering == "missing_request":
+        rows.pop(1)
+    elif tampering == "wrong_failure_type":
+        rows[-1]["details"]["failure_type"] = "ToolExecutionError"
+    elif tampering == "decision_claim":
+        rows[-1]["details"]["decision_summary"] = "A model decision was available."
+    else:
+        evidence_claim = {
+            **rows[1],
+            "event": "evidence_added",
+            "details": {
+                "evidence_id": "unsupported-evidence",
+                "source_tool": "customer_trend",
+                "source_tool_call_id": "unsupported-call",
+                "metric": "distinct_trips",
+                "limitations": [],
+            },
+        }
+        rows.insert(-1, evidence_claim)
+    _rewrite_trace_rows(trace_path, rows)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert "unsubstantiated_live_trace" in {item.code for item in result.issues}
 
 
 def test_artifact_verifier_preserves_legacy_openai_live_provenance(

@@ -129,11 +129,6 @@ export function EvidencePanel({
             <span className="eyebrow">Immutable evidence ledger</span>
             <h2>{filtered.length} grounded records</h2>
           </div>
-          <div className="ledger-legend">
-            <span><i className="role-dot role-dot--supporting" /> Supporting</span>
-            <span><i className="role-dot role-dot--counterevidence" /> Counter</span>
-            <span><i className="role-dot role-dot--context" /> Context</span>
-          </div>
         </div>
 
         <div className="filter-bar">

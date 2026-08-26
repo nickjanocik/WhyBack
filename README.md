@@ -25,16 +25,15 @@ flowchart LR
     H --> I[Deterministic verifier]
     I --> J[Human-reviewed Next Best Action]
     I --> K[JSON, Markdown, HTML + trace]
-    K --> L[Read-only local reviewer dashboard]
+    K --> L[Local reviewer dashboard + CLI launcher]
 ```
 
 ## Quickstart
 
 Python 3.12 and [`uv`](https://docs.astral.sh/uv/) are required. The default
 five-customer demo and test paths use the deterministic `ScriptedBackend`; no
-API key or full dataset is needed. Batches from 3 through 24 customers are
-accepted, so the assignment's 3–4-customer exercise and stricter five-result
-deliverable are both supported.
+API key or full dataset is needed. Batches from 5 through 24 customers are
+accepted, with five as the default.
 
 ```bash
 uv sync --frozen --extra dev
@@ -60,9 +59,10 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-Open <http://127.0.0.1:5163>. The React interface reads only the local Node
-bridge's sanitized artifact API; it does not calculate evidence or execute an
-action. See the [dashboard guide](web/README.md).
+Open <http://127.0.0.1:5163>. The React interface reads the local Node bridge's
+sanitized artifact API and can ask that bridge to start one fixed, bounded
+Gemini CLI command. The browser never receives credentials, calculates
+evidence, or executes a customer action. See the [dashboard guide](web/README.md).
 
 **Representative executed result.** Against the full official source pinned at
 `5b5d061`, the detector anchored baseline weeks 38–45 and recent weeks 46–53.
@@ -79,7 +79,7 @@ The repository contains a reproducible official-data path, a transparent
 detector, six deterministic analytical tools, two model backends, a bounded
 investigation loop, evidence-ID grounding, deterministic verification, a
 governed action catalog, append-only JSONL auditing, offline report and trace
-renderers, a localhost-only read-only reviewer dashboard, deterministic
+renderers, a localhost-only reviewer dashboard and guarded CLI launcher, deterministic
 behavioral evaluations, and an auditable Python-and-web quality gate. The
 implementation favors explicit contracts and inspectable failure states over
 framework abstraction.
@@ -262,7 +262,7 @@ The credential-free demo always generates a persistent timeout example while
 still completing the requested customer reports:
 
 ```bash
-uv run whyback demo --customers 3 --output-dir artifacts/local/failure-demo
+uv run whyback demo --customers 5 --output-dir artifacts/local/failure-demo
 uv run whyback verify-artifacts artifacts/local/failure-demo
 ```
 
@@ -274,10 +274,9 @@ See [Reliability and failure semantics](docs/reliability.md).
 
 ## Results for five customers
 
-The CLI and dashboard accept 3–24 customers, and integration tests execute both
-three- and four-customer batches. The committed reviewer run intentionally uses
-the default of five because the deliverables separately require results for at
-least five customers; this is the stricter output target.
+The CLI and dashboard accept 5–24 customers, and integration tests execute
+representative small batches plus the full 24-customer maximum. The committed
+reviewer run uses the default of five.
 
 The official detector deterministically selected households `5`, `181`, `423`,
 `472`, and `682`. This ordering is preserved even when paths look similar.
@@ -296,6 +295,12 @@ three Gemini-selected analytical tools completed over fabricated data, then the
 fourth provider request failed at the configured 60-second request boundary,
 and the run failed closed without a customer action. The artifact manifest is
 the authoritative record of execution mode, source, hashes, and omissions.
+
+The operational dashboard intentionally lists only verifier-sealed CLI runs
+created under `artifacts/local/live-runs/`. The bundled five-customer results,
+complete traces, Type A partial-data example, and controlled failure example
+remain credential-free reviewer artifacts linked below; they are not hidden or
+relabelled as live dashboard output.
 
 | Scripted control | Decline score | Verified action | Report | Trace |
 | --- | ---: | --- | --- | --- |
@@ -409,7 +414,7 @@ dependencies.
 | --- | --- | --- |
 | Official pinned data and hashes | Verified downloader, contracts, idempotent R-to-Parquet preparation, manifest | `src/whyback/data/`, `docs/data-semantics.md` |
 | Transparent decline detection | Max-week 8+8 windows, eligibility, weighted score, sensitivity | `src/whyback/detection/decline.py`, detector artifacts |
-| Assignment batch sizes | Explicit 3–24 bounds; deterministic tests run both 3- and 4-customer batches; committed default remains five | `src/whyback/demo_limits.py`, demo/CLI/web boundary tests |
+| Bounded batch sizes | Explicit 5–24 bounds with a five-customer default | `src/whyback/demo_limits.py`, demo/CLI/web boundary tests |
 | Six deterministic tools | Strict inputs/results, DuckDB calculations, provenance | `src/whyback/tools/`, unit/property tests |
 | Dynamic model selection | Provider-neutral backend; fresh Gemini function-calling requests or scripted decisions | `src/whyback/agent/backend.py`, `gemini_backend.py`, `scripted_backend.py` |
 | Bounded reliable loop | Tool/turn budgets, duplicate refusal, timeout, one retry, one repair | `src/whyback/agent/runner.py`, orchestration tests |
@@ -443,7 +448,7 @@ src/whyback/reporting/  typed JSON, Markdown/HTML reports, static trace viewer
 evals/                  scenario contracts and deterministic scorer
 tests/                  unit, property, integration, orchestration, golden, live
 scripts/                demo generation, artifact verification, quality audit
-web/                    read-only React reviewer UI and localhost artifact bridge
+web/                    React reviewer UI and guarded localhost CLI/artifact bridge
 artifacts/              small reviewer-facing outputs; never raw/prepared data
 docs/                   semantics, architecture, reliability, evaluation, ADRs
 ```

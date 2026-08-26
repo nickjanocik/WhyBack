@@ -1,4 +1,4 @@
-/** Coordinates artifact browsing, live-run status, and the dashboard's three views. */
+/** Coordinates CLI execution, live audit activity, and verified report review. */
 
 import {
   Activity,
@@ -11,6 +11,7 @@ import {
   Play,
   RefreshCw,
   ShieldCheck,
+  Terminal,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -22,13 +23,16 @@ import { CandidateRail } from "./components/CandidateRail";
 import { EvidencePanel } from "./components/EvidencePanel";
 import { LiveTraceDrawer } from "./components/LiveTraceDrawer";
 import { OverviewPanel } from "./components/OverviewPanel";
-import { RunDemoDialog } from "./components/RunDemoDialog";
-import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
+import { RunCliDialog } from "./components/RunCliDialog";
+import type {
+  DemoCustomerLimits,
+  DemoStatusResponse,
+  InvestigationResponse,
+  LiveRunConfiguration,
+  Workspace,
+} from "./types";
 
 type View = "overview" | "evidence" | "audit";
-
-const LIVE_COLLECTION_ID =
-  /^live-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 const views: Array<{ id: View; label: string; icon: typeof Activity }> = [
   { id: "overview", label: "Investigation", icon: FileSearch },
@@ -72,8 +76,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [demoStarting, setDemoStarting] = useState(false);
-  const [demoError, setDemoError] = useState<string | null>(null);
+  const [runStarting, setRunStarting] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
   const [liveStatus, setLiveStatus] = useState<DemoStatusResponse>(emptyLiveStatus);
   const [liveOpen, setLiveOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -92,18 +96,18 @@ export default function App() {
     (item) => item.householdId === householdId,
   )?.generatedAt;
 
-  /** Selects the preferred usable collection and resets the household workspace around it. */
+  /** Selects the preferred verified CLI run and handles an honestly empty workspace. */
   const initializeWorkspace = useCallback((nextWorkspace: Workspace, preferredCollection?: string) => {
     setLoading(true);
     setWorkspace(nextWorkspace);
     const collection =
       nextWorkspace.collections.find((item) => item.id === preferredCollection) ??
-      nextWorkspace.collections.find((item) => LIVE_COLLECTION_ID.test(item.id)) ??
-      nextWorkspace.collections.find((item) => item.id === "dashboard") ??
-      nextWorkspace.collections.find((item) => item.id === "demo") ??
       nextWorkspace.collections[0];
     if (!collection) {
-      setError("No WhyBack report artifacts are available. Run a live Gemini batch to create them.");
+      setCollectionId("");
+      setHouseholdId("");
+      setInvestigation(null);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -218,11 +222,11 @@ export default function App() {
       .then((nextWorkspace) => {
         setWorkspaceRefreshAttempt(0);
         initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
-        setToast("Live Gemini batch finished. Reports refreshed.");
+        setToast("CLI run verified. Reports refreshed.");
       })
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name !== "AbortError") {
-          setToast("Live Gemini batch finished, but the workspace refresh failed.");
+          setToast("CLI run finished, but the report list could not be refreshed.");
           if (workspaceRefreshAttempt < 3) {
             retryTimer = window.setTimeout(() => {
               refreshedJobRef.current = null;
@@ -296,9 +300,9 @@ export default function App() {
   }
 
   /** Starts a live batch and opens its audit drawer without waiting for completion. */
-  async function handleRunDemo(customers: number) {
-    setDemoStarting(true);
-    setDemoError(null);
+  async function handleRunCli(customers: number) {
+    setRunStarting(true);
+    setRunError(null);
     try {
       const status = await runDemo(customers);
       activeJobRef.current = status.jobId;
@@ -309,57 +313,51 @@ export default function App() {
       setDialogOpen(false);
       setLiveOpen(true);
     } catch (caught) {
-      setDemoError(caught instanceof Error ? caught.message : "The live Gemini run could not start.");
+      setRunError(caught instanceof Error ? caught.message : "The WhyBack CLI could not start.");
     } finally {
-      setDemoStarting(false);
+      setRunStarting(false);
     }
   }
 
-  /** Opens the sealed result collection, refreshing workspace metadata when necessary. */
-  async function handleOpenLiveResults() {
-    setLiveOpen(false);
-    if (
-      liveStatus.collectionId &&
-      workspace?.collections.some(
-        (collection) => collection.id === liveStatus.collectionId,
-      )
-    ) {
-      changeCollection(liveStatus.collectionId);
-      return;
-    }
-    if (liveStatus.status !== "completed") {
-      changeView("overview");
-      return;
-    }
+  /** Retries workspace discovery when automatic post-run publication refresh is exhausted. */
+  async function handleRefreshReports() {
+    setLoading(true);
     try {
       const nextWorkspace = await getWorkspace();
+      setWorkspaceRefreshAttempt(0);
       initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
+      setLiveOpen(false);
+      setToast("Verified CLI reports refreshed.");
     } catch {
-      setToast("Could not refresh the completed live run. Try opening results again.");
+      setLoading(false);
+      setToast("The verified report list could not be refreshed. Try again.");
     }
   }
 
-  const demoRunning = liveStatus.status === "running";
-  const demoBusy = demoStarting || demoRunning;
-  const demoCustomerLimits = workspace?.demoCustomerLimits;
+  const runRunning = liveStatus.status === "running";
+  const runBusy = runStarting || runRunning;
+  const customerLimits = workspace?.demoCustomerLimits;
   const liveRun = workspace?.liveRun;
+  const hasReports = Boolean(selectedCollection && householdId);
 
   return (
     <div className="app-shell">
       <div className="app-content">
         <a className="skip-link" href="#main-investigation">Skip to investigation</a>
         <header className="app-header">
-          <button
-            ref={mobileMenuRef}
-            className="mobile-menu"
-            type="button"
-            onClick={() => setRailOpen((value) => !value)}
-            aria-label="Toggle investigations"
-            aria-expanded={railOpen}
-            aria-controls="candidate-rail"
-          >
-            {railOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {hasReports && (
+            <button
+              ref={mobileMenuRef}
+              className="mobile-menu"
+              type="button"
+              onClick={() => setRailOpen((value) => !value)}
+              aria-label="Toggle investigations"
+              aria-expanded={railOpen}
+              aria-controls="candidate-rail"
+            >
+              {railOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
           <div className="internal-brand"><strong>WhyBack</strong><span>Investigator</span></div>
           <div className="header-actions">
             <button
@@ -372,23 +370,23 @@ export default function App() {
             >
               <Activity size={15} />
               <span className="live-toggle__label">Live activity</span>
-              {demoRunning ? <i aria-label="Run active" /> : liveStatus.eventCount > 0 ? <span className="live-toggle__count">{liveStatus.eventCount}</span> : null}
+              {runRunning ? <i aria-label="Run active" /> : liveStatus.eventCount > 0 ? <span className="live-toggle__count">{liveStatus.eventCount}</span> : null}
             </button>
             <button
               className="run-button"
               type="button"
-              disabled={demoBusy || !demoCustomerLimits || !liveRun}
-              onClick={() => { setDemoError(null); setDialogOpen(true); }}
-              aria-label={demoRunning ? "Live Gemini batch running" : "Run live Gemini batch"}
+              disabled={runBusy || !customerLimits || !liveRun}
+              onClick={() => { setRunError(null); setDialogOpen(true); }}
+              aria-label={runRunning ? "WhyBack CLI running" : "Run WhyBack CLI"}
             >
-              {demoRunning ? <LoaderCircle className="spin" size={15} /> : <Play size={15} />}
-              <span className="run-button__label">{demoRunning ? "Running live" : "Run live Gemini"}</span>
+              {runRunning ? <LoaderCircle className="spin" size={15} /> : <Terminal size={15} />}
+              <span className="run-button__label">{runRunning ? "CLI running" : "Run CLI"}</span>
             </button>
           </div>
         </header>
 
-      <div className={`workspace-layout ${railOpen ? "workspace-layout--rail-open" : ""}`}>
-        {workspace && workspace.collections.length > 0 && (
+      <div className={`workspace-layout ${railOpen ? "workspace-layout--rail-open" : ""} ${hasReports ? "" : "workspace-layout--empty"}`}>
+        {workspace && hasReports && (
           <CandidateRail
             collections={workspace.collections}
             collectionId={collectionId}
@@ -409,30 +407,32 @@ export default function App() {
           />
         )}
         <main className="main-workspace" id="main-investigation" tabIndex={-1}>
-          <div className="workspace-toolbar">
-            <nav aria-label="Investigation views">
-              {views.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className={view === item.id ? "active" : ""}
-                    aria-current={view === item.id ? "page" : undefined}
-                    onClick={() => changeView(item.id)}
-                  >
-                    <Icon size={15} /> {item.label}
-                    {item.id === "evidence" && investigation && <span>{investigation.report.evidence_ledger.length}</span>}
-                  </button>
-                );
-              })}
-            </nav>
-            <div className="toolbar-context">
-              <span>{selectedCollection?.title}</span>
-              <i />
-              <span>Household {householdId || "—"}</span>
+          {hasReports && (
+            <div className="workspace-toolbar">
+              <nav aria-label="Investigation views">
+                {views.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className={view === item.id ? "active" : ""}
+                      aria-current={view === item.id ? "page" : undefined}
+                      onClick={() => changeView(item.id)}
+                    >
+                      <Icon size={15} /> {item.label}
+                      {item.id === "evidence" && investigation && <span>{investigation.report.evidence_ledger.length}</span>}
+                    </button>
+                  );
+                })}
+              </nav>
+              <div className="toolbar-context">
+                <span>{selectedCollection?.title}</span>
+                <i />
+                <span>Household {householdId}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="workspace-scroll">
             {workspace && workspace.collectionWarnings.length > 0 && (
@@ -443,6 +443,18 @@ export default function App() {
             )}
             {loading && <LoadingState />}
             {!loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
+            {!loading && !error && workspace && !hasReports && customerLimits && liveRun && (
+              <EmptyWorkspace
+                customerLimits={customerLimits}
+                liveRun={liveRun}
+                status={liveStatus}
+                onOpenActivity={() => setLiveOpen(true)}
+                onStart={() => {
+                  setRunError(null);
+                  setDialogOpen(true);
+                }}
+              />
+            )}
             {!loading && !error && investigation && (
               <div key={`${investigation.report.run_id}-${view}`}>
                 {view === "overview" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
@@ -456,29 +468,91 @@ export default function App() {
         <LiveTraceDrawer
           open={liveOpen}
           status={liveStatus}
+          hasVisibleReport={hasReports}
           onClose={() => setLiveOpen(false)}
-          onOpenResults={() => void handleOpenLiveResults()}
+          onRefreshReports={() => void handleRefreshReports()}
           onStartRun={() => {
             setLiveOpen(false);
-            setDemoError(null);
+            setRunError(null);
             setDialogOpen(true);
           }}
         />
       </div>
 
-      {demoCustomerLimits && liveRun && (
-        <RunDemoDialog
+      {customerLimits && liveRun && (
+        <RunCliDialog
           open={dialogOpen}
-          running={demoStarting}
-          error={demoError}
-          customerLimits={demoCustomerLimits}
+          running={runStarting}
+          error={runError}
+          customerLimits={customerLimits}
           liveRun={liveRun}
-          onClose={() => !demoStarting && setDialogOpen(false)}
-          onRun={handleRunDemo}
+          onClose={() => !runStarting && setDialogOpen(false)}
+          onRun={handleRunCli}
         />
       )}
       <AnimatePresence>{toast && <motion.div className="toast" role="status" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}><CircleCheck size={18} /><span>{toast}</span></motion.div>}</AnimatePresence>
     </div>
+  );
+}
+
+/** Explains an empty operational workspace and offers the single useful next action. */
+function EmptyWorkspace({
+  customerLimits,
+  liveRun,
+  status,
+  onOpenActivity,
+  onStart,
+}: {
+  customerLimits: DemoCustomerLimits;
+  liveRun: LiveRunConfiguration;
+  status: DemoStatusResponse;
+  onOpenActivity: () => void;
+  onStart: () => void;
+}) {
+  const running = status.status === "running";
+  return (
+    <section className="empty-workspace" aria-labelledby="empty-workspace-title">
+      <div className="empty-workspace__icon"><Terminal size={24} /></div>
+      <span className="eyebrow">CLI workspace</span>
+      <h1 id="empty-workspace-title">
+        {running ? "Investigation in progress" : "No verified CLI runs yet"}
+      </h1>
+      <p>
+        {running
+          ? "The CLI is investigating households now. Reports appear here only after the run passes deterministic verification."
+          : "Start the WhyBack CLI against official prepared data. This workspace intentionally excludes bundled examples and unverified output."}
+      </p>
+
+      <div className="empty-workspace__facts" aria-label="CLI configuration">
+        <span><small>Backend</small>Gemini API</span>
+        <span><small>Model</small><code>{liveRun.model}</code></span>
+        <span><small>Batch range</small>{customerLimits.minimum}–{customerLimits.maximum} households</span>
+      </div>
+
+      {!liveRun.ready && !running && (
+        <div className="empty-workspace__notice" role="status">
+          <CircleAlert size={16} />
+          <span>{liveRun.blockedReason ?? "The local CLI is not ready."}</span>
+        </div>
+      )}
+      {status.status === "failed" && (
+        <div className="empty-workspace__notice empty-workspace__notice--failed" role="alert">
+          <CircleAlert size={16} />
+          <span>
+            <strong>The last CLI run was not published.</strong>{" "}
+            {status.error ?? "It did not produce a verified report collection."}
+          </span>
+        </div>
+      )}
+
+      <button
+        className="empty-workspace__action"
+        type="button"
+        onClick={running ? onOpenActivity : onStart}
+      >
+        {running ? <><Activity size={17} /> View CLI activity</> : <><Play size={17} /> Configure CLI run</>}
+      </button>
+    </section>
   );
 }
 

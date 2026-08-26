@@ -8,18 +8,18 @@ evidence, authors recommendations, or executes customer actions.
 
 ## Useful features
 
-- Browse artifact collections and search the ranked household investigation
-  queue.
+- Start the real `whyback demo` CLI with a bounded household count; the web app
+  has no scripted or fixture fallback.
+- Browse preserved, verifier-sealed CLI runs and search their ranked household
+  queues. Bundled examples and unverified output are excluded.
 - Compare baseline and recent retailer sales value, basket count, and active
   weeks, with the underlying weekly series.
 - Review supported findings, counterevidence, confidence adjustments,
   population context, analytical warnings, and interpretation limits.
 - Follow citations into a searchable evidence ledger and filter records by
   evidence role, source tool, or investigation step.
-- Review the sanitized run timeline, provenance, and deterministic report
-  artifacts.
-- Run a bounded live Gemini batch against prepared official data and monitor
-  its sanitized audit activity while it is running.
+- Follow the exact launched command and sanitized audit activity while the CLI
+  runs, then review durable per-household traces, provenance, and report files.
 - Use the interface with a keyboard, reduced-motion preferences, or a narrow
   viewport.
 
@@ -56,12 +56,12 @@ The web launcher is Gemini-only. It executes a fixed command through an
 argument array, never a shell string or a browser-selected backend:
 
 ```bash
-uv run whyback demo --customers <3-24> --backend gemini \
+uv run whyback demo --customers <5-24> --backend gemini \
   --output-dir artifacts/local/live-runs/live-<job-id>
 ```
 
-The supported range is inclusive from three through 24 households. The dialog
-defaults to five, matching the assignment demonstration size. Every household
+The supported range is inclusive from five through 24 households. The launch
+control defaults to five. Every household
 can make up to six real model decisions, so larger batches take longer and can
 consume more provider quota.
 
@@ -87,8 +87,8 @@ selected by browser input.
 
 The bridge exposes three read-only artifact endpoints:
 
-- `GET /api/workspace` returns available fixed and sealed live collections,
-  their report summaries, live-run readiness, and any collection warnings.
+- `GET /api/workspace` returns only verifier-sealed live CLI collections, their
+  report summaries, live-run readiness, and any collection warnings.
 - `GET /api/investigation?collection=<id>&household=<id>` returns one report and
   its sanitized replay trace after validating both identifiers.
 - `GET /api/artifact?collection=<id>&household=<id>&file=<name>` streams only an
@@ -102,7 +102,8 @@ The run API is asynchronous:
 - `GET /api/demo/status?job=<job-id>&after=<cursor>` returns the current job
   state and only the audited events recorded after the supplied cursor. The
   browser polls this endpoint while the job is running.
-- The live-activity drawer labels events by household and shows investigation
+- The live-activity drawer shows the exact fixed CLI command, labels events by
+  household, and shows investigation
   questions, selected tools, public decision summaries, tool status, retries,
   verification, and the terminal run state. Evidence-write events are hidden by
   default and appear only when the reviewer enables the **Evidence writes**
@@ -121,9 +122,10 @@ raw process output.
 
 - Every live job gets a preserved, Git-ignored collection below
   `artifacts/local/live-runs/live-<job-id>/`; a later job never overwrites its
-  reports or trace. A collection becomes browseable only after the deterministic
-  artifact verifier succeeds and the bridge writes a manifest-bound verification
-  seal.
+  reports or trace. A terminal collection becomes browseable only after the
+  deterministic artifact verifier succeeds and the bridge writes a
+  manifest-bound verification seal, even when the CLI exits nonzero after
+  recording honest failed household outcomes.
 - The bridge binds to `127.0.0.1`, accepts no browser-supplied paths, has a
   bounded process deadline, and permits only one live Gemini batch at a time.
   The default deadline is four hours; `WHYBACK_LIVE_TIMEOUT_MS` can set a value

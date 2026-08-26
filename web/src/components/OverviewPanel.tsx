@@ -343,7 +343,7 @@ function PopulationCard({
         <div className="category-context">
           <div>
             <span className="eyebrow">Category comparison</span>
-            <p>Target-excluded context for the largest observed category losses.</p>
+            <p>Context for the largest observed category losses.</p>
           </div>
           <div className="category-context__grid">
             {context.category_context.slice(0, 3).map((category) => (
@@ -401,7 +401,7 @@ function CohortStat({
               ? `${cohort.cohort_count} households`
               : `${formatNumber(cohort.target_percentile, 0)}th percentile`}
           </strong>
-          <p>Target-excluded comparison · n={cohort.cohort_count}</p>
+          <p>Comparison cohort · n={cohort.cohort_count}</p>
         </>
       ) : (
         <><strong>Not available</strong><p>Below the declared cohort minimum.</p></>

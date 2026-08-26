@@ -259,7 +259,7 @@ test("discovers owned Live Gemini collections newest first", async (context) => 
   );
   assert.deepEqual(
     definitions.map((item) => item.title),
-    ["Live Gemini · 223e4567", "Live Gemini · 123e4567"],
+    ["Run · 223e4567", "Run · 123e4567"],
   );
   assert.ok(definitions.every((item) => item.liveRun === true));
 });

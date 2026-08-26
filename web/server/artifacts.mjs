@@ -10,35 +10,6 @@ import {
   resolveVerifiedLiveRunDirectory,
 } from "./live-runs.mjs";
 
-const COLLECTIONS = [
-  {
-    id: "dashboard",
-    relativePath: "artifacts/local/dashboard",
-    title: "Generated runs",
-  },
-  {
-    id: "demo",
-    relativePath: "artifacts/demo",
-    title: "Committed sample",
-  },
-  {
-    id: "official",
-    relativePath: "artifacts/official",
-    title: "Official detector",
-  },
-  {
-    id: "official-type-a",
-    relativePath: "artifacts/official-type-a",
-    title: "Official Type A",
-  },
-  {
-    id: "live-gemini-synthetic-failure",
-    relativePath: "artifacts/live-gemini-synthetic-failure",
-    title: "Live boundary case",
-    flat: true,
-  },
-];
-
 const TRACE_DETAIL_KEYS = new Set([
   "allowed_tools",
   "arguments_valid",
@@ -179,32 +150,26 @@ async function reportDirectories(collectionPath) {
     .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true }));
 }
 
-/** Loads one fixed or verified live collection without exposing unsafe paths. */
+/** Loads one sealed live CLI collection without exposing unsafe paths. */
 async function loadCollection(repositoryRoot, definition) {
-  const collectionPath = definition.liveRun
-    ? await resolveVerifiedLiveRunDirectory(repositoryRoot, definition.id)
-    : path.resolve(repositoryRoot, definition.relativePath);
+  const collectionPath = await resolveVerifiedLiveRunDirectory(
+    repositoryRoot,
+    definition.id,
+  );
   if (!collectionPath) return null;
   if (!(await isRealDirectory(collectionPath))) return null;
 
-  let manifest = {};
   const manifestPath = path.join(collectionPath, "manifest.json");
-  if (!definition.liveRun || (await isRealFile(manifestPath))) {
-    try {
-      manifest = await readJson(manifestPath);
-    } catch (error) {
-      if (error?.code !== "ENOENT") throw error;
-    }
-  }
+  if (!(await isRealFile(manifestPath))) return null;
+  const manifest = await readJson(manifestPath);
 
-  const reportFiles = definition.flat
-    ? [path.join(collectionPath, "report.json")]
-    : (await reportDirectories(collectionPath)).map((entry) =>
-        path.join(collectionPath, entry.name, "report.json"),
-      );
+  /** Maps canonical customer directories to their required report source. */
+  const reportFiles = (await reportDirectories(collectionPath)).map((entry) =>
+    path.join(collectionPath, entry.name, "report.json"),
+  );
   const reports = [];
   for (const reportFile of reportFiles) {
-    if (definition.liveRun && !(await isRealFile(reportFile))) continue;
+    if (!(await isRealFile(reportFile))) continue;
     try {
       const report = await readJson(reportFile);
       reports.push(summarizeReport(report));
@@ -241,17 +206,16 @@ async function loadCollection(repositoryRoot, definition) {
   };
 }
 
-/** Builds the dashboard workspace while isolating unreadable collections as warnings. */
+/** Builds the operational workspace from verified CLI-produced runs only. */
 export async function loadWorkspace(repositoryRoot) {
-  let liveRunDefinitions = [];
+  let definitions = [];
   const collectionWarnings = [];
   try {
-    liveRunDefinitions = await discoverLiveRunCollections(repositoryRoot);
+    definitions = await discoverLiveRunCollections(repositoryRoot);
   } catch {
-    collectionWarnings.push("Live Gemini runs could not be discovered.");
+    collectionWarnings.push("Verified CLI runs could not be discovered.");
   }
-  const definitions = [...liveRunDefinitions, ...COLLECTIONS];
-  // One malformed optional collection must not hide every valid reviewer artifact.
+  // One malformed preserved run must not hide every other valid reviewer artifact.
   const results = await Promise.allSettled(
     definitions.map((definition) => loadCollection(repositoryRoot, definition)),
   );
@@ -275,19 +239,14 @@ export async function loadWorkspace(repositoryRoot) {
   };
 }
 
-/** Resolves only a fixed collection or a sealed live-run collection. */
+/** Resolves only a sealed live CLI collection. */
 export async function resolveCollection(repositoryRoot, collectionId) {
-  const definition = COLLECTIONS.find((item) => item.id === collectionId);
-  if (definition) return path.resolve(repositoryRoot, definition.relativePath);
   return resolveVerifiedLiveRunDirectory(repositoryRoot, collectionId);
 }
 
-/** Returns display and layout metadata for an allow-listed collection ID. */
+/** Returns display metadata only for a canonical live-run collection ID. */
 function collectionDefinition(collectionId) {
-  return (
-    COLLECTIONS.find((item) => item.id === collectionId) ??
-    liveRunCollectionDefinition(collectionId)
-  );
+  return liveRunCollectionDefinition(collectionId);
 }
 
 /** Restricts household IDs to the safe filename alphabet used by artifacts. */
@@ -362,14 +321,14 @@ export async function loadInvestigation(repositoryRoot, collectionId, householdI
   if (!definition || !collectionPath || !(await isRealDirectory(collectionPath))) {
     return null;
   }
-  const customerDirectory = definition.flat
-    ? collectionPath
-    : path.join(collectionPath, `customer_${householdId}`);
+  const customerDirectory = path.join(
+    collectionPath,
+    `customer_${householdId}`,
+  );
   if (!(await isRealDirectory(customerDirectory))) return null;
   if (
-    definition.liveRun &&
-    (!(await isRealFile(path.join(customerDirectory, "report.json"))) ||
-      !(await isRealFile(path.join(customerDirectory, "trace.jsonl"))))
+    !(await isRealFile(path.join(customerDirectory, "report.json"))) ||
+    !(await isRealFile(path.join(customerDirectory, "trace.jsonl")))
   ) {
     return null;
   }
@@ -400,19 +359,8 @@ export async function resolveArtifactFile(
   if (!definition || !collectionPath || !(await isRealDirectory(collectionPath))) {
     return null;
   }
-  const customerPath = definition.flat
-    ? collectionPath
-    : path.join(collectionPath, `customer_${householdId}`);
+  const customerPath = path.join(collectionPath, `customer_${householdId}`);
   if (!(await isRealDirectory(customerPath))) return null;
-  if (definition.flat) {
-    try {
-      const report = await readJson(path.join(customerPath, "report.json"));
-      if (String(report.household_id ?? "") !== householdId) return null;
-    } catch (error) {
-      if (error?.code === "ENOENT") return null;
-      throw error;
-    }
-  }
   const filePath = path.join(customerPath, fileName);
   try {
     const details = await lstat(filePath);

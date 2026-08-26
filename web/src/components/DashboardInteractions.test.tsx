@@ -15,17 +15,17 @@ import { AuditPanel } from "./AuditPanel";
 import { CandidateRail } from "./CandidateRail";
 import { LiveTraceDrawer } from "./LiveTraceDrawer";
 import { OverviewPanel } from "./OverviewPanel";
-import { RunDemoDialog } from "./RunDemoDialog";
+import { RunCliDialog } from "./RunCliDialog";
 import { TrendChart } from "./TrendChart";
 
 const collections: ArtifactCollection[] = [
   {
-    id: "demo",
-    title: "Guided demo",
-    datasetKind: "synthetic",
-    executionMode: "scripted",
-    backend: "scripted",
-    modelExecution: "scripted_control",
+    id: "live-123e4567-e89b-42d3-a456-426614174000",
+    title: "Run · 123e4567",
+    datasetKind: "official_complete_journey",
+    executionMode: "live",
+    backend: "gemini",
+    modelExecution: "live_gemini",
     reportCount: 2,
     completedCount: 2,
     humanReviewRequired: true,
@@ -65,12 +65,12 @@ const collections: ArtifactCollection[] = [
     ],
   },
   {
-    id: "official-type-a",
-    title: "Official Type A",
+    id: "live-223e4567-e89b-42d3-b456-426614174000",
+    title: "Run · 223e4567",
     datasetKind: "official_complete_journey",
-    executionMode: "scripted",
-    backend: "scripted",
-    modelExecution: "scripted_control",
+    executionMode: "live",
+    backend: "gemini",
+    modelExecution: "live_gemini",
     reportCount: 0,
     completedCount: 0,
     humanReviewRequired: true,
@@ -113,7 +113,7 @@ describe("dashboard interactions", () => {
     render(
       <CandidateRail
         collections={collections}
-        collectionId="demo"
+        collectionId={collections[0]!.id}
         householdId="101"
         onCollectionChange={onCollectionChange}
         onHouseholdChange={onHouseholdChange}
@@ -124,13 +124,12 @@ describe("dashboard interactions", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByText("Dataset: Synthetic")).toBeInTheDocument();
-    expect(screen.getByText("Execution: Scripted")).toBeInTheDocument();
+    expect(screen.getByText("Official data · Gemini · 2 completed")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /household 102/i }));
     expect(onHouseholdChange).toHaveBeenCalledWith("102");
 
-    await user.selectOptions(screen.getByLabelText("Artifact collection"), "official-type-a");
-    expect(onCollectionChange).toHaveBeenCalledWith("official-type-a");
+    await user.selectOptions(screen.getByLabelText("CLI run"), collections[1]!.id);
+    expect(onCollectionChange).toHaveBeenCalledWith(collections[1]!.id);
   });
 
   it("preserves the original candidate rank when filtering households", async () => {
@@ -138,25 +137,25 @@ describe("dashboard interactions", () => {
     render(
       <CandidateRail
         collections={collections}
-        collectionId="demo"
+        collectionId={collections[0]!.id}
         householdId="101"
         onCollectionChange={vi.fn()}
         onHouseholdChange={vi.fn()}
       />,
     );
 
-    await user.type(screen.getByPlaceholderText("Find household"), "102");
+    await user.type(screen.getByPlaceholderText("Find household or action"), "102");
 
     const candidate = screen.getByRole("button", { name: /household 102/i });
     expect(within(candidate).getByText("02")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /household 101/i })).not.toBeInTheDocument();
   });
 
-  it("runs the selected bounded live Gemini batch size", async () => {
+  it("runs the selected bounded CLI batch size", async () => {
     const user = userEvent.setup();
     const onRun = vi.fn().mockResolvedValue(undefined);
     render(
-      <RunDemoDialog
+      <RunCliDialog
         open
         running={false}
         error={null}
@@ -167,18 +166,17 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "5" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "3" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "4" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "24" }));
-    expect(screen.getByRole("button", { name: "24" })).toHaveAttribute("aria-pressed", "true");
-    await user.click(screen.getByRole("button", { name: /start live run/i }));
+    const count = screen.getByRole("spinbutton", { name: "Households" });
+    expect(count).toHaveValue(5);
+    await user.clear(count);
+    await user.type(count, "24");
+    await user.click(screen.getByRole("button", { name: /run whyback cli/i }));
     expect(onRun).toHaveBeenCalledWith(24);
   });
 
-  it("states the live Gemini and customer-action boundaries in the run dialog", () => {
+  it("states the provider, credential, and customer-action boundaries", () => {
     render(
-      <RunDemoDialog
+      <RunCliDialog
         open
         running={false}
         error={null}
@@ -189,10 +187,10 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.getByText(/the api key stays in local server-side processes/i)).toBeInTheDocument();
-    expect(screen.getByText(/real provider calls and may consume quota/i)).toBeInTheDocument();
-    expect(screen.getByText(/up to six live gemini decisions/i)).toBeInTheDocument();
-    expect(screen.getByText(/no outreach or customer action is executed/i)).toBeInTheDocument();
+    expect(screen.getByText("Server environment")).toBeInTheDocument();
+    expect(screen.getByText(/uses real provider quota/i)).toBeInTheDocument();
+    expect(screen.getByText(/python computes every metric/i)).toBeInTheDocument();
+    expect(screen.getByText(/executes no outreach/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
   });
 
@@ -200,7 +198,7 @@ describe("dashboard interactions", () => {
     const user = userEvent.setup();
     const onRun = vi.fn().mockResolvedValue(undefined);
     render(
-      <RunDemoDialog
+      <RunCliDialog
         open
         running={false}
         error={null}
@@ -216,7 +214,7 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(/gemini_api_key is not configured/i);
-    const start = screen.getByRole("button", { name: /start live run/i });
+    const start = screen.getByRole("button", { name: /run whyback cli/i });
     expect(start).toBeDisabled();
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
     await user.click(start);
@@ -302,13 +300,15 @@ describe("dashboard interactions", () => {
       <LiveTraceDrawer
         open
         status={status}
+        hasVisibleReport
         onClose={onClose}
-        onOpenResults={vi.fn()}
+        onRefreshReports={vi.fn()}
         onStartRun={vi.fn()}
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Live audit trace" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Live run activity" })).toBeInTheDocument();
+    expect(screen.getByText(status.command!)).toBeInTheDocument();
     expect(screen.getByText(/private model reasoning is not collected/i)).toBeInTheDocument();
     expect(screen.getByText(/4 earlier audit events were omitted/i)).toBeInTheDocument();
     expect(screen.getByText("Did visit frequency change?")).toBeInTheDocument();
@@ -334,8 +334,9 @@ describe("dashboard interactions", () => {
     const onClose = vi.fn();
     const drawerProps = {
       status: idleStatus,
+      hasVisibleReport: false,
       onClose,
-      onOpenResults: vi.fn(),
+      onRefreshReports: vi.fn(),
       onStartRun: vi.fn(),
     };
     const { rerender } = render(
@@ -366,7 +367,7 @@ describe("dashboard interactions", () => {
       </>,
     );
 
-    const drawer = await screen.findByRole("dialog", { name: "Live audit trace" });
+    const drawer = await screen.findByRole("dialog", { name: "Live run activity" });
     const close = within(drawer).getByRole("button", { name: "Close live audit trace" });
     await waitFor(() => expect(close).toHaveFocus());
     expect(document.querySelector(".skip-link")).toHaveAttribute("inert");
@@ -377,7 +378,7 @@ describe("dashboard interactions", () => {
       "0",
     );
 
-    within(drawer).getByRole("button", { name: "Start live run" }).focus();
+    within(drawer).getByRole("button", { name: "Configure CLI run" }).focus();
     await user.tab();
     expect(close).toHaveFocus();
 
@@ -403,6 +404,37 @@ describe("dashboard interactions", () => {
     expect(document.querySelector(".workspace-layout")).not.toHaveAttribute("inert");
   });
 
+  it("offers a manual report refresh after a completed CLI run", async () => {
+    const user = userEvent.setup();
+    const onRefreshReports = vi.fn();
+    const completedStatus: DemoStatusResponse = {
+      ...idleStatus,
+      jobId: "123e4567-e89b-42d3-a456-426614174000",
+      status: "completed",
+      customers: 5,
+      command:
+        "uv run whyback demo --customers 5 --backend gemini --output-dir artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
+      completedAt: "2026-08-25T12:00:00Z",
+      collectionId: "live-123e4567-e89b-42d3-a456-426614174000",
+    };
+
+    render(
+      <LiveTraceDrawer
+        open
+        status={completedStatus}
+        hasVisibleReport={false}
+        onClose={vi.fn()}
+        onRefreshReports={onRefreshReports}
+        onStartRun={vi.fn()}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Refresh verified reports" }),
+    );
+    expect(onRefreshReports).toHaveBeenCalledOnce();
+  });
+
   it("contains modal focus, makes the workspace inert, and restores focus", async () => {
     const props = {
       running: false,
@@ -416,7 +448,7 @@ describe("dashboard interactions", () => {
       <>
         <button type="button">Open demo</button>
         <div className="app-content"><button type="button">Background action</button></div>
-        <RunDemoDialog {...props} open={false} />
+        <RunCliDialog {...props} open={false} />
       </>,
     );
     const trigger = screen.getByRole("button", { name: "Open demo" });
@@ -426,7 +458,7 @@ describe("dashboard interactions", () => {
       <>
         <button type="button">Open demo</button>
         <div className="app-content"><button type="button">Background action</button></div>
-        <RunDemoDialog {...props} open />
+        <RunCliDialog {...props} open />
       </>,
     );
 
@@ -438,7 +470,7 @@ describe("dashboard interactions", () => {
       <>
         <button type="button">Open demo</button>
         <div className="app-content"><button type="button">Background action</button></div>
-        <RunDemoDialog {...props} open={false} />
+        <RunCliDialog {...props} open={false} />
       </>,
     );
     await waitFor(() => expect(screen.getByRole("button", { name: "Open demo" })).toHaveFocus());
@@ -541,7 +573,7 @@ describe("dashboard interactions", () => {
     } as unknown as ReportData;
 
     render(<AuditPanel collectionId="failure" report={failedReport} trace={[]} />);
-    expect(screen.getByText(/terminal investigation outcome/i)).toBeInTheDocument();
+    expect(screen.getByText(/sanitized events for this household investigation/i)).toBeInTheDocument();
     expect(screen.getByText("Gemini")).toBeInTheDocument();
     expect(screen.getByText("gemini-2.5-flash")).toBeInTheDocument();
   });
