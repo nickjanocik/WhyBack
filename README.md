@@ -405,16 +405,78 @@ documented in [Evaluation](docs/evaluation.md).
 uv run whyback verify-artifacts artifacts/demo
 ```
 
-## Productionization
+## Next steps: production hardening
 
-The submission is a local, auditable reference architecture, not an outreach
-service. Moving it to production requires a governed warehouse/query boundary,
-scheduled detection, durable queues and state, idempotency keys, cancellable
-queries, circuit breakers, RBAC and consent controls, model/prompt registries,
-data-quality and drift alerts, service objectives, cost/latency telemetry,
-approval workflow, and deployment evaluation gates. Actions should be tested
-with randomized holdouts; observational associations here do not establish
-causal treatment effects. See [Productionization](docs/productionization.md).
+WhyBack is currently a local, single-process reference implementation, not an
+outreach service. The production target should preserve its existing trust
+boundary: the model may choose the next analytical question, while application
+code owns data access, budgets, evidence, verification, approval, and every
+external side effect.
+
+Harden it in the following order:
+
+1. **Define the operating contract.** Set data-freshness, investigation-latency,
+   recovery, retention, regional-residency, cost, and availability objectives.
+   Assign owners for source data, detector policy, model/prompt releases,
+   verifier policy, human review, privacy, and incidents.
+2. **Package and separate the workloads.** Build pinned, signed containers for
+   scheduled detection, investigation workers, report publication, and the
+   reviewer API/UI. Replace the localhost Node bridge with an authenticated API
+   behind organizational SSO; keep it read-only except for explicit reviewer
+   dispositions.
+3. **Move data and state behind managed boundaries.** Query contracted feature
+   views in the enterprise warehouse, set server-side query limits and
+   cancellation, and persist every run transition, evidence record, approval,
+   and artifact manifest. Store audit output in append-only/WORM storage and
+   retain immutable input snapshot IDs so cases remain reproducible.
+4. **Make execution durable and idempotent.** Put detected cases on a queue,
+   checkpoint after every decision and tool attempt, use stable idempotency
+   keys, enforce budgets transactionally, add bounded backoff and circuit
+   breakers, and send exhausted cases to a dead-letter queue. A restarted or
+   duplicated worker must not repeat a successful tool call or customer action.
+5. **Close the security and privacy gaps.** Use workload identity, a managed
+   secret store, least-privilege roles, private networking, encryption with
+   managed keys, tokenized household identifiers, consent/suppression checks,
+   and separate permissions for investigation, review, and action execution.
+   The model endpoint must never receive raw transactions or credentials.
+6. **Add operational and release gates.** Export masked OpenTelemetry traces and
+   metrics for freshness, queue age, latency, cost, tool failures, verifier
+   rejection, action mix, and human overrides. Require replay evaluation,
+   dependency-failure tests, image/SBOM scans, a canary, and a tested rollback
+   for every detector, tool, prompt, model, verifier, or catalog change.
+7. **Launch through governed review.** Keep the model and reviewer workbench
+   disconnected from direct CRM/campaign writes. A separate execution service
+   must re-check approval, consent, suppression, frequency caps, and offer
+   validity, then assign randomized treatment/holdout groups so incremental
+   impact can be measured rather than inferred from observational data.
+
+### Cloud deployment options
+
+The Python contracts and `ModelBackend` boundary are intentionally portable.
+The following are sensible managed-service starting points, not components the
+current repository already provisions:
+
+| Capability | AWS | Azure | GCP |
+| --- | --- | --- | --- |
+| Container runtime | ECR + ECS on Fargate; use EKS only when Kubernetes is an organizational requirement | Azure Container Registry + Azure Container Apps; use AKS only when Kubernetes is required | Artifact Registry + Cloud Run services/jobs; use GKE only when Kubernetes is required |
+| Scheduling, workflow, and queue | EventBridge Scheduler + Step Functions + SQS with a DLQ | Azure Functions/Durable Functions or Durable Task Scheduler + Service Bus with a DLQ | Cloud Scheduler/Eventarc + Workflows + Pub/Sub with a dead-letter topic; Cloud Tasks for controlled per-case dispatch |
+| Analytical data plane | Redshift Serverless, or Athena over governed S3/Glue tables | Azure Databricks or Synapse over ADLS Gen2 | BigQuery over governed warehouse tables and Cloud Storage |
+| Authoritative run state | Aurora PostgreSQL for transactional state; DynamoDB where conditional item updates fit the access pattern | Azure Database for PostgreSQL; Cosmos DB where document state and conditional writes fit | Cloud SQL for PostgreSQL; Firestore where document state and transactions fit |
+| Immutable audit/artifacts | S3 with versioning, KMS, and Object Lock | Blob Storage with versioning, customer-managed keys, and immutable-storage policy | Cloud Storage with object versioning, Cloud KMS, and Bucket Lock/retention policy |
+| Identity, secrets, and network | IAM task roles, Secrets Manager, KMS, VPC endpoints/PrivateLink | Entra managed identities, Key Vault, managed HSM/keys, VNet integration and Private Link | Service accounts/Workload Identity, Secret Manager, Cloud KMS, Private Service Connect and VPC Service Controls |
+| Telemetry | AWS Distro for OpenTelemetry + CloudWatch/X-Ray | Azure Monitor OpenTelemetry + Application Insights/Log Analytics | Google-built OpenTelemetry Collector + Cloud Monitoring/Logging/Trace |
+| Governed model option | Keep the existing Gemini API behind egress controls, or implement and evaluate an Amazon Bedrock backend | Keep Gemini, or implement and evaluate a Microsoft Foundry/Azure OpenAI backend | Move the Gemini backend to Vertex AI with workload identity and private controls |
+
+Start with the cloud already hosting the governed customer data and identity
+plane; avoiding cross-cloud movement of customer-level evidence is usually more
+valuable than choosing a particular workflow product. Any new model provider
+needs its own strict adapter, pinned model/version, tool-calling contract tests,
+behavioral replay, privacy review, and canary. Do not assume providers implement
+structured calls, retries, safety filters, or data retention identically.
+
+For the provider-neutral target architecture, service objectives, approval
+workflow, and deployment gates, see
+[Productionizing WhyBack](docs/productionization.md).
 
 ## Deliberate non-choices
 

@@ -238,6 +238,10 @@ describe("population intelligence views", () => {
 
     expect(screen.getByRole("link", { name: /csv/i })).toHaveAttribute("href", "/api/population/export?collection=live-safe&format=csv");
     expect(screen.getByRole("table", { name: /text equivalent for decline score/i })).toBeInTheDocument();
+    const histogram = screen.getByRole("img", { name: /overlaid normalized histograms/i });
+    expect(histogram.querySelector("#population-histogram-plot")).toBeInTheDocument();
+    expect(histogram.querySelector('g[clip-path="url(#population-histogram-plot)"]')).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /quartile and median ribbon/i })).toHaveAttribute("viewBox", "0 0 520 218");
     await user.selectOptions(screen.getByLabelText("Metric"), "sales_drop");
     expect(await screen.findByText("Distribution unavailable for this preserved run.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /open household 101/i }));

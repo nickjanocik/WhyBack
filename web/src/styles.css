@@ -4265,6 +4265,10 @@ select:focus-visible {
   gap: 14px;
 }
 
+.explorer-grid {
+  align-items: start;
+}
+
 .population-card {
   min-width: 0;
   padding: 20px;
@@ -4527,6 +4531,22 @@ select:focus-visible {
   border-radius: 13px;
 }
 
+.explorer-controls {
+  position: sticky;
+  z-index: 8;
+  top: 10px;
+  flex-wrap: wrap;
+  box-shadow: 0 10px 28px rgb(25 57 45 / 8%);
+}
+
+.explorer-controls label {
+  min-width: 130px;
+}
+
+.explorer-controls select {
+  width: 100%;
+}
+
 .explorer-controls label,
 .factor-filters label {
   display: grid;
@@ -4552,7 +4572,27 @@ select:focus-visible {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.explorer-card {
+  align-self: start;
+  width: 100%;
+  overflow: hidden;
+}
+
+.population-figure,
+.percentile-ribbon,
+.density-plot,
+.sensitivity-chart {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.percentile-ribbon svg,
+.sensitivity-chart svg {
+  max-width: 560px;
+  margin: 0 auto;
 }
 
 .population-figure svg text,
@@ -4605,6 +4645,7 @@ select:focus-visible {
 
 .population-table-wrap {
   width: 100%;
+  margin-top: 15px;
   overflow: auto;
 }
 
@@ -4962,6 +5003,8 @@ select:focus-visible {
   .explorer-controls {
     align-items: stretch;
     flex-direction: column;
+    position: static;
+    box-shadow: none;
   }
 
   .control-context {

@@ -89,7 +89,7 @@ export function PopulationExplorer({
       </section>
 
       <div className="explorer-grid">
-        <section className="population-card population-card--wide" aria-labelledby="distribution-title">
+        <section className="population-card population-card--wide explorer-card explorer-card--distribution" aria-labelledby="distribution-title">
           <header className="population-card__header"><div><span className="eyebrow">Normalized shape</span><h2 id="distribution-title">{metrics.find((item) => item.id === metric)?.label} distribution</h2></div></header>
           <AnimatePresence mode="wait">
             <motion.div key={metric} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -99,17 +99,17 @@ export function PopulationExplorer({
           <DistributionTable distributions={distributions} metric={metric} />
         </section>
 
-        <section className="population-card" aria-labelledby="percentile-title">
+        <section className="population-card explorer-card explorer-card--percentile" aria-labelledby="percentile-title">
           <header className="population-card__header"><div><span className="eyebrow">Robust summaries</span><h2 id="percentile-title">Percentile ribbon</h2></div></header>
           {available ? <PercentileRibbon distributions={distributions} focus={focusCohort} reduced={Boolean(reduced)} /> : <UnavailableChart label="Percentiles unavailable." />}
         </section>
 
-        <section className="population-card population-card--wide" aria-labelledby="density-title">
+        <section className="population-card population-card--wide explorer-card explorer-card--density" aria-labelledby="density-title">
           <header className="population-card__header"><div><span className="eyebrow">Aggregate landscape</span><h2 id="density-title">Baseline value × decline score</h2></div><ScatterChart size={19} /></header>
           {population.density_grid ? <DensityPlot population={population} onOpenHousehold={onOpenHousehold} reduced={Boolean(reduced)} /> : <UnavailableChart label="Density grid unavailable for this preserved run." />}
         </section>
 
-        <section className="population-card" aria-labelledby="sensitivity-title">
+        <section className="population-card explorer-card explorer-card--sensitivity" aria-labelledby="sensitivity-title">
           <header className="population-card__header"><div><span className="eyebrow">Declared detector policy</span><h2 id="sensitivity-title">Threshold sensitivity</h2></div></header>
           {population.threshold_sensitivity.length > 0 ? <SensitivityChart population={population} reduced={Boolean(reduced)} /> : <UnavailableChart label="Sensitivity counts unavailable." />}
         </section>
@@ -141,15 +141,22 @@ function HistogramChart({ distributions, focus, reduced }: { distributions: Dist
   const innerHeight = height - margin.top - margin.bottom;
   return (
     <figure className="population-figure">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Overlaid normalized histograms for eligible, flagged, and investigated households">
+      <svg className="histogram-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Overlaid normalized histograms for eligible, flagged, and investigated households">
+        <defs>
+          <clipPath id="population-histogram-plot">
+            <rect x={margin.left} y={margin.top} width={innerWidth} height={innerHeight} />
+          </clipPath>
+        </defs>
         {[0, 0.5, 1].map((tick) => <g key={tick}><line x1={margin.left} x2={width - margin.right} y1={margin.top + innerHeight * (1 - tick)} y2={margin.top + innerHeight * (1 - tick)} className="chart-gridline" /><text x={margin.left - 7} y={margin.top + innerHeight * (1 - tick) + 4} textAnchor="end">{formatPercent(maximum * tick)}</text></g>)}
-        {distributions.map(({ cohort, data }) => data?.histogram.map((bin, index) => {
-          const slot = innerWidth / bins;
-          const barWidth = Math.max(1, slot / 3 - 1);
-          const cohortIndex = cohorts.findIndex((item) => item.id === cohort);
-          const barHeight = (bin.share / maximum) * innerHeight;
-          return <motion.rect key={`${cohort}-${index}`} x={margin.left + index * slot + cohortIndex * barWidth} width={barWidth} y={margin.top + innerHeight - barHeight} height={barHeight} fill={cohortColors[cohort]} opacity={focus === cohort ? 0.94 : 0.42} initial={reduced ? false : { height: 0, y: margin.top + innerHeight }} animate={{ height: barHeight, y: margin.top + innerHeight - barHeight }} transition={{ duration: 0.42, delay: index * 0.012 }} />;
-        }))}
+        <g clipPath="url(#population-histogram-plot)">
+          {distributions.map(({ cohort, data }) => data?.histogram.map((bin, index) => {
+            const slot = innerWidth / bins;
+            const barWidth = Math.max(1, slot / 3 - 1);
+            const cohortIndex = cohorts.findIndex((item) => item.id === cohort);
+            const barHeight = Math.min(innerHeight, Math.max(0, (bin.share / maximum) * innerHeight));
+            return <motion.rect key={`${cohort}-${index}`} x={margin.left + index * slot + cohortIndex * barWidth} width={barWidth} y={margin.top + innerHeight - barHeight} height={barHeight} rx="1.5" fill={cohortColors[cohort]} opacity={focus === cohort ? 0.94 : 0.42} initial={reduced ? false : { height: 0, y: margin.top + innerHeight }} animate={{ height: barHeight, y: margin.top + innerHeight - barHeight }} transition={{ duration: 0.42, delay: index * 0.012 }} />;
+          }))}
+        </g>
         <line x1={margin.left} x2={width - margin.right} y1={margin.top + innerHeight} y2={margin.top + innerHeight} className="chart-axis" />
       </svg>
       <figcaption className="chart-legend">{cohorts.map((item) => <span key={item.id}><i style={{ background: cohortColors[item.id] }} />{item.label}</span>)}</figcaption>
@@ -175,11 +182,16 @@ function PercentileRibbon({ distributions, focus, reduced }: { distributions: Di
   const values = distributions.flatMap((item) => item.data ? [item.data.minimum, item.data.maximum] : []).filter((item): item is number => item !== null);
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
+  const width = 520;
+  const height = 218;
+  const plotLeft = 108;
+  const plotRight = 500;
   /** Maps one metric value into the ribbon's shared horizontal coordinates. */
-  const scale = (value: number) => 24 + ((value - minimum) / Math.max(1e-9, maximum - minimum)) * 452;
-  return <figure className="percentile-ribbon"><svg viewBox="0 0 500 170" role="img" aria-label="Quartile and median ribbon by cohort">{distributions.map(({ cohort, data }, index) => {
+  const scale = (value: number) => plotLeft + ((value - minimum) / Math.max(1e-9, maximum - minimum)) * (plotRight - plotLeft);
+  return <figure className="percentile-ribbon"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Quartile and median ribbon by cohort">{distributions.map(({ cohort, data }, index) => {
     if (!data || data.minimum === null || data.maximum === null || data.q25 === null || data.q75 === null || data.median === null) return null;
-    return <g key={cohort} opacity={focus === cohort ? 1 : 0.55}><text x="20" y={38 + index * 48}>{humanize(cohort)}</text><line x1={scale(data.minimum)} x2={scale(data.maximum)} y1={48 + index * 48} y2={48 + index * 48} stroke={cohortColors[cohort]} strokeWidth="2" /><motion.rect x={scale(data.q25)} y={39 + index * 48} width={scale(data.q75) - scale(data.q25)} height="18" rx="5" fill={cohortColors[cohort]} initial={reduced ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} style={{ transformOrigin: `${scale(data.q25)}px center` }} /><line x1={scale(data.median)} x2={scale(data.median)} y1={36 + index * 48} y2={60 + index * 48} className="ribbon-median" /></g>;
+    const rowY = 48 + index * 62;
+    return <g key={cohort} opacity={focus === cohort ? 1 : 0.55}><text x="18" y={rowY + 4}>{humanize(cohort)}</text><line x1={scale(data.minimum)} x2={scale(data.maximum)} y1={rowY} y2={rowY} stroke={cohortColors[cohort]} strokeWidth="2" /><motion.rect x={scale(data.q25)} y={rowY - 10} width={Math.max(2, scale(data.q75) - scale(data.q25))} height="20" rx="5" fill={cohortColors[cohort]} initial={reduced ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} style={{ transformOrigin: `${scale(data.q25)}px center` }} /><line x1={scale(data.median)} x2={scale(data.median)} y1={rowY - 14} y2={rowY + 14} className="ribbon-median" /></g>;
   })}</svg><figcaption>Whiskers show range; bars show IQR; ticks show medians.</figcaption></figure>;
 }
 
@@ -204,9 +216,19 @@ function DensityPlot({ population, onOpenHousehold, reduced }: { population: Pop
 /** Draws the predeclared threshold sensitivity curve and exact text values. */
 function SensitivityChart({ population, reduced }: { population: PopulationSummary; reduced: boolean }) {
   const rows = population.threshold_sensitivity.filter((item) => item.threshold !== null && item.flagged_share !== null);
-  const points = rows.map((item, index) => ({ x: 38 + index * (410 / Math.max(1, rows.length - 1)), y: 150 - (item.flagged_share ?? 0) * 125, ...item }));
+  const width = 520;
+  const height = 230;
+  const margin = { left: 48, right: 20, top: 24, bottom: 44 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+  const yMaximum = Math.max(0.4, Math.ceil(Math.max(...rows.map((item) => item.flagged_share ?? 0)) * 10) / 10);
+  const points = rows.map((item, index) => ({
+    x: rows.length === 1 ? margin.left + innerWidth / 2 : margin.left + index * (innerWidth / (rows.length - 1)),
+    y: margin.top + innerHeight * (1 - (item.flagged_share ?? 0) / yMaximum),
+    ...item,
+  }));
   const path = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
-  return <figure className="sensitivity-chart"><svg viewBox="0 0 470 190" role="img" aria-label="Flagged household share across declared decline thresholds"><line x1="38" x2="448" y1="150" y2="150" className="chart-axis" /><motion.path d={path} fill="none" stroke="var(--chart)" strokeWidth="4" initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.7 }} />{points.map((point) => <g key={point.threshold}><circle cx={point.x} cy={point.y} r="5" fill="var(--forest)" /><text x={point.x} y="174" textAnchor="middle">{formatPercent(point.threshold ?? 0)}</text><text x={point.x} y={point.y - 10} textAnchor="middle">{formatPercent(point.flagged_share ?? 0)}</text></g>)}</svg><figcaption>{rows.map((item) => `${formatPercent(item.threshold ?? 0)} threshold: ${item.flagged_households ?? "—"} flagged`).join(" · ")}</figcaption></figure>;
+  return <figure className="sensitivity-chart"><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Flagged household share across declared decline thresholds">{[0, 0.5, 1].map((tick) => { const y = margin.top + innerHeight * (1 - tick); return <g key={tick}><line x1={margin.left} x2={width - margin.right} y1={y} y2={y} className={tick === 0 ? "chart-axis" : "chart-gridline"} /><text x={margin.left - 8} y={y + 3} textAnchor="end">{formatPercent(yMaximum * tick)}</text></g>; })}<motion.path d={path} fill="none" stroke="var(--chart)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.7 }} />{points.map((point) => <g key={point.threshold}><circle cx={point.x} cy={point.y} r="5" fill="var(--forest)" /><text x={point.x} y={height - 17} textAnchor="middle">{formatPercent(point.threshold ?? 0)}</text><text x={point.x} y={point.y - 11} textAnchor="middle">{formatPercent(point.flagged_share ?? 0)}</text></g>)}</svg><figcaption>{rows.map((item) => `${formatPercent(item.threshold ?? 0)} threshold: ${item.flagged_households ?? "—"} flagged`).join(" · ")}</figcaption></figure>;
 }
 
 /** Shows an explicit unavailable state instead of a misleading zero-valued chart. */
