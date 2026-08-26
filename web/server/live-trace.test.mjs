@@ -592,10 +592,11 @@ test("manager carries a unique live descriptor through execution and status", as
     repositoryRoot: root,
     backend: "gemini",
     model: "gemini-test-model",
-    describeRun: (customers, jobId) => ({
+    describeRun: (customers, jobId, declineThreshold) => ({
       backend: "gemini",
       collectionId: `live-${jobId}`,
-      command: `uv run whyback demo --customers ${customers} --backend gemini`,
+      command: `uv run whyback demo --customers ${customers} --decline-threshold ${declineThreshold} --backend gemini`,
+      declineThreshold,
       model: "gemini-test-model",
       runDirectory: path.join(root, "artifacts", "local", "live-runs", `live-${jobId}`),
     }),
@@ -620,13 +621,23 @@ test("manager carries a unique live descriptor through execution and status", as
   });
   context.after(() => manager.dispose());
 
-  const started = manager.start(5);
+  const idle = manager.status();
+  assert.equal(idle.declineThreshold, null);
+  assert.throws(
+    () => manager.start(5, 0.25),
+    (error) => error.statusCode === 400,
+  );
+
+  const started = manager.start(5, 0.4);
   assert.equal(started.backend, "gemini");
   assert.equal(started.model, "gemini-test-model");
+  assert.equal(started.declineThreshold, 0.4);
   assert.match(started.collectionId, /^live-/u);
   assert.match(started.command, /--backend gemini/u);
 
   const completed = await waitForStatus(manager, started.jobId, "completed");
+  assert.equal(receivedDescriptor.declineThreshold, 0.4);
+  assert.equal(completed.declineThreshold, 0.4);
   assert.equal(receivedDescriptor.collectionId, completed.collectionId);
   assert.equal(completed.events.at(-1).event, "run_completed");
 });

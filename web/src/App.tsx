@@ -1,4 +1,4 @@
-/** Coordinates CLI execution, live audit activity, and verified report review. */
+/** Coordinates live analysis, decision activity, and verified report review. */
 
 import {
   Activity,
@@ -14,10 +14,10 @@ import {
   Play,
   RefreshCw,
   ShieldCheck,
-  Terminal,
+  Sparkles,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -37,9 +37,11 @@ import { LiveTraceDrawer } from "./components/LiveTraceDrawer";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { PopulationExplorer } from "./components/PopulationExplorer";
 import { RunCliDialog } from "./components/RunCliDialog";
+import { productMessage } from "./lib/report";
 import type {
   DemoCustomerLimits,
   DemoStatusResponse,
+  DeclineThreshold,
   InvestigationResponse,
   LiveRunConfiguration,
   PopulationSummary,
@@ -65,6 +67,7 @@ const emptyLiveStatus: DemoStatusResponse = {
   backend: "gemini",
   model: "",
   customers: null,
+  declineThreshold: null,
   command: null,
   startedAt: null,
   completedAt: null,
@@ -89,6 +92,7 @@ function initialView(): View {
 
 /** Renders the complete WhyBack reviewer workspace and owns its application state. */
 export default function App() {
+  const reduceMotion = useReducedMotion();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [collectionId, setCollectionId] = useState("");
   const [householdId, setHouseholdId] = useState("");
@@ -150,7 +154,7 @@ export default function App() {
     window.history.replaceState(null, "", url);
   }, []);
 
-  /** Selects the preferred verified CLI run and handles an honestly empty workspace. */
+  /** Selects the preferred verified analysis and handles an honestly empty workspace. */
   const initializeWorkspace = useCallback((nextWorkspace: Workspace, preferredCollection?: string) => {
     investigationRequestEpochRef.current += 1;
     setInvestigation(null);
@@ -189,7 +193,7 @@ export default function App() {
       .then((value) => initializeWorkspace(value))
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name !== "AbortError") {
-          setError(caught instanceof Error ? caught.message : "Could not reach the local WhyBack bridge.");
+          setError(caught instanceof Error ? productMessage(caught.message, "WhyBack is temporarily unavailable.") : "WhyBack is temporarily unavailable.");
           setLoading(false);
         }
       });
@@ -216,7 +220,7 @@ export default function App() {
           setLiveStatus((current) => ({
             ...current,
             traceWarning:
-              caught instanceof Error ? caught.message : "Could not load live run status.",
+              caught instanceof Error ? productMessage(caught.message, "Could not load live analysis status.") : "Could not load live analysis status.",
           }));
         }
       });
@@ -252,7 +256,7 @@ export default function App() {
             status: "failed",
             completedAt: new Date().toISOString(),
             error:
-              "This run is no longer available. The local dashboard bridge may have restarted.",
+              "This analysis is no longer available. The analytics service may have restarted.",
             traceWarning: null,
           }));
           return;
@@ -260,7 +264,7 @@ export default function App() {
         setLiveStatus((current) => ({
           ...current,
           traceWarning:
-            caught instanceof Error ? caught.message : "Live trace polling failed.",
+            caught instanceof Error ? productMessage(caught.message, "Live progress could not be refreshed.") : "Live progress could not be refreshed.",
         }));
         timer = window.setTimeout(() => void poll(), 800);
       }
@@ -294,11 +298,11 @@ export default function App() {
         setWorkspaceRefreshAttempt(0);
         setReportRefreshFailed(false);
         initializeWorkspace(nextWorkspace, publishedCollectionId);
-        setToast("CLI run finished. Published reports refreshed.");
+        setToast("Analysis complete. Dashboard insights are ready.");
       })
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name !== "AbortError") {
-          setToast("CLI run finished, but the report list could not be refreshed.");
+          setToast("Analysis complete, but the dashboard could not refresh yet.");
           if (workspaceRefreshAttempt < 3) {
             retryTimer = window.setTimeout(() => {
               refreshedJobRef.current = null;
@@ -337,7 +341,7 @@ export default function App() {
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name === "AbortError") return;
         setPopulationError(
-          caught instanceof Error ? caught.message : "Could not load population context.",
+          caught instanceof Error ? productMessage(caught.message, "Could not load population context.") : "Could not load population context.",
         );
         setPopulationLoading(false);
       });
@@ -364,7 +368,7 @@ export default function App() {
           return;
         }
         if ((caught as { name?: string }).name !== "AbortError") {
-          setError(caught instanceof Error ? caught.message : "Could not load the investigation.");
+          setError(caught instanceof Error ? productMessage(caught.message, "Could not load the investigation.") : "Could not load the investigation.");
           setLoading(false);
         }
       });
@@ -425,11 +429,14 @@ export default function App() {
   }
 
   /** Starts a live batch and opens its audit drawer without waiting for completion. */
-  async function handleRunCli(customers: number) {
+  async function handleRunCli(
+    customers: number,
+    declineThreshold: DeclineThreshold,
+  ) {
     setRunStarting(true);
     setRunError(null);
     try {
-      const status = await runDemo(customers);
+      const status = await runDemo(customers, declineThreshold);
       activeJobRef.current = status.jobId;
       liveCursorRef.current = status.cursor;
       refreshedJobRef.current = null;
@@ -440,7 +447,7 @@ export default function App() {
       setDialogOpen(false);
       setLiveOpen(true);
     } catch (caught) {
-      setRunError(caught instanceof Error ? caught.message : "The WhyBack CLI could not start.");
+      setRunError(caught instanceof Error ? productMessage(caught.message, "The analysis could not start.") : "The analysis could not start.");
     } finally {
       setRunStarting(false);
     }
@@ -459,7 +466,7 @@ export default function App() {
       setReportRefreshFailed(false);
       initializeWorkspace(nextWorkspace, publishedCollectionId);
       setLiveOpen(false);
-      setToast("Published CLI reports reloaded.");
+      setToast("Dashboard insights reloaded.");
     } catch {
       setLoading(false);
       setReportRefreshFailed(true);
@@ -477,7 +484,7 @@ export default function App() {
       ? selectedCollection.reportCount
       : liveStatus.customers;
 
-  /** Opens the bounded launcher for a uniquely owned CLI run. */
+  /** Opens the bounded launcher for a new portfolio analysis. */
   function openNewRun() {
     setRunError(null);
     setDialogOpen(true);
@@ -501,18 +508,21 @@ export default function App() {
               {railOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="internal-brand"><strong>WhyBack</strong><span>Investigator</span></div>
+          <div className="internal-brand">
+            <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
+            <span className="brand-copy"><strong>WhyBack</strong><small>Population Intelligence</small></span>
+          </div>
           <div className="header-actions">
             <button
               className={`live-toggle ${liveOpen ? "active" : ""}`}
               type="button"
               onClick={() => setLiveOpen((value) => !value)}
-              aria-label={`${liveOpen ? "Close" : "Open"} live audit trace`}
+              aria-label={`${liveOpen ? "Close" : "Open"} live analysis progress`}
               aria-expanded={liveOpen}
               aria-controls="live-trace-drawer"
             >
               <Activity size={15} />
-              <span className="live-toggle__label">Live activity</span>
+              <span className="live-toggle__label">Live progress</span>
               {runRunning ? <i aria-label="Run active" /> : liveStatus.eventCount > 0 ? <span className="live-toggle__count">{liveStatus.eventCount}</span> : null}
             </button>
             <button
@@ -520,10 +530,10 @@ export default function App() {
               type="button"
               disabled={runBusy || !customerLimits || !liveRun}
               onClick={openNewRun}
-              aria-label={runRunning ? "WhyBack CLI running" : "Start a new WhyBack CLI run"}
+              aria-label={runRunning ? "Analysis in progress" : "Start a new analysis"}
             >
               {runRunning ? <LoaderCircle className="spin" size={15} /> : <RefreshCw size={15} />}
-              <span className="run-button__label">{runRunning ? "CLI running" : "New run"}</span>
+              <span className="run-button__label">{runRunning ? "Analyzing" : "New analysis"}</span>
             </button>
           </div>
         </header>
@@ -566,6 +576,7 @@ export default function App() {
                 })}
               </nav>
               <div className="toolbar-context">
+                <span className="verified-context"><ShieldCheck size={12} /> Verified</span>
                 <span>{selectedCollection?.title}</span>
                 {householdViews.has(view) && <><i /><span>Household {householdId}</span></>}
               </div>
@@ -576,7 +587,7 @@ export default function App() {
             {workspace && workspace.collectionWarnings.length > 0 && (
               <div className="collection-warning" role="status">
                 <CircleAlert size={16} />
-                <span>{workspace.collectionWarnings.join(" ")}</span>
+                <span>{productMessage(workspace.collectionWarnings.join(" "), "Some analysis history is temporarily unavailable.")}</span>
               </div>
             )}
             {householdViews.has(view) && loading && <LoadingState />}
@@ -595,18 +606,30 @@ export default function App() {
               <ErrorState message={populationError} onRetry={() => window.location.reload()} />
             )}
             {!householdViews.has(view) && !populationLoading && !populationError && population && (
-              <div key={`${collectionId}-${view}`}>
+              <motion.div
+                className="view-stage"
+                key={`${collectionId}-${view}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 8, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: reduceMotion ? 0 : 0.24, ease: "easeOut" }}
+              >
                 {view === "home" && <ExecutiveHome population={population} onNavigate={changeView} />}
                 {view === "population" && <PopulationExplorer collectionId={collectionId} population={population} onOpenHousehold={openHousehold} />}
                 {view === "factors" && <FactorMap population={population} onOpenHousehold={openHousehold} />}
-              </div>
+              </motion.div>
             )}
             {householdViews.has(view) && !loading && !error && hasReports && investigation && (
-              <div key={`${investigation.report.run_id}-${view}`}>
+              <motion.div
+                className="view-stage"
+                key={`${investigation.report.run_id}-${view}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 8, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: reduceMotion ? 0 : 0.24, ease: "easeOut" }}
+              >
                 {view === "investigation" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
                 {view === "evidence" && <EvidencePanel report={investigation.report} selectedEvidenceId={selectedEvidenceId} onEvidenceSelect={setSelectedEvidenceId} />}
                 {view === "audit" && <AuditPanel collectionId={collectionId} report={investigation.report} trace={investigation.trace} />}
-              </div>
+              </motion.div>
             )}
           </div>
         </main>
@@ -632,6 +655,8 @@ export default function App() {
           customerLimits={customerLimits}
           liveRun={liveRun}
           initialCustomers={priorRunCustomerCount}
+          initialDeclineThreshold={population?.detector_policy.decline_threshold}
+          thresholdSensitivity={population?.threshold_sensitivity}
           onClose={() => !runStarting && setDialogOpen(false)}
           onRun={handleRunCli}
         />
@@ -658,35 +683,35 @@ function EmptyWorkspace({
   const running = status.status === "running";
   return (
     <section className="empty-workspace" aria-labelledby="empty-workspace-title">
-      <div className="empty-workspace__icon"><Terminal size={24} /></div>
-      <span className="eyebrow">CLI workspace</span>
+      <div className="empty-workspace__icon"><Sparkles size={24} /></div>
+      <span className="eyebrow">Population intelligence</span>
       <h1 id="empty-workspace-title">
-        {running ? "Investigation in progress" : "No verified CLI runs yet"}
+        {running ? "Portfolio analysis in progress" : "Ready for your first portfolio review"}
       </h1>
       <p>
         {running
-          ? "The CLI is investigating households now. Reports appear here only after the run passes deterministic verification."
-          : "Start the WhyBack CLI against official prepared data. This workspace intentionally excludes bundled examples and unverified output."}
+          ? "WhyBack is comparing household behavior and verifying every result. Insights will appear here when the review is complete."
+          : "Launch a verified analysis of official household data to surface population patterns, differentiated factors, and governed actions."}
       </p>
 
-      <div className="empty-workspace__facts" aria-label="CLI configuration">
-        <span><small>Backend</small>Gemini API</span>
-        <span><small>Model</small><code>{liveRun.model}</code></span>
-        <span><small>Batch range</small>{customerLimits.minimum}–{customerLimits.maximum} households</span>
+      <div className="empty-workspace__facts" aria-label="Analysis configuration">
+        <span><small>Data</small>Official household records</span>
+        <span><small>Method</small>Verified population analysis</span>
+        <span><small>Review size</small>{customerLimits.minimum}–{customerLimits.maximum} households</span>
       </div>
 
       {!liveRun.ready && !running && (
         <div className="empty-workspace__notice" role="status">
           <CircleAlert size={16} />
-          <span>{liveRun.blockedReason ?? "The local CLI is not ready."}</span>
+          <span>{liveRun.blockedReason ? productMessage(liveRun.blockedReason, "Analysis is temporarily unavailable.") : "Analysis is temporarily unavailable. Check the secure model connection."}</span>
         </div>
       )}
       {status.status === "failed" && (
         <div className="empty-workspace__notice empty-workspace__notice--failed" role="alert">
           <CircleAlert size={16} />
           <span>
-            <strong>The last CLI run was not published.</strong>{" "}
-            {status.error ?? "It did not produce a verified report collection."}
+            <strong>The last analysis did not complete.</strong>{" "}
+            {status.error ? productMessage(status.error, "No verified results were produced.") : "No verified results were produced."}
           </span>
         </div>
       )}
@@ -696,7 +721,7 @@ function EmptyWorkspace({
         type="button"
         onClick={running ? onOpenActivity : onStart}
       >
-        {running ? <><Activity size={17} /> View CLI activity</> : <><Play size={17} /> Configure CLI run</>}
+        {running ? <><Activity size={17} /> View live progress</> : <><Play size={17} /> Start portfolio analysis</>}
       </button>
     </section>
   );

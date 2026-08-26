@@ -14,6 +14,13 @@ interface FactorMapProps {
 
 type SortKey = "rank" | "decline_score" | "sales_drop" | "population_gap" | "warnings";
 
+const NO_ACTION_KEY = "NO_PUBLISHED_RECOMMENDATION";
+
+/** Keeps failed investigations visible without presenting missing output as data loss. */
+function actionKey(row: InvestigatedPopulationHousehold): string {
+  return row.action_id ?? NO_ACTION_KEY;
+}
+
 /** Renders cross-household differences without hiding insufficient or failed outcomes. */
 export function FactorMap({ population, onOpenHousehold }: FactorMapProps) {
   const reduced = useReducedMotion();
@@ -30,7 +37,7 @@ export function FactorMap({ population, onOpenHousehold }: FactorMapProps) {
     (factorLabel === "all" || row.identified_factor.label === factorLabel) &&
     (status === "all" || row.status === status) &&
     (context === "all" || row.context_classification === context) &&
-    (action === "all" || (row.action_id ?? "UNAVAILABLE") === action) &&
+    (action === "all" || actionKey(row) === action) &&
     (confidence === "all" || row.confidence === confidence),
   ), [action, confidence, context, factorLabel, factorType, rows, status]);
   const sorted = useMemo(() => [...filtered].sort((left, right) => {
@@ -46,14 +53,14 @@ export function FactorMap({ population, onOpenHousehold }: FactorMapProps) {
         <div className="factor-denominator"><strong>{filtered.length}</strong><span>of {rows.length} investigated</span></div>
       </header>
 
-      <div className="method-banner" role="note"><CircleAlert size={17} /><p><strong>Every terminal outcome stays visible.</strong> Insufficient-evidence and failed investigations remain in denominators unless a visible filter excludes them.</p></div>
+      <div className="method-banner" role="note"><CircleAlert size={17} /><p><strong>Every outcome stays visible.</strong> Insufficient-evidence and failed investigations remain in denominators unless a visible filter excludes them.</p></div>
 
       <section className="factor-filters" aria-label="Factor map filters">
         <span><Filter size={15} /> Filters</span>
         <FilterSelect label="Status" value={status} onChange={setStatus} rows={rows} getValue={(row) => row.status} />
         <FilterSelect label="Context" value={context} onChange={setContext} rows={rows} getValue={(row) => row.context_classification} />
         <FilterSelect label="Factor type" value={factorType} onChange={(value) => { setFactorType(value); setFactorLabel("all"); }} rows={rows} getValue={(row) => row.identified_factor.factor_type} />
-        <FilterSelect label="Action" value={action} onChange={setAction} rows={rows} getValue={(row) => row.action_id ?? "UNAVAILABLE"} />
+        <FilterSelect label="Action" value={action} onChange={setAction} rows={rows} getValue={actionKey} />
         <FilterSelect label="Confidence" value={confidence} onChange={setConfidence} rows={rows} getValue={(row) => row.confidence} />
         <button type="button" onClick={() => { setStatus("all"); setContext("all"); setFactorType("all"); setFactorLabel("all"); setAction("all"); setConfidence("all"); }}>Clear all</button>
       </section>
@@ -89,12 +96,12 @@ function FactorFlow({ rows, reduced }: { rows: InvestigatedPopulationHousehold[]
   if (rows.length === 0) return <div className="chart-unavailable"><CircleAlert size={20} />No households match these filters.</div>;
   const contexts = [...new Set(rows.map((row) => row.context_classification))];
   const factors = [...new Set(rows.map((row) => row.identified_factor.label))];
-  const actions = [...new Set(rows.map((row) => row.action_id ?? "UNAVAILABLE"))];
+  const actions = [...new Set(rows.map(actionKey))];
   /** Positions a category evenly within its flow column. */
   const yFor = (value: string, values: string[]) => 42 + values.indexOf(value) * (230 / Math.max(1, values.length - 1));
   const paths = new Map<string, { context: string; factor: string; action: string; count: number }>();
   for (const row of rows) {
-    const actionId = row.action_id ?? "UNAVAILABLE";
+    const actionId = actionKey(row);
     const key = `${row.context_classification}|${row.identified_factor.label}|${actionId}`;
     const item = paths.get(key) ?? { context: row.context_classification, factor: row.identified_factor.label, action: actionId, count: 0 };
     item.count += 1;
@@ -105,7 +112,7 @@ function FactorFlow({ rows, reduced }: { rows: InvestigatedPopulationHousehold[]
     const factorY = yFor(item.factor, factors);
     const actionY = yFor(item.action, actions);
     return <g key={`${item.context}-${item.factor}-${item.action}`}><motion.path d={`M 185 ${contextY} C 250 ${contextY}, 280 ${factorY}, 350 ${factorY}`} fill="none" stroke="var(--chart)" strokeOpacity="0.48" strokeWidth={3 + item.count * 3} initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.6 }} /><motion.path d={`M 515 ${factorY} C 580 ${factorY}, 610 ${actionY}, 680 ${actionY}`} fill="none" stroke="var(--accent)" strokeOpacity="0.58" strokeWidth={3 + item.count * 3} initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.6, delay: 0.15 }} /></g>;
-  })}{contexts.map((item) => <FlowNode key={item} x={28} y={yFor(item, contexts)} label={humanize(item)} count={rows.filter((row) => row.context_classification === item).length} />)}{factors.map((item) => <FlowNode key={item} x={350} y={yFor(item, factors)} label={item} count={rows.filter((row) => row.identified_factor.label === item).length} />)}{actions.map((item) => <FlowNode key={item} x={680} y={yFor(item, actions)} label={humanize(item)} count={rows.filter((row) => (row.action_id ?? "UNAVAILABLE") === item).length} />)}</svg><figcaption><table><thead><tr><th>Context</th><th>Factor</th><th>Action</th><th>Households</th></tr></thead><tbody>{[...paths.values()].map((item) => <tr key={`${item.context}-${item.factor}-${item.action}`}><td>{humanize(item.context)}</td><td>{item.factor}</td><td>{humanize(item.action)}</td><td>{item.count}</td></tr>)}</tbody></table></figcaption></figure>;
+  })}{contexts.map((item) => <FlowNode key={item} x={28} y={yFor(item, contexts)} label={humanize(item)} count={rows.filter((row) => row.context_classification === item).length} />)}{factors.map((item) => <FlowNode key={item} x={350} y={yFor(item, factors)} label={item} count={rows.filter((row) => row.identified_factor.label === item).length} />)}{actions.map((item) => <FlowNode key={item} x={680} y={yFor(item, actions)} label={humanize(item)} count={rows.filter((row) => actionKey(row) === item).length} />)}</svg><figcaption><table><thead><tr><th>Context</th><th>Factor</th><th>Action</th><th>Households</th></tr></thead><tbody>{[...paths.values()].map((item) => <tr key={`${item.context}-${item.factor}-${item.action}`}><td>{humanize(item.context)}</td><td>{item.factor}</td><td>{humanize(item.action)}</td><td>{item.count}</td></tr>)}</tbody></table></figcaption></figure>;
 }
 
 /** Draws one labeled flow node with its non-color count cue. */
@@ -128,7 +135,7 @@ function FactorRankings({ rows, selectedFactor, onSelectFactor, reduced }: { row
     map.set(key, current);
     return map;
   }, new Map<string, { factorType: string; label: string; count: number }>()).values()].sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
-  const actions = count((row) => row.action_id ?? "UNAVAILABLE");
+  const actions = count(actionKey);
   const maximum = Math.max(1, ...factorRows.map((item) => item.count), ...actions.map((item) => item[1]));
   return <div className="factor-rankings"><h3>Factors</h3>{factorRows.map((item, index) => <button type="button" className={selectedFactor === item.label ? "selected" : ""} onClick={() => onSelectFactor(selectedFactor === item.label ? "all" : item.label)} key={`${item.factorType}-${item.label}`}><span>{item.label}</span><i><motion.b initial={reduced ? false : { width: 0 }} animate={{ width: `${(item.count / maximum) * 100}%` }} transition={{ delay: index * 0.05 }} /></i><strong>{item.count}</strong></button>)}<h3>Actions</h3>{actions.map(([key, value], index) => <div className="factor-ranking-row" key={key}><span>{humanize(key)}</span><i><motion.b initial={reduced ? false : { width: 0 }} animate={{ width: `${(value / maximum) * 100}%` }} transition={{ delay: index * 0.05 }} /></i><strong>{value}</strong></div>)}</div>;
 }

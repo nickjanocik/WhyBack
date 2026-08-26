@@ -97,6 +97,8 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     assert manifest["population_summary"] == "population_summary.json"
     assert manifest["population_schema_version"] == 1
     assert population["availability"] == "full"
+    assert population["detector_policy"]["decline_threshold"] == 0.3
+    assert 0.3 in population["detector_policy"]["sensitivity_thresholds"]
     assert [item["cohort"] for item in population["cohorts"]] == [
         "eligible",
         "flagged",

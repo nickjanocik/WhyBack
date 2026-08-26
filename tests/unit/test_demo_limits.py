@@ -6,9 +6,12 @@ import pytest
 
 from whyback.demo_limits import (
     DEFAULT_DEMO_CUSTOMERS,
+    DEFAULT_DEMO_DECLINE_THRESHOLD,
+    DEMO_DECLINE_THRESHOLDS,
     MAX_DEMO_CUSTOMERS,
     MIN_DEMO_CUSTOMERS,
     validate_demo_customer_count,
+    validate_demo_decline_threshold,
 )
 
 
@@ -43,3 +46,16 @@ def test_demo_customer_limit_rejects_values_outside_boundaries(
 
     with pytest.raises(ValueError, match="between 3 and 24"):
         validate_demo_customer_count(customers)
+
+
+def test_demo_decline_threshold_accepts_only_declared_choices() -> None:
+    """Verify that live runs use one of three explicit detector postures."""
+
+    assert DEFAULT_DEMO_DECLINE_THRESHOLD == 0.3
+    assert DEMO_DECLINE_THRESHOLDS == (0.2, 0.3, 0.4)
+    for threshold in DEMO_DECLINE_THRESHOLDS:
+        validate_demo_decline_threshold(threshold)
+
+    for threshold in (0.0, 0.25, 1.0, True, "0.3"):
+        with pytest.raises(ValueError, match=r"0\.2, 0\.3, or 0\.4"):
+            validate_demo_decline_threshold(threshold)

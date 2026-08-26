@@ -15,11 +15,13 @@ import type { LiveTraceEvent, TraceEvent } from "../types";
 export function TraceEventRow({
   event,
   showSource = false,
+  condensed = false,
 }: {
   event: TraceEvent | LiveTraceEvent;
   showSource?: boolean;
+  condensed?: boolean;
 }) {
-  const details = orderedDetails(event.details);
+  const details = orderedDetails(event.details, condensed);
   const sourceLabel = "sourceLabel" in event ? event.sourceLabel : null;
   return (
     <article className={`trace-row trace-row--${traceCategory(event.event)}`}>
@@ -37,8 +39,8 @@ export function TraceEventRow({
                 className={`trace-detail ${narrativeDetailKeys.has(key) ? "trace-detail--narrative" : ""}`}
                 key={key}
               >
-                <small>{humanize(key)}</small>
-                <span className="trace-detail__value">{formatTraceDetail(value)}</span>
+                <small>{detailLabel(key)}</small>
+                <span className="trace-detail__value">{formatTraceDetail(value, key)}</span>
               </div>
             ))}
           </div>
@@ -59,6 +61,7 @@ function traceCategory(event: string): string {
     return "warning";
   }
   if (event.includes("verification")) return "verify";
+  if (event.includes("evidence")) return "evidence";
   if (event.includes("tool")) return "tool";
   if (event.includes("decision") || event === "finish_requested") return "decision";
   return "run";
@@ -67,6 +70,9 @@ function traceCategory(event: string): string {
 const detailPriority = [
   "investigation_question",
   "decision_summary",
+  "analytical_check",
+  "signals",
+  "scope_note",
   "selected_tool",
   "tool_name",
   "status",
@@ -91,15 +97,48 @@ const detailPriority = [
 const narrativeDetailKeys = new Set([
   "investigation_question",
   "decision_summary",
+  "scope_note",
 ]);
 const detailPriorityByKey = new Map(
   detailPriority.map((key, index) => [key, index]),
 );
+const condensedHiddenDetails = new Set([
+  "allowed_tools",
+  "evidence_id",
+  "finish_available",
+  "input_tokens",
+  "model",
+  "output_tokens",
+  "prompt_version",
+  "provider_call_id",
+  "repair_attempted",
+  "repair_available",
+  "repair_requested",
+  "source_tool",
+  "source_tool_call_id",
+  "tool_call_id",
+  "unavailable_tools",
+]);
+
+/** Gives implementation-oriented activity fields product-friendly labels. */
+function detailLabel(key: string): string {
+  const labels: Record<string, string> = {
+    selected_tool: "Analytical lens",
+    tool_name: "Analytical check",
+    latency_ms: "Elapsed milliseconds",
+    remaining_tool_budget: "Checks remaining",
+    remaining_turn_budget: "Review steps remaining",
+    analytical_check: "Analytical check",
+    signals: "Signals recorded",
+    scope_note: "Scope note",
+  };
+  return labels[key] ?? humanize(key);
+}
 
 /** Orders allow-listed details by reviewer importance and removes empty values. */
-function orderedDetails(details: Record<string, unknown>) {
+function orderedDetails(details: Record<string, unknown>, condensed: boolean) {
   return Object.entries(details)
-    .filter(([, value]) => value !== null && value !== "")
+    .filter(([key, value]) => value !== null && value !== "" && (!condensed || !condensedHiddenDetails.has(key)))
     .sort(
       ([left], [right]) =>
         (detailPriorityByKey.get(left) ?? Number.MAX_SAFE_INTEGER) -
@@ -118,14 +157,22 @@ function traceIcon(event: string) {
 }
 
 /** Formats one already-sanitized trace value without exposing raw object content. */
-function formatTraceDetail(value: unknown): string {
-  if (Array.isArray(value)) return value.map(String).join(", ") || "None";
+function formatTraceDetail(value: unknown, key: string): string {
+  if (Array.isArray(value)) {
+    const values = value.map(String);
+    return key === "signals"
+      ? values.map(humanize).join(", ") || "None"
+      : values.join(", ") || "None";
+  }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number") {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
   if (typeof value === "object") return "Structured detail";
-  return String(value);
+  const rendered = String(value);
+  return key === "selected_tool" || key === "tool_name" || key === "analytical_check"
+    ? humanize(rendered)
+    : rendered;
 }
 
 /** Formats an audit timestamp as local clock time with a safe fallback. */

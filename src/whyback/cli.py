@@ -15,8 +15,10 @@ from whyback import __version__
 from whyback.config import load_settings
 from whyback.demo_limits import (
     DEFAULT_DEMO_CUSTOMERS,
+    DEFAULT_DEMO_DECLINE_THRESHOLD,
     MAX_DEMO_CUSTOMERS,
     MIN_DEMO_CUSTOMERS,
+    validate_demo_decline_threshold,
 )
 
 app = typer.Typer(
@@ -333,6 +335,15 @@ def demo(
             ),
         ),
     ] = DEFAULT_DEMO_CUSTOMERS,
+    decline_threshold: Annotated[
+        float,
+        typer.Option(
+            "--decline-threshold",
+            min=0.2,
+            max=0.4,
+            help="Flag households at a decline score of exactly 0.2, 0.3, or 0.4.",
+        ),
+    ] = DEFAULT_DEMO_DECLINE_THRESHOLD,
     backend: Annotated[
         str,
         typer.Option(help="scripted uses synthetic data; gemini uses official data."),
@@ -346,10 +357,20 @@ def demo(
 
     from whyback.demo import build_official_demo, build_synthetic_demo
 
+    try:
+        validate_demo_decline_threshold(decline_threshold)
+    except ValueError as error:
+        raise typer.BadParameter(
+            str(error), param_hint="--decline-threshold"
+        ) from error
     settings = load_settings()
     if backend == "scripted":
         destination = output_dir or Path("artifacts/demo")
-        summary = build_synthetic_demo(destination, customers=customers)
+        summary = build_synthetic_demo(
+            destination,
+            customers=customers,
+            decline_threshold=decline_threshold,
+        )
     elif backend == "gemini":
         destination = output_dir or Path("artifacts/live")
         summary = build_official_demo(
@@ -357,6 +378,7 @@ def demo(
             destination,
             customers=customers,
             backend="gemini",
+            decline_threshold=decline_threshold,
         )
     else:
         raise typer.BadParameter("backend must be 'scripted' or 'gemini'")

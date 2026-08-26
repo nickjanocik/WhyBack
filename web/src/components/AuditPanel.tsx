@@ -1,4 +1,4 @@
-/** Presents sanitized provenance, replay events, and links to rendered audit artifacts. */
+/** Presents sanitized provenance, replay events, and supporting review views. */
 
 import {
   ArrowUpRight,
@@ -46,9 +46,9 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
         <section className="surface trace-surface">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Durable CLI trace</span>
-              <h1>Recorded run events</h1>
-              <p>{events.length} sanitized events for this household investigation.</p>
+              <span className="eyebrow">Decision history</span>
+              <h1>How this analysis was built</h1>
+              <p>{events.length} recorded analytical steps for this household.</p>
             </div>
             <label className="switch-label">
               <input type="checkbox" checked={showEvidenceEvents} onChange={(event) => setShowEvidenceEvents(event.target.checked)} />
@@ -58,32 +58,32 @@ export function AuditPanel({ collectionId, report, trace }: AuditPanelProps) {
           </div>
           <div className="audit-inline-stats" aria-label="Audit summary">
             <span><Route size={14} /> {decisionCount} decisions</span>
-            <span><Hammer size={14} /> {toolCount} tool outcomes</span>
+            <span><Hammer size={14} /> {toolCount} analytical checks</span>
             <span><CircleAlert size={14} /> {retryCount} retries</span>
           </div>
           <div className="trace-list">
             {events.map((event, index) => <TraceEventRow event={event} key={`${event.timestamp}-${event.event}-${index}`} />)}
-            {events.length === 0 && <p className="muted-copy">No trace JSONL is available for this artifact.</p>}
+            {events.length === 0 && <p className="muted-copy">No decision history is available for this analysis.</p>}
           </div>
         </section>
 
         <aside className="audit-aside">
           <section className="surface provenance-card">
             <span className="eyebrow">Run provenance</span>
-            <h2>Artifact identity</h2>
+            <h2>Analysis identity</h2>
             <ProvenanceRow icon={<Fingerprint size={15} />} label="Run ID" value={compactId(report.run_id, 8)} />
             <ProvenanceRow icon={<Database size={15} />} label="Dataset" value={humanize(report.provenance.dataset_kind)} />
-            <ProvenanceRow icon={<Hammer size={15} />} label="Backend" value={humanize(report.provenance.backend)} />
+            <ProvenanceRow icon={<Hammer size={15} />} label="Analysis engine" value={humanize(report.provenance.backend)} />
             <ProvenanceRow icon={<Bot size={15} />} label="Model" value={report.provenance.model} />
             <ProvenanceRow icon={<FileJson size={15} />} label="Schema" value={`Report v${report.schema_version}`} />
             <ProvenanceRow icon={<Clock3 size={15} />} label="Generated" value={formatTimestamp(report.provenance.generated_at)} />
           </section>
 
           <section className="surface original-links">
-            <span className="eyebrow">Artifact files</span>
-            <h2>Generated views</h2>
-            <a href={artifactUrl(collectionId, report.household_id, "report.html")} target="_blank" rel="noreferrer">Report HTML <ArrowUpRight size={15} /></a>
-            <a href={artifactUrl(collectionId, report.household_id, "trace.html")} target="_blank" rel="noreferrer">Trace HTML <ArrowUpRight size={15} /></a>
+            <span className="eyebrow">Supporting views</span>
+            <h2>Review in detail</h2>
+            <a href={artifactUrl(collectionId, report.household_id, "report.html")} target="_blank" rel="noreferrer">Full report <ArrowUpRight size={15} /></a>
+            <a href={artifactUrl(collectionId, report.household_id, "trace.html")} target="_blank" rel="noreferrer">Decision trail <ArrowUpRight size={15} /></a>
           </section>
         </aside>
       </div>

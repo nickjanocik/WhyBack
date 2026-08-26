@@ -1,4 +1,4 @@
-/** Proves the operational UI reaches the real CLI bridge from an empty workspace. */
+/** Proves the operational UI reaches live analysis from an empty workspace. */
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -32,6 +32,7 @@ const idleStatus: DemoStatusResponse = {
   backend: "gemini",
   model: "gemini-3.7-flash",
   customers: null,
+  declineThreshold: null,
   command: null,
   startedAt: null,
   completedAt: null,
@@ -50,6 +51,7 @@ const runningStatus: DemoStatusResponse = {
   jobId: "123e4567-e89b-42d3-a456-426614174000",
   status: "running",
   customers: 4,
+  declineThreshold: 0.4,
   command:
     "uv run whyback demo --customers 4 --backend gemini --output-dir artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
   startedAt: "2026-08-26T12:00:00Z",
@@ -262,7 +264,7 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("CLI application workflow", () => {
+describe("analysis application workflow", () => {
   it("opens on Home without loading a household report", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -315,7 +317,7 @@ describe("CLI application workflow", () => {
     });
   });
 
-  it("starts the CLI from an honest empty state and opens its live activity", async () => {
+  it("starts an analysis from an honest empty state and opens live progress", async () => {
     const user = userEvent.setup();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -344,16 +346,17 @@ describe("CLI application workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "No verified CLI runs yet" }),
+      await screen.findByRole("heading", { name: "Ready for your first portfolio review" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/excludes bundled examples and unverified output/i)).toBeInTheDocument();
+    expect(screen.getByText(/launch a verified analysis of official household data/i)).toBeInTheDocument();
     expect(screen.queryByText(/committed sample|official type a|boundary case/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
-    const launchDialog = screen.getByRole("dialog", { name: "Start a new investigation run" });
-    const count = screen.getByRole("spinbutton", { name: "Households" });
+    await user.click(screen.getByRole("button", { name: "Start a new analysis" }));
+    const launchDialog = screen.getByRole("dialog", { name: "Review a household cohort" });
+    const count = screen.getByRole("spinbutton", { name: "Households to investigate" });
     await user.clear(count);
     await user.type(count, "4");
+    await user.click(screen.getByRole("radio", { name: /focused/i }));
     await user.click(
       launchDialog.querySelector<HTMLButtonElement>(".run-submit")!,
     );
@@ -364,12 +367,16 @@ describe("CLI application workflow", () => {
       );
       expect(post).toBeDefined();
       expect(post?.[1]?.headers).toMatchObject({ "Content-Type": "application/json" });
-      expect(JSON.parse(String(post?.[1]?.body))).toEqual({ customers: 4 });
+      expect(JSON.parse(String(post?.[1]?.body))).toEqual({
+        customers: 4,
+        declineThreshold: 0.4,
+      });
     });
 
-    const drawer = await screen.findByRole("dialog", { name: "Live run activity" });
-    expect(drawer).toHaveTextContent(runningStatus.command!);
-    expect(drawer).toHaveTextContent(/cli run not published/i);
+    const drawer = await screen.findByRole("dialog", { name: "Live progress" });
+    expect(drawer).not.toHaveTextContent(runningStatus.command!);
+    expect(drawer).toHaveTextContent(/analysis did not complete/i);
+    expect(drawer).not.toHaveTextContent(/\bcli\b/i);
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
   });
 
@@ -399,7 +406,7 @@ describe("CLI application workflow", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("combobox", { name: "CLI run" })).toHaveValue(
+    expect(await screen.findByRole("combobox", { name: "Analysis run" })).toHaveValue(
       existingCollectionId,
     );
     expect(
@@ -411,18 +418,18 @@ describe("CLI application workflow", () => {
         { name: "What changed across the household population?" },
       ),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
-    expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(5);
-    await user.click(screen.getByRole("button", { name: "Start new run" }));
+    await user.click(screen.getByRole("button", { name: "Start a new analysis" }));
+    expect(screen.getByRole("spinbutton", { name: "Households to investigate" })).toHaveValue(5);
+    await user.click(screen.getByRole("button", { name: "Start analysis" }));
 
-    const drawer = await screen.findByRole("dialog", { name: "Live run activity" });
-    expect(drawer).toHaveTextContent(nextRunningStatus.command!);
+    const drawer = await screen.findByRole("dialog", { name: "Live progress" });
+    expect(drawer).not.toHaveTextContent(nextRunningStatus.command!);
     expect(drawer).not.toHaveTextContent(/existing verified report remains visible/i);
     expect(document.querySelector("#candidate-rail")).not.toBeInTheDocument();
     const main = document.querySelector<HTMLElement>(".main-workspace")!;
     expect(within(main).queryByText("Household 1")).not.toBeInTheDocument();
     expect(within(main).queryByLabelText("Loading investigation")).not.toBeInTheDocument();
-    expect(within(main).getByRole("heading", { name: "Investigation in progress" })).toBeInTheDocument();
+    expect(within(main).getByRole("heading", { name: "Portfolio analysis in progress" })).toBeInTheDocument();
     staleReport.resolve(staleInvestigation);
     await waitFor(() => {
       expect(within(main).queryByText("STALE HOUSEHOLD")).not.toBeInTheDocument();
@@ -434,7 +441,10 @@ describe("CLI application workflow", () => {
     const post = fetchMock.mock.calls.find(
       ([url, init]) => url === "/api/demo" && init?.method === "POST",
     );
-    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ customers: 5 });
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({
+      customers: 5,
+      declineThreshold: 0.3,
+    });
   });
 
   it("preserves the candidate rail and main panel when the bridge rejects a new run", async () => {
@@ -455,12 +465,12 @@ describe("CLI application workflow", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("combobox", { name: "CLI run" })).toHaveValue(
+    expect(await screen.findByRole("combobox", { name: "Analysis run" })).toHaveValue(
       existingCollectionId,
     );
-    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
-    const launchDialog = screen.getByRole("dialog", { name: "Start a new investigation run" });
-    await user.click(within(launchDialog).getByRole("button", { name: "Start new run" }));
+    await user.click(screen.getByRole("button", { name: "Start a new analysis" }));
+    const launchDialog = screen.getByRole("dialog", { name: "Review a household cohort" });
+    await user.click(within(launchDialog).getByRole("button", { name: "Start analysis" }));
 
     expect(await within(launchDialog).findByRole("alert")).toHaveTextContent(
       "Gemini rejected the launch.",
@@ -470,7 +480,7 @@ describe("CLI application workflow", () => {
     expect(within(rail).getByText("Household 1")).toBeInTheDocument();
     expect(within(main).getByRole("heading", { name: "What changed across the household population?" })).toBeInTheDocument();
     expect(within(main).queryByLabelText("Loading investigation")).not.toBeInTheDocument();
-    expect(within(main).queryByRole("heading", { name: "Investigation in progress" })).not.toBeInTheDocument();
+    expect(within(main).queryByRole("heading", { name: "Portfolio analysis in progress" })).not.toBeInTheDocument();
     expect((document.querySelector("#collection") as HTMLSelectElement).value).toBe(
       existingCollectionId,
     );
@@ -514,12 +524,12 @@ describe("CLI application workflow", () => {
 
     render(<App />);
 
-    await screen.findByRole("combobox", { name: "CLI run" });
-    await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
-    await user.click(screen.getByRole("button", { name: "Start new run" }));
+    await screen.findByRole("combobox", { name: "Analysis run" });
+    await user.click(screen.getByRole("button", { name: "Start a new analysis" }));
+    await user.click(screen.getByRole("button", { name: "Start analysis" }));
 
     const main = document.querySelector<HTMLElement>(".main-workspace")!;
-    expect(await within(main).findByRole("heading", { name: "Investigation in progress" })).toBeInTheDocument();
+    expect(await within(main).findByRole("heading", { name: "Portfolio analysis in progress" })).toBeInTheDocument();
     expect(document.querySelector("#candidate-rail")).not.toBeInTheDocument();
 
     completion.resolve(completedStatus);
@@ -578,11 +588,11 @@ describe("CLI application workflow", () => {
 
       if (firstResponse === "workspace first") {
         workspaceResponse.resolve(existingWorkspace);
-        await screen.findByRole("combobox", { name: "CLI run" });
+        await screen.findByRole("combobox", { name: "Analysis run" });
         statusResponse.resolve(nextRunningStatus);
       } else {
         statusResponse.resolve(nextRunningStatus);
-        await screen.findByRole("dialog", { name: "Live run activity" });
+        await screen.findByRole("dialog", { name: "Live progress" });
         workspaceResponse.resolve(existingWorkspace);
       }
 
@@ -591,7 +601,7 @@ describe("CLI application workflow", () => {
         expect(
           within(document.querySelector<HTMLElement>(".main-workspace")!).getByRole(
             "heading",
-            { name: "Investigation in progress" },
+            { name: "Portfolio analysis in progress" },
           ),
         ).toBeInTheDocument();
       });

@@ -17,7 +17,11 @@ import {
   populationCsv,
   resolveArtifactFile,
 } from "./artifacts.mjs";
-import { demoCustomerCountError } from "./demo-limits.mjs";
+import {
+  DEFAULT_DEMO_DECLINE_THRESHOLD,
+  demoCustomerCountError,
+  demoDeclineThresholdError,
+} from "./demo-limits.mjs";
 import { createDemoRunManager, DemoRunError } from "./live-trace.mjs";
 import {
   createLiveRunDescriptor,
@@ -193,13 +197,21 @@ export async function liveRunCapability({
 }
 
 /** Builds the fixed argv used for every browser-triggered Gemini batch. */
-export function liveDemoArguments(customers, relativeOutputPath) {
+export function liveDemoArguments(
+  customers,
+  relativeOutputPath,
+  declineThreshold = DEFAULT_DEMO_DECLINE_THRESHOLD,
+) {
+  const thresholdError = demoDeclineThresholdError(declineThreshold);
+  if (thresholdError) throw new RangeError(thresholdError);
   return [
     "run",
     "whyback",
     "demo",
     "--customers",
     String(customers),
+    "--decline-threshold",
+    String(declineThreshold),
     "--backend",
     "gemini",
     "--output-dir",
@@ -211,15 +223,24 @@ export function liveDemoArguments(customers, relativeOutputPath) {
 export function describeLiveRun(
   customers,
   jobId,
-  { root = repositoryRoot, environment = process.env } = {},
+  {
+    root = repositoryRoot,
+    environment = process.env,
+    declineThreshold = DEFAULT_DEMO_DECLINE_THRESHOLD,
+  } = {},
 ) {
   const target = createLiveRunDescriptor(root, jobId);
-  const args = liveDemoArguments(customers, target.relativePath);
+  const args = liveDemoArguments(
+    customers,
+    target.relativePath,
+    declineThreshold,
+  );
   return {
     ...target,
     args,
     backend: "gemini",
     command: `uv ${args.join(" ")}`,
+    declineThreshold,
     model: configuredGeminiModel(environment),
     repositoryRoot: root,
     runDirectory: target.directory,
@@ -293,6 +314,23 @@ async function verifyLiveOutput(descriptor, customers) {
       await readFile(path.join(ownedDirectory, "manifest.json"), "utf8"),
     );
     if (!liveManifestIsVerified(manifest, customers)) return false;
+    if (
+      manifest.population_summary !== "population_summary.json" ||
+      Number(manifest.population_schema_version) !== 1
+    ) {
+      return false;
+    }
+    const populationPath = path.join(ownedDirectory, "population_summary.json");
+    if (!(await isRealFile(populationPath))) return false;
+    const population = JSON.parse(await readFile(populationPath, "utf8"));
+    if (
+      !isPlainObject(population) ||
+      !isPlainObject(population.detector_policy) ||
+      population.detector_policy.decline_threshold !==
+        (descriptor.declineThreshold ?? DEFAULT_DEMO_DECLINE_THRESHOLD)
+    ) {
+      return false;
+    }
     const artifactChecks = manifest.selected_household_ids.flatMap((householdId) => {
       const customerDirectory = path.join(ownedDirectory, `customer_${householdId}`);
       return [
@@ -577,7 +615,8 @@ const demoManager = createDemoRunManager({
   repositoryRoot,
   backend: "gemini",
   model: configuredGeminiModel(),
-  describeRun: (customers, jobId) => describeLiveRun(customers, jobId),
+  describeRun: (customers, jobId, declineThreshold) =>
+    describeLiveRun(customers, jobId, { declineThreshold }),
   execute: (customers, descriptor) =>
     runLiveDemo(customers, descriptor, {
       canStartProcess: () => !dashboardShuttingDown,
@@ -585,7 +624,12 @@ const demoManager = createDemoRunManager({
 });
 
 /** Starts a job only after the current server readiness check has passed. */
-export function startLiveRun(manager, customers, capability) {
+export function startLiveRun(
+  manager,
+  customers,
+  capability,
+  declineThreshold = DEFAULT_DEMO_DECLINE_THRESHOLD,
+) {
   if (!capability.ready) {
     const error = new Error(
       capability.blockedReason || "The live Gemini run is not configured.",
@@ -593,19 +637,32 @@ export function startLiveRun(manager, customers, capability) {
     error.statusCode = 503;
     throw error;
   }
-  return manager.start(customers);
+  const thresholdError = demoDeclineThresholdError(declineThreshold);
+  if (thresholdError) {
+    const error = new Error(thresholdError);
+    error.statusCode = 400;
+    throw error;
+  }
+  return manager.start(customers, declineThreshold);
 }
 
-/** Allows the browser to submit exactly one field: the bounded customer count. */
+/** Allows only a bounded customer count and one governed detector threshold. */
 export function liveRunRequestError(body) {
+  const allowedFields = new Set(["customers", "declineThreshold"]);
   if (
     !isPlainObject(body) ||
-    Object.keys(body).length !== 1 ||
-    !Object.hasOwn(body, "customers")
+    !Object.hasOwn(body, "customers") ||
+    Object.keys(body).some((field) => !allowedFields.has(field))
   ) {
-    return "The live run request may contain only customers.";
+    return "The live run request may contain only customers and declineThreshold.";
   }
-  return demoCustomerCountError(body.customers);
+  const customerError = demoCustomerCountError(body.customers);
+  if (customerError) return customerError;
+  return demoDeclineThresholdError(
+    Object.hasOwn(body, "declineThreshold")
+      ? body.declineThreshold
+      : DEFAULT_DEMO_DECLINE_THRESHOLD,
+  );
 }
 
 /** Streams one already-resolved file with its safe content type and headers. */
@@ -743,6 +800,9 @@ async function handleApi(request, response, url) {
       sendError(response, 400, requestError);
       return;
     }
+    const declineThreshold = Object.hasOwn(body, "declineThreshold")
+      ? body.declineThreshold
+      : DEFAULT_DEMO_DECLINE_THRESHOLD;
     const capability = await liveRunCapability({
       canStartProcess: () => !dashboardShuttingDown,
     });
@@ -750,7 +810,11 @@ async function handleApi(request, response, url) {
       sendError(response, 503, "The dashboard is shutting down.");
       return;
     }
-    sendJson(response, 202, startLiveRun(demoManager, customers, capability));
+    sendJson(
+      response,
+      202,
+      startLiveRun(demoManager, customers, capability, declineThreshold),
+    );
     return;
   }
 

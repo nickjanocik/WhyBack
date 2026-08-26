@@ -170,7 +170,7 @@ const population: PopulationSummary = {
     action_mix: [
       { key: "VISIT_FREQUENCY_REACTIVATION", label: "Restore visit rhythm", count: 1, share: 1 / 3 },
       { key: "INSUFFICIENT_EVIDENCE", label: "Gather more evidence", count: 1, share: 1 / 3 },
-      { key: "UNAVAILABLE", label: "No governed action", count: 1, share: 1 / 3 },
+      { key: "NO_PUBLISHED_RECOMMENDATION", label: "No recommendation published", count: 1, share: 1 / 3 },
     ],
     factor_mix: [
       { key: "cadence", label: "Visit cadence", count: 1, share: 1 / 3 },
@@ -201,9 +201,32 @@ describe("population intelligence views", () => {
 
     expect(screen.getByText("304 of 1,313 eligible households were flagged; 3 were investigated.")).toBeInTheDocument();
     expect(screen.getByText(/not recoverable revenue/i)).toBeInTheDocument();
+    expect(screen.getByText("No recommendation published")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /no causal explanation/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /open factor map/i }));
     expect(onNavigate).toHaveBeenCalledWith("factors");
+  });
+
+  it("labels partial recorded value as investigated-household coverage", () => {
+    render(
+      <ExecutiveHome
+        population={{
+          ...population,
+          availability: "partial",
+          executive: {
+            ...population.executive,
+            aggregate_baseline_value: 570,
+            aggregate_recent_value: 159,
+            recorded_value_change: -411,
+            gross_recorded_decrease: 411,
+          },
+        }}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/across 3 investigated households only/i)).toBeInTheDocument();
+    expect(screen.getByText("-$411.00")).toBeInTheDocument();
   });
 
   it("supports distribution controls, exports, partial states, and density drill-down", async () => {

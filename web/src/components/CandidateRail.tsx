@@ -1,4 +1,4 @@
-/** Lets reviewers choose an artifact collection and ranked household investigation. */
+/** Lets reviewers choose an analysis collection and ranked household investigation. */
 
 import { AlertTriangle, Check, ChevronDown, History, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,7 +14,7 @@ interface CandidateRailProps {
   onHouseholdChange: (householdId: string) => void;
 }
 
-/** Renders verified CLI history and ranked household navigation. */
+/** Renders verified analysis history and ranked household navigation. */
 export function CandidateRail({
   collections,
   collectionId,
@@ -41,7 +41,7 @@ export function CandidateRail({
   return (
     <aside className="candidate-rail" id="candidate-rail">
       <div className="collection-picker">
-        <label htmlFor="collection">CLI run</label>
+        <label htmlFor="collection">Analysis run</label>
         <div className="select-wrap">
           <History size={15} aria-hidden="true" />
           <select

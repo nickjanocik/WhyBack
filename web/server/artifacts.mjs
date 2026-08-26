@@ -254,7 +254,7 @@ export function sanitizePopulationSummary(raw) {
               detail: safeString(factor.detail, "No differentiating factor was available."),
             },
             action_id: row.action_id === null ? null : safeString(row.action_id),
-            action_label: safeString(row.action_label, "No governed action"),
+            action_label: safeString(row.action_label, "No recommendation published"),
             confidence: safeString(row.confidence, "unavailable"),
             warnings: Array.isArray(row.warnings)
               ? row.warnings.map((item) => safeString(item)).slice(0, 50)
@@ -682,7 +682,9 @@ function legacyInvestigatedRow(report, rank) {
     peer_gap: finiteOrNull(peers.target_minus_median_change),
     identified_factor: legacyFactor(report),
     action_id: action ? safeString(action.action_id) : null,
-    action_label: action ? safeString(action.description, "Governed action") : "No governed action",
+    action_label: action
+      ? safeString(action.description, "Governed action")
+      : "No recommendation published",
     confidence: action ? safeString(action.resolved_confidence, "unavailable") : "unavailable",
     warnings: [
       ...(Array.isArray(report.limitations) ? report.limitations : []),
@@ -746,6 +748,33 @@ async function legacyPopulation(collectionPath, manifest) {
   const completed = rows.filter((item) => item.status === "completed").length;
   const insufficient = rows.filter((item) => item.status === "insufficient_evidence").length;
   const failed = rows.filter((item) => item.status === "failed").length;
+  const valueRows = rows.filter(
+    (item) =>
+      item.baseline_retailer_sales_value !== null &&
+      item.recent_retailer_sales_value !== null &&
+      item.recorded_value_change !== null,
+  );
+  const hasCompleteInvestigatedValues = rows.length > 0 && valueRows.length === rows.length;
+  const investigatedBaseline = hasCompleteInvestigatedValues
+    ? valueRows.reduce((total, item) => total + item.baseline_retailer_sales_value, 0)
+    : null;
+  const investigatedRecent = hasCompleteInvestigatedValues
+    ? valueRows.reduce((total, item) => total + item.recent_retailer_sales_value, 0)
+    : null;
+  const investigatedChange =
+    investigatedBaseline === null || investigatedRecent === null
+      ? null
+      : investigatedRecent - investigatedBaseline;
+  const investigatedGrossDecrease = hasCompleteInvestigatedValues
+    ? valueRows.reduce(
+        (total, item) =>
+          total + Math.max(
+            0,
+            item.baseline_retailer_sales_value - item.recent_retailer_sales_value,
+          ),
+        0,
+      )
+    : null;
   /** Counts one legacy categorical mix against all investigated rows. */
   const mixes = (pairs) => {
     const totals = new Map();
@@ -769,6 +798,9 @@ async function legacyPopulation(collectionPath, manifest) {
     missing_data_reasons: [
       "This preserved run predates population_summary.json.",
       "Eligible and flagged distributions and the density grid are unavailable; displayed counts come from detector sensitivity output.",
+      ...(hasCompleteInvestigatedValues
+        ? ["Recorded value totals cover investigated households only."]
+        : ["Recorded value totals are unavailable because one or more investigated reports lack value fields."]),
     ],
     cohort_definitions: definitions,
     analysis_windows: {
@@ -786,7 +818,15 @@ async function legacyPopulation(collectionPath, manifest) {
     cohorts: [
       { cohort: "eligible", definition: definitions.eligible, household_count: configured?.eligible_households ?? null, metrics: [] },
       { cohort: "flagged", definition: definitions.flagged, household_count: configured?.flagged_households ?? null, metrics: [] },
-      { cohort: "investigated", definition: definitions.investigated, household_count: rows.length, metrics: [] },
+      {
+        cohort: "investigated",
+        definition: definitions.investigated,
+        household_count: rows.length,
+        aggregate_baseline_value: investigatedBaseline,
+        aggregate_recent_value: investigatedRecent,
+        gross_recorded_decrease: investigatedGrossDecrease,
+        metrics: [],
+      },
     ],
     density_grid: null,
     investigated_households: rows,
@@ -799,12 +839,14 @@ async function legacyPopulation(collectionPath, manifest) {
       completed_count: completed,
       insufficient_count: insufficient,
       failed_count: failed,
-      aggregate_baseline_value: null,
-      aggregate_recent_value: null,
-      recorded_value_change: null,
-      gross_recorded_decrease: null,
+      aggregate_baseline_value: investigatedBaseline,
+      aggregate_recent_value: investigatedRecent,
+      recorded_value_change: investigatedChange,
+      gross_recorded_decrease: investigatedGrossDecrease,
       verified_action_rate: rows.length ? completed / rows.length : 0,
-      action_mix: mixes(rows.map((item) => [item.action_id ?? "UNAVAILABLE", item.action_label])),
+      action_mix: mixes(rows.map((item) => item.action_id
+        ? [item.action_id, item.action_label]
+        : ["NO_PUBLISHED_RECOMMENDATION", "No recommendation published"])),
       factor_mix: mixes(rows.map((item) => [item.identified_factor.factor_type, item.identified_factor.label])),
       context_mix: mixes(rows.map((item) => [item.context_classification, item.context_classification.replaceAll("_", " ")])),
     },

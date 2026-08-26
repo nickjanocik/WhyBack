@@ -52,12 +52,23 @@ async function writeVerifiedLiveOutput(descriptor, householdIds) {
     ]);
   }
   await writeFile(
+    path.join(descriptor.directory, "population_summary.json"),
+    `${JSON.stringify({
+      schema_version: 1,
+      detector_policy: {
+        decline_threshold: descriptor.declineThreshold ?? 0.3,
+      },
+    })}\n`,
+  );
+  await writeFile(
     path.join(descriptor.directory, "manifest.json"),
     `${JSON.stringify({
       dataset_kind: "official_complete_journey",
       backend: "gemini",
       execution_mode: "live",
       model_execution: "live_gemini",
+      population_summary: "population_summary.json",
+      population_schema_version: 1,
       selected_household_ids: householdIds,
       completed_household_ids: householdIds,
       failed_household_ids: [],
@@ -178,11 +189,11 @@ test("validates official prepared data without passing the Gemini credential", a
 });
 
 test("fails closed without live readiness before invoking the run manager", () => {
-  let starts = 0;
+  const starts = [];
   const manager = {
     /** Records whether readiness allowed the test manager to start. */
-    start() {
-      starts += 1;
+    start(...args) {
+      starts.push(args);
       return {};
     },
   };
@@ -194,20 +205,43 @@ test("fails closed without live readiness before invoking the run manager", () =
       }),
     (error) => error?.statusCode === 503,
   );
-  assert.equal(starts, 0);
+  assert.equal(starts.length, 0);
   assert.deepEqual(startLiveRun(manager, 5, { ready: true }), {});
-  assert.equal(starts, 1);
+  assert.deepEqual(starts, [[5, 0.3]]);
+  assert.deepEqual(startLiveRun(manager, 5, { ready: true }, 0.4), {});
+  assert.deepEqual(starts.at(-1), [5, 0.4]);
+  assert.throws(
+    () => startLiveRun(manager, 5, { ready: true }, 0.25),
+    (error) => error?.statusCode === 400,
+  );
+  assert.equal(starts.length, 2);
 });
 
-test("accepts only a customer count from the browser", () => {
+test("accepts only a customer count and governed decline threshold", () => {
   assert.equal(liveRunRequestError({ customers: 5 }), null);
   assert.equal(
+    liveRunRequestError({ customers: 5, declineThreshold: 0.2 }),
+    null,
+  );
+  assert.equal(
+    liveRunRequestError({ customers: 5, declineThreshold: 0.4 }),
+    null,
+  );
+  assert.equal(
     liveRunRequestError({ customers: 5, backend: "scripted" }),
-    "The live run request may contain only customers.",
+    "The live run request may contain only customers and declineThreshold.",
   );
   assert.equal(
     liveRunRequestError({ customers: 5, apiKey: "browser-key" }),
-    "The live run request may contain only customers.",
+    "The live run request may contain only customers and declineThreshold.",
+  );
+  assert.match(
+    liveRunRequestError({ customers: 5, declineThreshold: 0.25 }),
+    /0\.2, 0\.3, or 0\.4/u,
+  );
+  assert.match(
+    liveRunRequestError({ customers: 5, declineThreshold: null }),
+    /0\.2, 0\.3, or 0\.4/u,
   );
   assert.equal(liveRunRequestError({ customers: 3 }), null);
   assert.equal(liveRunRequestError({ customers: 4 }), null);
@@ -218,6 +252,7 @@ test("constructs only the fixed Gemini command in a unique live collection", () 
   const jobId = "123e4567-e89b-42d3-a456-426614174000";
   const descriptor = describeLiveRun(24, jobId, {
     root: "/workspace/WhyBack",
+    declineThreshold: 0.4,
     environment: {
       GEMINI_API_KEY: "must-not-appear",
       RETENTION_MODEL: "gemini-test-model",
@@ -229,21 +264,31 @@ test("constructs only the fixed Gemini command in a unique live collection", () 
     "demo",
     "--customers",
     "24",
+    "--decline-threshold",
+    "0.4",
     "--backend",
     "gemini",
     "--output-dir",
     "artifacts/local/live-runs/live-123e4567-e89b-42d3-a456-426614174000",
   ];
   assert.deepEqual(descriptor.args, exactArguments);
-  assert.deepEqual(liveDemoArguments(24, descriptor.relativePath), exactArguments);
+  assert.deepEqual(
+    liveDemoArguments(24, descriptor.relativePath, 0.4),
+    exactArguments,
+  );
   assert.equal(descriptor.command, `uv ${exactArguments.join(" ")}`);
   assert.match(descriptor.collectionId, /^live-/u);
   assert.equal(descriptor.backend, "gemini");
+  assert.equal(descriptor.declineThreshold, 0.4);
   assert.equal(descriptor.model, "gemini-test-model");
   assert.match(descriptor.command, /--backend gemini/u);
   assert.match(descriptor.command, /artifacts[/\\]local[/\\]live-runs/u);
   assert.equal(descriptor.command.includes("scripted"), false);
   assert.equal(descriptor.command.includes("must-not-appear"), false);
+  assert.throws(
+    () => liveDemoArguments(5, descriptor.relativePath, "0.3 --backend scripted"),
+    /declineThreshold must be one of/u,
+  );
 });
 
 test("accepts only reconciled manifests that prove a live Gemini execution", () => {
@@ -317,6 +362,8 @@ test("publishes independently verified terminal output after a nonzero CLI exit"
     "demo",
     "--customers",
     "5",
+    "--decline-threshold",
+    "0.3",
     "--backend",
     "gemini",
     "--output-dir",
@@ -373,11 +420,47 @@ test("rejects a nonzero CLI exit when its terminal output is missing", async (co
     "demo",
     "--customers",
     "5",
+    "--decline-threshold",
+    "0.3",
     "--backend",
     "gemini",
     "--output-dir",
     "artifacts/local/live-runs/live-223e4567-e89b-42d3-b456-426614174000",
   ]);
+});
+
+test("rejects output whose published detector threshold differs from the request", async (context) => {
+  const root = await makeRoot(context);
+  const descriptor = describeLiveRun(
+    5,
+    "273e4567-e89b-42d3-b456-426614174000",
+    { root, declineThreshold: 0.4 },
+  );
+  await writeVerifiedLiveOutput(descriptor, ["7", "8", "9", "10", "11"]);
+  await writeFile(
+    path.join(descriptor.directory, "population_summary.json"),
+    `${JSON.stringify({
+      schema_version: 1,
+      detector_policy: { decline_threshold: 0.3 },
+    })}\n`,
+  );
+  const spawnCalls = [];
+
+  await assert.rejects(
+    runLiveDemo(5, descriptor, {
+      environment: { GEMINI_API_KEY: "sentinel" },
+      spawnProcess: (command, args, options) => {
+        const child = new EventEmitter();
+        child.kill = () => true;
+        spawnCalls.push({ command, args, options });
+        setImmediate(() => child.emit("close", 0));
+        return child;
+      },
+      timeoutMs: 60_000,
+    }),
+    /did not publish a verified live artifact collection/u,
+  );
+  assert.equal(spawnCalls.length, 1);
 });
 
 test("does not seal terminal output when independent verification fails", async (context) => {

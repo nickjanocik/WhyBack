@@ -12,6 +12,16 @@ interface ExecutiveHomeProps {
 }
 
 const mixColors = ["var(--forest)", "var(--chart)", "var(--accent)", "var(--blue)", "var(--faint)"];
+const actionMixLabels: Record<string, string> = {
+  CATEGORY_WINBACK: "Category engagement",
+  VISIT_FREQUENCY_REACTIVATION: "Visit cadence",
+  PROMOTION_VALUE_REENGAGEMENT: "Promotion and value",
+  PERSONALIZED_CHECK_IN: "Personalized review",
+  MONITOR: "Monitor and reassess",
+  INSUFFICIENT_EVIDENCE: "No action · more evidence needed",
+  NO_PUBLISHED_RECOMMENDATION: "No recommendation published",
+  UNAVAILABLE: "No recommendation published",
+};
 
 /** Renders the default collection view for business leadership. */
 export function ExecutiveHome({ population, onNavigate }: ExecutiveHomeProps) {
@@ -21,6 +31,11 @@ export function ExecutiveHome({ population, onNavigate }: ExecutiveHomeProps) {
   const flagged = totals.flagged_count;
   const investigated = totals.investigated_count;
   const hasCounts = eligible !== null && flagged !== null && investigated !== null;
+  const recordedValueDetail = totals.recorded_value_change === null
+    ? "Recorded value coverage unavailable"
+    : population.availability === "full"
+      ? "Observed across eligible households; not recoverable revenue"
+      : `Observed across ${formatNumber(investigated ?? 0)} investigated households only; not recoverable revenue`;
 
   return (
     <div className="population-page executive-home">
@@ -74,7 +89,7 @@ export function ExecutiveHome({ population, onNavigate }: ExecutiveHomeProps) {
           reduced={Boolean(reduced)}
           label="Recorded value change"
           value={totals.recorded_value_change === null ? "Unavailable" : formatCurrency(totals.recorded_value_change)}
-          detail="Observed retailer value; not recoverable revenue"
+          detail={recordedValueDetail}
           tone={totals.recorded_value_change !== null && totals.recorded_value_change < 0 ? "warning" : undefined}
         />
         <KpiCard
@@ -206,7 +221,7 @@ function CohortFunnel({ population, reduced }: { population: PopulationSummary; 
 function SegmentedMix({ items, reduced }: { items: PopulationMix[]; reduced: boolean }) {
   return (
     <div className="segmented-mix">
-      <div className="segmented-mix__bar" role="img" aria-label={items.map((item) => `${item.label}: ${item.count}`).join(", ")}>
+      <div className="segmented-mix__bar" role="img" aria-label={items.map((item) => `${actionMixLabel(item)}: ${item.count}`).join(", ")}>
         {items.map((item, index) => (
           <motion.span
             key={item.key}
@@ -217,10 +232,15 @@ function SegmentedMix({ items, reduced }: { items: PopulationMix[]; reduced: boo
           />
         ))}
       </div>
-      <ul>{items.map((item, index) => <li key={item.key}><i style={{ background: mixColors[index % mixColors.length] }} /><span>{humanize(item.key)}</span><strong>{item.count}</strong></li>)}</ul>
+      <ul>{items.map((item, index) => <li key={item.key}><i style={{ background: mixColors[index % mixColors.length] }} /><span>{actionMixLabel(item)}</span><strong>{item.count}</strong></li>)}</ul>
       {items.length === 0 && <p className="chart-unavailable">Action mix unavailable.</p>}
     </div>
   );
+}
+
+/** Gives governed outcomes concise labels suitable for an executive chart. */
+function actionMixLabel(item: PopulationMix): string {
+  return actionMixLabels[item.key] ?? (item.label || humanize(item.key));
 }
 
 /** Ranks aggregate mix entries with count-proportional animated bars. */

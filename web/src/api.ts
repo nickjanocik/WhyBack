@@ -1,6 +1,7 @@
 /** Wraps the dashboard bridge endpoints in small typed browser helpers. */
 
 import type {
+  DeclineThreshold,
   DemoStatusResponse,
   InvestigationResponse,
   PopulationSummary,
@@ -71,11 +72,14 @@ export function populationExportUrl(
   return `/api/population/export?${query}`;
 }
 
-/** Requests a bounded live Gemini batch containing only the selected customer count. */
-export function runDemo(customers: number): Promise<DemoStatusResponse> {
+/** Requests a bounded analysis with its explicit cohort-selection policy. */
+export function runDemo(
+  customers: number,
+  declineThreshold: DeclineThreshold,
+): Promise<DemoStatusResponse> {
   return requestJson<DemoStatusResponse>("/api/demo", {
     method: "POST",
-    body: JSON.stringify({ customers }),
+    body: JSON.stringify({ customers, declineThreshold }),
   });
 }
 

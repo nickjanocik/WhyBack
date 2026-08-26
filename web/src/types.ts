@@ -2,6 +2,7 @@
 
 export type RunStatus = "completed" | "insufficient_evidence" | "failed";
 export type EvidenceRole = "supporting" | "counterevidence" | "context";
+export type DeclineThreshold = 0.2 | 0.3 | 0.4;
 
 export interface ReportSummary {
   householdId: string;
@@ -405,6 +406,7 @@ export interface DemoStatusResponse {
   backend: "gemini";
   model: string;
   customers: number | null;
+  declineThreshold: DeclineThreshold | null;
   command: string | null;
   startedAt: string | null;
   completedAt: string | null;

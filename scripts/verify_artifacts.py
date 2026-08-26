@@ -141,6 +141,60 @@ _OBSERVATIONAL_DRIVER_LIMITATION = (
 )
 
 
+def _resolved_driver_template(
+    action_id: ActionId,
+    claim_type: ClaimType,
+    matching_records: Sequence[EvidenceRecord],
+) -> str | None:
+    """Reconstruct the report generator's deterministic action-driver wording."""
+
+    templates = (
+        _DESCRIPTIVE_DRIVER_TEMPLATES
+        if claim_type is ClaimType.DESCRIPTIVE
+        else _DRIVER_TEMPLATES
+    )
+    template = templates.get(action_id)
+    if action_id is not ActionId.CATEGORY_WINBACK:
+        return template
+
+    contribution_records = tuple(
+        record
+        for record in matching_records
+        if record.metric == "contribution_to_lost_retailer_sales_value"
+        and record.value is not None
+    )
+    category_records = contribution_records or tuple(
+        record
+        for record in matching_records
+        if record.metric == "category_retailer_sales_value"
+    )
+    if not category_records:
+        return template
+    if contribution_records:
+        selected_category = max(
+            category_records,
+            key=lambda record: record.value or 0.0,
+        )
+    else:
+        selected_category = min(
+            category_records,
+            key=lambda record: record.change or 0.0,
+        )
+    department = selected_category.dimensions.get("department")
+    product_category = selected_category.dimensions.get("product_category")
+    if not department or not product_category:
+        return template
+    if claim_type is ClaimType.DESCRIPTIVE:
+        return (
+            f"A recorded loss in {department} / {product_category} is present in "
+            "the observed decline."
+        )
+    return (
+        f"A recorded loss in {department} / {product_category} is a plausible "
+        "contributor to the observed engagement decline."
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class VerificationIssue:
     """One stable artifact-verification failure."""
@@ -2443,12 +2497,11 @@ def _validate_report_trace_pair(
             if driver_supporting or contributing_drivers
             else ClaimType.ASSOCIATIONAL
         )
-        templates = (
-            _DESCRIPTIVE_DRIVER_TEMPLATES
-            if expected_claim_type is ClaimType.DESCRIPTIVE
-            else _DRIVER_TEMPLATES
+        driver_template = _resolved_driver_template(
+            report.action.action_id,
+            expected_claim_type,
+            driver_supporting,
         )
-        driver_template = templates.get(report.action.action_id)
         expected_drivers = (
             (
                 DriverReportData(

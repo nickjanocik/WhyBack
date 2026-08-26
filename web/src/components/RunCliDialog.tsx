@@ -1,10 +1,16 @@
-/** Collects the one runtime choice needed to start the real WhyBack CLI. */
+/** Collects the one portfolio choice needed to start a new analysis. */
 
-import { Cpu, LoaderCircle, Play, Terminal, X } from "lucide-react";
+import { BrainCircuit, LoaderCircle, Play, ShieldCheck, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-import type { DemoCustomerLimits, LiveRunConfiguration } from "../types";
+import type {
+  DeclineThreshold,
+  DemoCustomerLimits,
+  LiveRunConfiguration,
+  PopulationSummary,
+} from "../types";
+import { formatNumber, productMessage } from "../lib/report";
 
 interface RunCliDialogProps {
   open: boolean;
@@ -13,11 +19,38 @@ interface RunCliDialogProps {
   customerLimits: DemoCustomerLimits;
   liveRun: LiveRunConfiguration;
   initialCustomers?: number | null;
+  initialDeclineThreshold?: number | null;
+  thresholdSensitivity?: PopulationSummary["threshold_sensitivity"];
   onClose: () => void;
-  onRun: (customers: number) => Promise<void>;
+  onRun: (
+    customers: number,
+    declineThreshold: DeclineThreshold,
+  ) => Promise<void>;
 }
 
 const DEFAULT_CUSTOMERS = 5;
+const DEFAULT_DECLINE_THRESHOLD: DeclineThreshold = 0.3;
+const sensitivityOptions: ReadonlyArray<{
+  label: string;
+  threshold: DeclineThreshold;
+  description: string;
+}> = [
+  {
+    label: "Broad",
+    threshold: 0.2,
+    description: "More households can qualify",
+  },
+  {
+    label: "Standard",
+    threshold: 0.3,
+    description: "Declared portfolio default",
+  },
+  {
+    label: "Focused",
+    threshold: 0.4,
+    description: "Stronger decline signals",
+  },
+];
 
 /** Mounts fresh launcher state whenever a new dialog session begins. */
 export function RunCliDialog(props: RunCliDialogProps) {
@@ -28,19 +61,24 @@ export function RunCliDialog(props: RunCliDialogProps) {
   );
 }
 
-/** Renders a compact launch dialog; credentials remain entirely server-side. */
+/** Renders a compact, product-oriented analysis launcher. */
 function RunCliDialogContent({
   running,
   error,
   customerLimits,
   liveRun,
   initialCustomers,
+  initialDeclineThreshold,
+  thresholdSensitivity,
   onClose,
   onRun,
 }: RunCliDialogProps) {
   const reduceMotion = useReducedMotion();
   const [customerInput, setCustomerInput] = useState(() =>
     String(boundedInitialCustomers(customerLimits, initialCustomers)),
+  );
+  const [declineThreshold, setDeclineThreshold] = useState<DeclineThreshold>(
+    () => declaredDeclineThreshold(initialDeclineThreshold),
   );
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
@@ -133,27 +171,27 @@ function RunCliDialogContent({
           type="button"
           onClick={onClose}
           disabled={running}
-          aria-label="Close CLI run dialog"
+          aria-label="Close new analysis dialog"
         >
           <X size={18} />
         </button>
 
         <div className="run-dialog__title">
-          <span><Terminal size={18} /></span>
+          <span><BrainCircuit size={18} /></span>
           <div>
-            <span className="eyebrow">WhyBack CLI</span>
-            <h2 id="run-cli-title">Start a new investigation run</h2>
+            <span className="eyebrow">New analysis</span>
+            <h2 id="run-cli-title">Review a household cohort</h2>
           </div>
         </div>
 
         <dl className="run-config-summary">
-          <div><dt>Backend</dt><dd>Gemini API</dd></div>
-          <div><dt>Model</dt><dd><code>{liveRun.model}</code></dd></div>
-          <div><dt>Credential</dt><dd>Server environment</dd></div>
+          <div><dt>Coverage</dt><dd>Official data</dd></div>
+          <div><dt>Comparison</dt><dd>Nested cohorts</dd></div>
+          <div><dt>Guardrail</dt><dd><ShieldCheck size={12} /> Human review</dd></div>
         </dl>
 
         <label className="customer-count-field">
-          <span>Households</span>
+          <span>Households to investigate</span>
           <input
             type="number"
             min={customerLimits.minimum}
@@ -166,19 +204,75 @@ function RunCliDialogContent({
           />
         </label>
         <p id="customer-count-help" className="field-help">
-          Enter {customerLimits.minimum}–{customerLimits.maximum}. The CLI selects the highest-ranked eligible households.
+          Choose {customerLimits.minimum}–{customerLimits.maximum}. WhyBack reviews the highest-ranked eligible households and keeps the broader population aggregated.
         </p>
 
+        <fieldset
+          className="review-sensitivity"
+          aria-describedby="review-sensitivity-help"
+          data-motion={reduceMotion ? "reduced" : "animated"}
+          disabled={running || !liveRun.ready}
+        >
+          <legend>Review sensitivity</legend>
+          <div className="review-sensitivity__choices">
+            {sensitivityOptions.map((option) => {
+              const selected = declineThreshold === option.threshold;
+              const snapshot = thresholdSensitivity?.find(
+                (item) => item.threshold === option.threshold,
+              );
+              const description =
+                snapshot?.flagged_households !== null &&
+                snapshot?.flagged_households !== undefined &&
+                snapshot.eligible_households !== null
+                  ? `${formatNumber(snapshot.flagged_households)} / ${formatNumber(snapshot.eligible_households)} flagged`
+                  : option.description;
+              return (
+                <label
+                  className={`sensitivity-choice ${selected ? "sensitivity-choice--selected" : ""}`}
+                  key={option.threshold}
+                >
+                  <input
+                    type="radio"
+                    name="decline-threshold"
+                    value={option.threshold}
+                    checked={selected}
+                    onChange={() => setDeclineThreshold(option.threshold)}
+                  />
+                  <span>
+                    <strong>{option.label}</strong>
+                    <small>≥ {Math.round(option.threshold * 100)}% decline score</small>
+                  </span>
+                  <small>{description}</small>
+                  {selected && (
+                    <motion.i
+                      aria-hidden="true"
+                      className="sensitivity-choice__indicator"
+                      initial={reduceMotion ? false : { opacity: 0, scaleX: 0.35 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+                    />
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          <p id="review-sensitivity-help">
+            Sets which eligible households enter the flagged cohort. Snapshot counts may
+            change with new data. Recommendation evidence rules stay fixed at every
+            setting; the score is not a churn probability.
+          </p>
+        </fieldset>
+
         <p className="run-boundary">
-          <Cpu size={15} />
+          <ShieldCheck size={15} />
           <span>
-            Starting clears the active workspace. Earlier artifacts remain preserved and return to run history after the new run is published. This uses real provider quota; Python computes every metric and executes no outreach.
+            Previous analyses remain available in history. Every metric is verified before display, recommendations require human review, and no outreach is executed automatically.
           </span>
         </p>
 
         {!liveRun.ready && (
           <div className="dialog-error" role="alert">
-            {liveRun.blockedReason ?? "The CLI run is not ready on this bridge."}
+            {liveRun.blockedReason ? productMessage(liveRun.blockedReason, "Analysis is temporarily unavailable.") : "Analysis is temporarily unavailable. Check the secure model connection."}
           </div>
         )}
         {!countIsValid && (
@@ -186,21 +280,23 @@ function RunCliDialogContent({
             Choose a whole number from {customerLimits.minimum} through {customerLimits.maximum}.
           </div>
         )}
-        {error && <div className="dialog-error" role="alert">{error}</div>}
+        {error && <div className="dialog-error" role="alert">{productMessage(error, "The analysis could not start.")}</div>}
 
         <button
           className="run-submit"
           type="button"
           aria-busy={running}
           onClick={() => {
-            if (liveRun.ready && countIsValid) void onRun(customers);
+            if (liveRun.ready && countIsValid) {
+              void onRun(customers, declineThreshold);
+            }
           }}
           disabled={running || !liveRun.ready || !countIsValid}
         >
           {running ? (
-            <><LoaderCircle className="spin" size={18} /> Starting CLI…</>
+            <><LoaderCircle className="spin" size={18} /> Starting analysis…</>
           ) : (
-            <><Play size={18} /> Start new run</>
+            <><Play size={18} /> Start analysis</>
           )}
         </button>
       </motion.section>
@@ -218,4 +314,13 @@ function boundedInitialCustomers(
     customerLimits.maximum,
     Math.max(customerLimits.minimum, candidate),
   );
+}
+
+/** Reuses a verified collection threshold only when it is a declared run choice. */
+function declaredDeclineThreshold(
+  requested: number | null | undefined,
+): DeclineThreshold {
+  return requested === 0.2 || requested === 0.3 || requested === 0.4
+    ? requested
+    : DEFAULT_DECLINE_THRESHOLD;
 }

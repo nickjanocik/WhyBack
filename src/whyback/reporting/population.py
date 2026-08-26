@@ -411,15 +411,25 @@ def _edges(
     minimum = min(values)
     maximum = max(values)
     if metric != "recorded_value_change" and minimum >= 0:
-        return tuple(
+        edges = tuple(
             float(value)
             for value in np.expm1(np.linspace(0.0, np.log1p(maximum or 1.0), bins + 1))
         )
-    if minimum == maximum:
-        padding = max(1.0, abs(minimum) * 0.01)
-        minimum -= padding
-        maximum += padding
-    return tuple(float(value) for value in np.linspace(minimum, maximum, bins + 1))
+    else:
+        if minimum == maximum:
+            padding = max(1.0, abs(minimum) * 0.01)
+            minimum -= padding
+            maximum += padding
+        edges = tuple(float(value) for value in np.linspace(minimum, maximum, bins + 1))
+
+    # expm1(log1p(maximum)) can round one representable float below the source
+    # maximum. np.histogram then silently drops that household. Make the outer
+    # bounds explicitly inclusive while preserving the shared internal bins.
+    return (
+        min(edges[0], float(np.nextafter(min(values), -np.inf))),
+        *edges[1:-1],
+        max(edges[-1], float(np.nextafter(max(values), np.inf))),
+    )
 
 
 def _distribution(
@@ -641,7 +651,7 @@ def _investigated_rows(
                 action_label=(
                     report.action.description
                     if report.action is not None
-                    else "No governed action"
+                    else "No recommendation published"
                 ),
                 confidence=(
                     report.action.resolved_confidence.value
@@ -765,7 +775,8 @@ def build_population_summary(
         )
     )
     action_values = [
-        (item.action_id or "UNAVAILABLE", item.action_label) for item in rows
+        (item.action_id or "NO_PUBLISHED_RECOMMENDATION", item.action_label)
+        for item in rows
     ]
     factor_values = [
         (

@@ -31,7 +31,12 @@ from whyback.config import (
 from whyback.data.manifest import DataManifest
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
-from whyback.demo_limits import DEFAULT_DEMO_CUSTOMERS, validate_demo_customer_count
+from whyback.demo_limits import (
+    DEFAULT_DEMO_CUSTOMERS,
+    DEFAULT_DEMO_DECLINE_THRESHOLD,
+    validate_demo_customer_count,
+    validate_demo_decline_threshold,
+)
 from whyback.detection.decline import (
     DeclineSnapshot,
     SensitivityRow,
@@ -66,6 +71,23 @@ def _gemini_api_key_present() -> bool:
     """Return whether the configured Gemini credential contains non-space text."""
 
     return bool((os.getenv("GEMINI_API_KEY") or "").strip())
+
+
+def _effective_detection_policy(
+    configured: DetectionConfig, decline_threshold: float
+) -> DetectionConfig:
+    """Apply one governed demo threshold and retain it in sensitivity diagnostics."""
+
+    validate_demo_decline_threshold(decline_threshold)
+    return DetectionConfig.model_validate(
+        {
+            **configured.model_dump(),
+            "decline_threshold": decline_threshold,
+            "sensitivity_thresholds": tuple(
+                sorted({*configured.sensitivity_thresholds, decline_threshold})
+            ),
+        }
+    )
 
 
 class DemoBuildSummary(BaseModel):
@@ -761,6 +783,7 @@ def _build_synthetic_demo_contents(
     *,
     customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
+    decline_threshold: float = DEFAULT_DEMO_DECLINE_THRESHOLD,
 ) -> DemoBuildSummary:
     """Generate deterministic no-credential reports plus failure/partial examples."""
 
@@ -773,12 +796,15 @@ def _build_synthetic_demo_contents(
         prepared_dir = Path(temporary) / "prepared"
         prepare_frames_for_tests(synthetic_demo_frames(), prepared_dir)
         settings = load_settings()
+        detector_policy = _effective_detection_policy(
+            settings.detection, decline_threshold
+        )
         with DataRepository(
             prepared_dir, required_tables=("household_week",)
         ) as repository:
             candidates = detect_declines(
                 repository,
-                settings.detection,
+                detector_policy,
                 baseline_weeks=settings.data.baseline_weeks,
                 recent_weeks=settings.data.recent_weeks,
             )
@@ -792,7 +818,7 @@ def _build_synthetic_demo_contents(
             output_directory / "decline_candidates.csv", index=False
         )
         sensitivity = sensitivity_diagnostics(
-            candidates, settings.detection.sensitivity_thresholds
+            candidates, detector_policy.sensitivity_thresholds
         )
         candidates_frame(sensitivity).to_csv(
             output_directory / "sensitivity.csv", index=False
@@ -842,7 +868,7 @@ def _build_synthetic_demo_contents(
             selected_ids=selected_ids,
             candidates=candidates,
             selected=selected,
-            detector_policy=settings.detection,
+            detector_policy=detector_policy,
             threshold_sensitivity=sensitivity,
             source_manifest=None,
         )
@@ -916,10 +942,12 @@ def build_synthetic_demo(
     *,
     customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "scripted",
+    decline_threshold: float = DEFAULT_DEMO_DECLINE_THRESHOLD,
 ) -> DemoBuildSummary:
     """Build an exact synthetic artifact tree in staging, then publish it."""
 
     validate_demo_customer_count(customers)
+    validate_demo_decline_threshold(decline_threshold)
     output_directory.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(
         mkdtemp(
@@ -932,6 +960,7 @@ def build_synthetic_demo(
             staging,
             customers=customers,
             backend=backend,
+            decline_threshold=decline_threshold,
         )
         _publish_staged_directory(staging, output_directory)
     except Exception:
@@ -952,6 +981,7 @@ def _build_official_demo_contents(
     *,
     customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
+    decline_threshold: float = DEFAULT_DEMO_DECLINE_THRESHOLD,
 ) -> DemoBuildSummary:
     """Select the official top households and optionally run the live backend."""
 
@@ -959,12 +989,13 @@ def _build_official_demo_contents(
     output_directory.mkdir(parents=True, exist_ok=True)
     _write_ownership_marker(output_directory)
     settings = load_settings()
+    detector_policy = _effective_detection_policy(settings.detection, decline_threshold)
     with DataRepository(
         prepared_dir, required_tables=("household_week",)
     ) as repository:
         candidates = detect_declines(
             repository,
-            settings.detection,
+            detector_policy,
             baseline_weeks=settings.data.baseline_weeks,
             recent_weeks=settings.data.recent_weeks,
         )
@@ -978,7 +1009,7 @@ def _build_official_demo_contents(
         output_directory / "decline_candidates.csv", index=False
     )
     sensitivity = sensitivity_diagnostics(
-        candidates, settings.detection.sensitivity_thresholds
+        candidates, detector_policy.sensitivity_thresholds
     )
     candidates_frame(sensitivity).to_csv(
         output_directory / "sensitivity.csv", index=False
@@ -1003,7 +1034,8 @@ def _build_official_demo_contents(
                 "model": load_settings().model,
                 "selected_household_ids": selected_ids,
                 "exact_command": (
-                    f"uv run whyback demo --customers {customers} --backend gemini"
+                    f"uv run whyback demo --customers {customers} "
+                    f"--decline-threshold {decline_threshold:g} --backend gemini"
                 ),
                 "reports_generated": False,
             },
@@ -1016,7 +1048,7 @@ def _build_official_demo_contents(
             selected_ids=selected_ids,
             candidates=candidates,
             selected=selected,
-            detector_policy=settings.detection,
+            detector_policy=detector_policy,
             threshold_sensitivity=sensitivity,
             source_manifest="data_provenance.json",
         )
@@ -1042,7 +1074,7 @@ def _build_official_demo_contents(
             selected_ids=selected_ids,
             candidates=candidates,
             selected=selected,
-            detector_policy=settings.detection,
+            detector_policy=detector_policy,
             threshold_sensitivity=sensitivity,
             source_manifest="data_provenance.json",
         )
@@ -1106,10 +1138,12 @@ def build_official_demo(
     *,
     customers: int = DEFAULT_DEMO_CUSTOMERS,
     backend: BackendName = "gemini",
+    decline_threshold: float = DEFAULT_DEMO_DECLINE_THRESHOLD,
 ) -> DemoBuildSummary:
     """Build official status artifacts without overwriting any prior run audit."""
 
     validate_demo_customer_count(customers)
+    validate_demo_decline_threshold(decline_threshold)
     if _has_preserved_run_artifacts(output_directory):
         raise FileExistsError(
             "Official run artifacts already exist; choose a new output directory "
@@ -1122,6 +1156,7 @@ def build_official_demo(
             output_directory,
             customers=customers,
             backend=backend,
+            decline_threshold=decline_threshold,
         )
 
     output_directory.parent.mkdir(parents=True, exist_ok=True)
@@ -1137,6 +1172,7 @@ def build_official_demo(
             staging,
             customers=customers,
             backend=backend,
+            decline_threshold=decline_threshold,
         )
         _publish_staged_directory(staging, output_directory)
     except Exception:

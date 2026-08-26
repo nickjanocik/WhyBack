@@ -43,7 +43,15 @@ async function fixtureRoot() {
 /** Writes a sealed live collection fixture, with optional deliberate tampering. */
 async function writeLiveCollection(
   root,
-  { jobId, householdId, generatedAt, modifiedAt, population = null },
+  {
+    jobId,
+    householdId,
+    generatedAt,
+    modifiedAt,
+    population = null,
+    baselineValue = 200,
+    recentValue = 80,
+  },
 ) {
   const descriptor = createLiveRunDescriptor(root, jobId);
   const customer = path.join(descriptor.directory, `customer_${householdId}`);
@@ -62,8 +70,8 @@ async function writeLiveCollection(
       sales_drop: 0.6,
       trip_drop: 0.5,
       active_week_drop: 0.4,
-      baseline_retailer_sales_value: 200,
-      recent_retailer_sales_value: 80,
+      baseline_retailer_sales_value: baselineValue,
+      recent_retailer_sales_value: recentValue,
     },
     action: null,
     evidence_ledger: [],
@@ -313,13 +321,56 @@ test("derives explicit partial population context for a legacy run", async (cont
   const population = await loadPopulation(root, live.collectionId);
   assert.equal(population.availability, "partial");
   assert.equal(population.executive.eligible_count, null);
+  assert.equal(population.executive.aggregate_baseline_value, 200);
+  assert.equal(population.executive.aggregate_recent_value, 80);
+  assert.equal(population.executive.recorded_value_change, -120);
+  assert.equal(population.executive.gross_recorded_decrease, 120);
   assert.equal(population.cohorts[0].metrics.length, 0);
+  assert.deepEqual(
+    {
+      baseline: population.cohorts[2].aggregate_baseline_value,
+      recent: population.cohorts[2].aggregate_recent_value,
+      decrease: population.cohorts[2].gross_recorded_decrease,
+    },
+    { baseline: 200, recent: 80, decrease: 120 },
+  );
+  assert.deepEqual(population.executive.action_mix, [
+    {
+      key: "NO_PUBLISHED_RECOMMENDATION",
+      label: "No recommendation published",
+      count: 1,
+      share: 1,
+    },
+  ]);
   assert.deepEqual(
     population.investigated_households.map((item) => item.household_id),
     ["7"],
   );
   assert.match(population.missing_data_reasons.join(" "), /predates/u);
+  assert.match(
+    population.missing_data_reasons.join(" "),
+    /investigated households only/u,
+  );
   assert.equal(await loadPopulation(root, "../manifest.json"), null);
+});
+
+test("keeps partial recorded-value totals unavailable when report coverage is incomplete", async (context) => {
+  const root = await fixtureRoot();
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+    baselineValue: null,
+  });
+
+  const population = await loadPopulation(root, live.collectionId);
+  assert.equal(population.executive.aggregate_baseline_value, null);
+  assert.equal(population.executive.aggregate_recent_value, null);
+  assert.equal(population.executive.recorded_value_change, null);
+  assert.equal(population.executive.gross_recorded_decrease, null);
+  assert.match(population.missing_data_reasons.join(" "), /lack value fields/u);
 });
 
 test("projects full population data without leaking non-investigated IDs", async (context) => {

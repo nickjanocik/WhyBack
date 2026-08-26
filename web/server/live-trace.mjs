@@ -8,7 +8,11 @@ import { clearInterval, setInterval } from "node:timers";
 import { TextDecoder } from "node:util";
 
 import { normalizeTraceEvent } from "./artifacts.mjs";
-import { MAX_LIVE_TRACE_EVENTS } from "./demo-limits.mjs";
+import {
+  DEFAULT_DEMO_DECLINE_THRESHOLD,
+  MAX_LIVE_TRACE_EVENTS,
+  demoDeclineThresholdError,
+} from "./demo-limits.mjs";
 import { resolveOwnedLiveRunDirectory } from "./live-runs.mjs";
 
 const STAGING_NAME = /^\.dashboard\.staging-[A-Za-z0-9._-]+$/u;
@@ -347,6 +351,7 @@ function idleStatus(eventCapacity, backend, model) {
     jobId: null,
     status: "idle",
     customers: null,
+    declineThreshold: null,
     command: null,
     startedAt: null,
     completedAt: null,
@@ -399,6 +404,7 @@ export function createDemoRunManager({
       jobId: target.jobId,
       status: target.status,
       customers: target.customers,
+      declineThreshold: target.declineThreshold,
       command: target.command,
       startedAt: target.startedAt,
       completedAt: target.completedAt,
@@ -459,7 +465,16 @@ export function createDemoRunManager({
   }
 
   /** Starts one gated live job and returns its initial public status immediately. */
-  function start(customers) {
+  function start(
+    customers,
+    declineThreshold = DEFAULT_DEMO_DECLINE_THRESHOLD,
+  ) {
+    const thresholdError = demoDeclineThresholdError(declineThreshold);
+    if (thresholdError) {
+      const error = new Error(thresholdError);
+      error.statusCode = 400;
+      throw error;
+    }
     if (runningJobId && jobs.get(runningJobId)?.status === "running") {
       const error = new Error("A live Gemini run is already active.");
       error.statusCode = 409;
@@ -468,19 +483,25 @@ export function createDemoRunManager({
     clearTimer();
     const jobId = randomUUID();
     const startedAtMs = now();
-    const descriptor = describeRun
-      ? describeRun(customers, jobId)
+    const described = describeRun
+      ? describeRun(customers, jobId, declineThreshold)
       : {
           backend,
           collectionId: "dashboard",
-          command: `uv run whyback demo --customers ${customers} --backend gemini --output-dir artifacts/local/dashboard`,
+          command: `uv run whyback demo --customers ${customers} --decline-threshold ${declineThreshold} --backend gemini --output-dir artifacts/local/dashboard`,
+          declineThreshold,
           model,
           runDirectory: null,
         };
+    const descriptor = {
+      ...described,
+      declineThreshold: described.declineThreshold ?? declineThreshold,
+    };
     const job = {
       jobId,
       status: "running",
       customers,
+      declineThreshold: descriptor.declineThreshold ?? declineThreshold,
       command: descriptor.command,
       startedAt: new Date(startedAtMs).toISOString(),
       completedAt: null,

@@ -22,29 +22,48 @@ from scripts.run_quality_gate import (
     validate_test_outputs,
 )
 from scripts.verify_artifacts import sha256_file, verify_artifact_tree
+from tests.fixtures.source_frames import minimal_source_frames
 from whyback import __version__
 from whyback.agent.actions import ActionId, load_action_catalog
 from whyback.agent.prompts import PROMPT_HASH, PROMPT_VERSION
+from whyback.agent.runner import InvestigationRunner, make_tool_call_id
+from whyback.agent.scripted_backend import ScriptedBackend
+from whyback.agent.state import (
+    ConfidenceLevel,
+    DriverClaim,
+    FinishDecision,
+    FinishProposal,
+    ToolDecision,
+)
 from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY
 from whyback.data.download import SOURCE_FILES
 from whyback.data.manifest import DataManifest, preparation_code_sha256
+from whyback.data.prepare import prepare_frames_for_tests
+from whyback.data.repository import DataRepository
+from whyback.detection.decline import DeclineSnapshot
+from whyback.methodology import ClaimType
 from whyback.observability import AuditEvent, AuditEventName
-from whyback.observability.audit import read_audit_events
+from whyback.observability.audit import AuditJsonlWriter, read_audit_events
+from whyback.provenance import RunProvenance
 from whyback.reporting import (
     build_interpretation_limits,
     build_population_context,
     render_report_html,
     render_report_markdown,
     render_trace_html,
+    write_report_bundle,
 )
 from whyback.reporting.models import ReportData
 from whyback.tools.contracts import (
+    CategoryDecompositionInput,
     EvidenceRecord,
+    ToolExecutionContext,
     ToolName,
     ToolProvenance,
     ToolResult,
     ToolStatus,
 )
+from whyback.tools.registry import RegisteredTool, ToolRegistry
 
 RUN_ID = UUID("00000000-0000-4000-8000-000000000077")
 
@@ -767,6 +786,154 @@ def _write_live_artifacts(root: Path) -> None:
     _rehash_manifest(root)
 
 
+def _write_category_action_artifacts(root: Path) -> None:
+    """Write a complete category action through the real runner and report boundary."""
+
+    _write_valid_artifacts(root)
+    prepared = root.parent / f"{root.name}-prepared"
+    prepare_frames_for_tests(minimal_source_frames(), prepared)
+    source_hashes = {"fixture": "c" * 64}
+    query_hash = "d" * 64
+    call_id = make_tool_call_id(RUN_ID, 1, ToolName.CATEGORY_DECOMPOSITION)
+    evidence_id = f"ev_{call_id}_001"
+
+    def category_handler(
+        parameters: CategoryDecompositionInput,
+        context: ToolExecutionContext,
+        repository: DataRepository,
+    ) -> ToolResult:
+        """Return one mapped category contribution with deterministic provenance."""
+
+        del parameters, repository
+        evidence = EvidenceRecord(
+            evidence_id=evidence_id,
+            run_id=context.run_id,
+            household_id=context.household_id,
+            source_tool=ToolName.CATEGORY_DECOMPOSITION,
+            source_tool_call_id=context.tool_call_id,
+            metric="contribution_to_lost_retailer_sales_value",
+            dimensions={
+                "department": "GROCERY",
+                "product_category": "SOUP",
+                "direction": "loss",
+            },
+            value=60.0,
+            unit="retailer_sales_value",
+            query_hash=query_hash,
+        )
+        return ToolResult(
+            tool_call_id=context.tool_call_id,
+            tool_name=ToolName.CATEGORY_DECOMPOSITION,
+            status=ToolStatus.OK,
+            evidence=(evidence,),
+            provenance=ToolProvenance(
+                dataset_source_commit="whyback-test-fixture-v1",
+                source_hashes=source_hashes,
+                normalized_parameters={"household_id": "77", "top_n": 8},
+                query_hash=query_hash,
+                rows_examined=1,
+                elapsed_ms=1.0,
+                diagnostics={
+                    "baseline_reconciled": True,
+                    "recent_reconciled": True,
+                },
+                application_version=__version__,
+            ),
+        )
+
+    registry = ToolRegistry(
+        (
+            RegisteredTool(
+                ToolName.CATEGORY_DECOMPOSITION,
+                CategoryDecompositionInput,
+                category_handler,
+                "Return deterministic mapped category losses.",
+            ),
+        )
+    )
+    proposal = FinishProposal(
+        driver_summary=(
+            DriverClaim(
+                summary=(
+                    "Recorded evidence supports the selected human-reviewed action "
+                    "hypothesis."
+                ),
+                claim_type=ClaimType.ASSOCIATIONAL,
+                supporting_evidence_ids=(evidence_id,),
+                no_material_counterevidence_reason=(
+                    "No material counterevidence was identified."
+                ),
+                limitations=("Observed retailer behavior is not causal evidence.",),
+            ),
+        ),
+        proposed_confidence=ConfidenceLevel.HIGH,
+        supporting_evidence_ids=(evidence_id,),
+        counterevidence_ids=(),
+        next_best_action_id=ActionId.CATEGORY_WINBACK,
+        rationale="Submit the mapped category loss for deterministic review.",
+        alternative_explanations=(
+            "Recorded activity may have shifted outside this retailer.",
+        ),
+        uncertainties=("Customer intent is not observed.",),
+    )
+    backend = ScriptedBackend(
+        (
+            ToolDecision(
+                investigation_question="Which mapped category recorded the loss?",
+                selected_tool=ToolName.CATEGORY_DECOMPOSITION,
+                arguments={"household_id": "77"},
+                decision_summary="Inspect mapped category movement.",
+            ),
+            FinishDecision(
+                investigation_question="Does the category evidence support review?",
+                decision_summary="Submit the mapped category for verification.",
+                final=proposal,
+            ),
+        )
+    )
+    trace_path = root / "customer_77" / "trace.jsonl"
+    trace_path.unlink()
+    started = datetime(2026, 1, 1, tzinfo=UTC)
+    event_times = iter(started + timedelta(seconds=index) for index in range(30))
+    with DataRepository(prepared) as repository, AuditJsonlWriter(trace_path) as writer:
+        outcome = InvestigationRunner(
+            backend=backend,
+            registry=registry,
+            repository=repository,
+            action_catalog=load_action_catalog(),
+            source_hashes=source_hashes,
+            dataset_source_commit="whyback-test-fixture-v1",
+            dataset_source_repository="whyback/tests",
+            dataset_kind="synthetic",
+            audit_writer=writer,
+            event_clock=lambda: next(event_times),
+        ).run(DeclineSnapshot.model_validate(_detector_snapshot()), run_id=RUN_ID)
+    outcome = outcome.model_copy(
+        update={
+            "provenance": RunProvenance(
+                dataset_kind="synthetic",
+                dataset_source_repository="whyback/tests",
+                dataset_source_commit="whyback-test-fixture-v1",
+                source_hashes=source_hashes,
+                backend="scripted",
+                execution_mode="scripted_control",
+                model="scripted/whyback-v1",
+                generated_at=started + timedelta(minutes=1),
+            )
+        }
+    )
+    assert outcome.verification is not None and outcome.verification.passed
+    write_report_bundle(outcome, root / "customer_77")
+    _write_exact_trace_view(trace_path)
+    manifest_path = root / "artifact_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["completed_household_ids"] = ["77"]
+    manifest["failed_household_ids"] = []
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _write_results_files(root)
+    _rehash_manifest(root)
+
+
 def _write_failed_live_artifacts(root: Path) -> None:
     """Write a live request that failed before receiving a provider response."""
 
@@ -1435,6 +1602,47 @@ def test_live_history_and_skip_are_credential_independent(
     assert without_current_key.passed, without_current_key.issues
     assert with_current_key.passed, with_current_key.issues
     assert with_current_key.execution_modes == ("live", "skipped")
+
+
+def test_artifact_verifier_accepts_category_specific_driver_template(
+    tmp_path: Path,
+) -> None:
+    """Accept the exact mapped-category wording produced by deterministic review."""
+
+    _write_category_action_artifacts(tmp_path)
+    report = json.loads(
+        (tmp_path / "customer_77" / "report.json").read_text(encoding="utf-8")
+    )
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert report["likely_drivers"][0]["summary"] == (
+        "A recorded loss in GROCERY / SOUP is a plausible contributor to the "
+        "observed engagement decline."
+    )
+    assert result.passed, result.issues
+
+
+def test_artifact_verifier_rejects_tampered_category_specific_driver_label(
+    tmp_path: Path,
+) -> None:
+    """Reject a mapped-category label that disagrees with its selected evidence."""
+
+    _write_category_action_artifacts(tmp_path)
+    report_path = tmp_path / "customer_77" / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["likely_drivers"][0]["summary"] = (
+        "A recorded loss in GROCERY / CHEESE is a plausible contributor to the "
+        "observed engagement decline."
+    )
+    _write_exact_report_bundle(report_path, report)
+    _write_results_files(tmp_path)
+    _rehash_manifest(tmp_path)
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert not result.passed
+    assert "report_verified_prose_mismatch" in {issue.code for issue in result.issues}
 
 
 def test_artifact_verifier_accepts_live_backend_failure_before_response(

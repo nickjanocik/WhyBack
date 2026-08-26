@@ -3,6 +3,8 @@
 export const MIN_DEMO_CUSTOMERS = 3;
 export const DEFAULT_DEMO_CUSTOMERS = 5;
 export const MAX_DEMO_CUSTOMERS = 24;
+export const DEMO_DECLINE_THRESHOLDS = Object.freeze([0.2, 0.3, 0.4]);
+export const DEFAULT_DEMO_DECLINE_THRESHOLD = 0.3;
 export const MAX_LIVE_TRACE_EVENTS = 5_000;
 
 export const DEMO_CUSTOMER_LIMITS = Object.freeze({
@@ -17,4 +19,11 @@ export function demoCustomerCountError(customers) {
     customers <= MAX_DEMO_CUSTOMERS
     ? null
     : `customers must be an integer from ${MIN_DEMO_CUSTOMERS} through ${MAX_DEMO_CUSTOMERS}.`;
+}
+
+/** Returns a public validation message for detector thresholds outside the UI choices. */
+export function demoDeclineThresholdError(declineThreshold) {
+  return DEMO_DECLINE_THRESHOLDS.includes(declineThreshold)
+    ? null
+    : "declineThreshold must be one of 0.2, 0.3, or 0.4.";
 }

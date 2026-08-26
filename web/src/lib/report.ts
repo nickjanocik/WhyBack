@@ -93,19 +93,43 @@ export function meaningfulTrace<T extends TraceEvent>(trace: T[]): T[] {
   return trace.filter((item) => item.event !== "evidence_added");
 }
 
+/** Removes implementation vocabulary from errors before they reach product UI. */
+export function productMessage(message: string, fallback: string): string {
+  if (/GEMINI_API_KEY|API key/iu.test(message)) {
+    return "The secure model connection is not configured. Ask an administrator to enable live analysis.";
+  }
+  const normalized = message
+    .replace(/\bWhyBack CLI\b/giu, "analysis")
+    .replace(/\bCLI\b/giu, "analysis")
+    .replace(/\bsubprocess\b/giu, "analysis job")
+    .replace(/\bprocess\b/giu, "analysis job")
+    .replace(/\bdashboard bridge\b/giu, "analytics service")
+    .replace(/\bbridge\b/giu, "analytics service")
+    .replace(/\bartifact collection\b/giu, "result set")
+    .replace(/\bartifacts\b/giu, "results")
+    .replace(/\bartifact\b/giu, "result")
+    .replace(/\bmanifest\b/giu, "verification record")
+    .replace(/\btrace JSONL\b/giu, "decision history")
+    .replace(/\bJSONL\b/giu, "decision history")
+    .replace(/\brepository \.env or server environment\b/giu, "secure configuration")
+    .trim();
+  return normalized || fallback;
+}
+
 /** Returns a reviewer-friendly label for known audit events. */
 export function eventLabel(event: string): string {
   const labels: Record<string, string> = {
     run_started: "Investigation started",
     model_decision_requested: "Question prepared",
-    model_decision_rejected: "Invalid model decision rejected",
+    model_decision_rejected: "Invalid analytical response rejected",
     model_decision_received: "Analytical choice made",
-    tool_started: "Tool started",
-    tool_completed: "Tool completed",
-    tool_partial: "Tool returned partial evidence",
-    tool_failed: "Tool failed",
+    tool_started: "Analytical check started",
+    tool_completed: "Analytical check completed",
+    tool_partial: "Analytical check returned partial evidence",
+    tool_failed: "Analytical check failed",
     retry_scheduled: "Retry scheduled",
     evidence_added: "Evidence recorded",
+    evidence_batch: "Evidence summary",
     finish_requested: "Recommendation proposed",
     verification_started: "Verification started",
     verification_rejected: "Verification requested repair",

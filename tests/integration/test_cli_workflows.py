@@ -115,6 +115,8 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
             "demo",
             "--customers",
             str(DEFAULT_DEMO_CUSTOMERS),
+            "--decline-threshold",
+            "0.4",
             "--output-dir",
             str(demo_output),
         ],
@@ -134,6 +136,11 @@ def test_cli_demo_and_invalid_backend_paths(tmp_path: Path) -> None:
     assert demo_result.exit_code == 0, demo_result.output
     assert "Generated 5 reports for 101, 102, 103, 104, 105" in demo_result.stdout
     assert (demo_output / "manifest.json").is_file()
+    population = json.loads(
+        (demo_output / "population_summary.json").read_text(encoding="utf-8")
+    )
+    assert population["detector_policy"]["decline_threshold"] == 0.4
+    assert 0.4 in population["detector_policy"]["sensitivity_thresholds"]
     assert invalid_demo.exit_code == 2
     assert "backend must be" in invalid_demo.stderr
     assert invalid_investigation.exit_code == 2
@@ -160,6 +167,25 @@ def test_cli_demo_enforces_the_shared_customer_boundaries(tmp_path: Path) -> Non
         assert result.exit_code == 2
         assert str(MIN_DEMO_CUSTOMERS) in result.stderr
         assert "24" in result.stderr
+
+
+def test_cli_demo_rejects_an_undeclared_decline_threshold(tmp_path: Path) -> None:
+    """Verify that the dashboard choices remain the only run-level thresholds."""
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "demo",
+            "--decline-threshold",
+            "0.25",
+            "--output-dir",
+            str(tmp_path / "unsupported-threshold"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "0.2, 0.3, or 0.4" in result.stderr
+    assert not (tmp_path / "unsupported-threshold").exists()
 
 
 def test_cli_rejects_retired_openai_backend(tmp_path: Path) -> None:

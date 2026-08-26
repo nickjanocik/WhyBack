@@ -92,6 +92,7 @@ const idleStatus: DemoStatusResponse = {
   backend: "gemini",
   model: "gemini-2.5-flash",
   customers: null,
+  declineThreshold: null,
   command: null,
   startedAt: null,
   completedAt: null,
@@ -128,7 +129,7 @@ describe("dashboard interactions", () => {
     await user.click(screen.getByRole("button", { name: /household 102/i }));
     expect(onHouseholdChange).toHaveBeenCalledWith("102");
 
-    await user.selectOptions(screen.getByLabelText("CLI run"), collections[1]!.id);
+    await user.selectOptions(screen.getByLabelText("Analysis run"), collections[1]!.id);
     expect(onCollectionChange).toHaveBeenCalledWith(collections[1]!.id);
   });
 
@@ -151,7 +152,7 @@ describe("dashboard interactions", () => {
     expect(screen.queryByRole("button", { name: /household 101/i })).not.toBeInTheDocument();
   });
 
-  it("runs the selected bounded CLI batch size", async () => {
+  it("runs the selected batch with an explicit review sensitivity", async () => {
     const user = userEvent.setup();
     const onRun = vi.fn().mockResolvedValue(undefined);
     render(
@@ -166,15 +167,19 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    const count = screen.getByRole("spinbutton", { name: "Households" });
+    const count = screen.getByRole("spinbutton", { name: "Households to investigate" });
     expect(count).toHaveValue(5);
+    expect(screen.getByRole("radio", { name: /standard/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /broad/i })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /focused/i })).not.toBeChecked();
     await user.clear(count);
     await user.type(count, "24");
-    await user.click(screen.getByRole("button", { name: /start new run/i }));
-    expect(onRun).toHaveBeenCalledWith(24);
+    await user.click(screen.getByRole("radio", { name: /focused/i }));
+    await user.click(screen.getByRole("button", { name: /start analysis/i }));
+    expect(onRun).toHaveBeenCalledWith(24, 0.4);
   });
 
-  it("states the provider, credential, and customer-action boundaries", () => {
+  it("states product guardrails without exposing implementation details", () => {
     render(
       <RunCliDialog
         open
@@ -187,13 +192,42 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.getByText("Server environment")).toBeInTheDocument();
-    expect(screen.getByText(/starting clears the active workspace/i)).toBeInTheDocument();
-    expect(screen.getByText(/earlier artifacts remain preserved/i)).toBeInTheDocument();
-    expect(screen.getByText(/uses real provider quota/i)).toBeInTheDocument();
-    expect(screen.getByText(/python computes every metric/i)).toBeInTheDocument();
-    expect(screen.getByText(/executes no outreach/i)).toBeInTheDocument();
+    expect(screen.getByText("Official data")).toBeInTheDocument();
+    expect(screen.getByText("Nested cohorts")).toBeInTheDocument();
+    expect(screen.getByText(/previous analyses remain available/i)).toBeInTheDocument();
+    expect(screen.getByText(/every metric is verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/no outreach is executed automatically/i)).toBeInTheDocument();
+    expect(screen.getByText(/sets which eligible households enter the flagged cohort/i)).toBeInTheDocument();
+    expect(screen.getByText(/recommendation evidence rules stay fixed/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a churn probability/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\bcli\b|command|server environment/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+  });
+
+  it("reuses the current verified sensitivity and previews its cohort counts", () => {
+    render(
+      <RunCliDialog
+        open
+        running={false}
+        error={null}
+        customerLimits={demoCustomerLimits}
+        liveRun={readyLiveRun}
+        initialDeclineThreshold={0.2}
+        thresholdSensitivity={[
+          {
+            threshold: 0.2,
+            eligible_households: 1_313,
+            flagged_households: 430,
+            flagged_share: 430 / 1_313,
+          },
+        ]}
+        onClose={vi.fn()}
+        onRun={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("radio", { name: /broad/i })).toBeChecked();
+    expect(screen.getByText("430 / 1,313 flagged")).toBeInTheDocument();
   });
 
   it("explains blocked live readiness without collecting a credential or starting", async () => {
@@ -215,15 +249,19 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/gemini_api_key is not configured/i);
-    const start = screen.getByRole("button", { name: /start new run/i });
+    expect(screen.getByRole("alert")).toHaveTextContent(/secure model connection is not configured/i);
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/gemini_api_key|api key/i);
+    const start = screen.getByRole("button", { name: /start analysis/i });
     expect(start).toBeDisabled();
+    for (const option of screen.getAllByRole("radio")) {
+      expect(option).toBeDisabled();
+    }
     expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
     await user.click(start);
     expect(onRun).not.toHaveBeenCalled();
   });
 
-  it("submits only the selected household count to the local live-run bridge", async () => {
+  it("submits only the selected run inputs to the analysis service", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => idleStatus,
@@ -231,11 +269,14 @@ describe("dashboard interactions", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      await runDemo(5);
+      await runDemo(5, 0.2);
       const request = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
       expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/demo");
       expect(request?.method).toBe("POST");
-      expect(JSON.parse(String(request?.body))).toEqual({ customers: 5 });
+      expect(JSON.parse(String(request?.body))).toEqual({
+        customers: 5,
+        declineThreshold: 0.2,
+      });
       expect(String(request?.body)).not.toMatch(/api.?key|credential|gemini/i);
     } finally {
       vi.unstubAllGlobals();
@@ -251,11 +292,12 @@ describe("dashboard interactions", () => {
       backend: "gemini",
       model: "gemini-2.5-flash",
       customers: 5,
+      declineThreshold: 0.3,
       command: "uv run whyback demo --customers 5 --backend gemini",
       startedAt: "2026-08-25T12:00:00Z",
       completedAt: null,
-      cursor: 2,
-      eventCount: 2,
+      cursor: 3,
+      eventCount: 3,
       eventCapacity: 5_000,
       droppedEventCount: 4,
       events: [
@@ -273,6 +315,10 @@ describe("dashboard interactions", () => {
             investigation_question: "Did visit frequency change?",
             decision_summary: "Use the observed weekly trend to check visit frequency.",
             selected_tool: "customer_trend",
+            model: "gemini-3.7-flash",
+            prompt_version: "whyback-investigator-v3",
+            allowed_tools: ["customer_trend", "category_decomposition"],
+            provider_call_id: "provider-call-1",
           },
         },
         {
@@ -285,11 +331,34 @@ describe("dashboard interactions", () => {
           event: "evidence_added",
           runId: "run-101",
           householdId: "101",
-          details: { evidence_id: "ev-1" },
+          details: {
+            evidence_id: "ev-1",
+            source_tool: "customer_trend",
+            source_tool_call_id: "call-1",
+            metric: "weekly_retailer_sales_value",
+            limitations: ["Observed retailer activity only."],
+          },
+        },
+        {
+          id: "job-12345678:3",
+          cursor: 3,
+          source: "customer_101/trace.jsonl",
+          sourceLabel: "Household 101",
+          schemaVersion: 1,
+          timestamp: "2026-08-25T12:00:03Z",
+          event: "evidence_added",
+          runId: "run-101",
+          householdId: "101",
+          details: {
+            evidence_id: "ev-2",
+            source_tool: "customer_trend",
+            source_tool_call_id: "call-1",
+            metric: "distinct_trips",
+          },
         },
       ],
       error: null,
-      traceWarning: null,
+      traceWarning: "Load failed",
       collectionId: null,
     };
     const scrollIntoView = vi.fn();
@@ -309,11 +378,15 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Live run activity" })).toBeInTheDocument();
-    expect(screen.getByText(status.command!)).toBeInTheDocument();
-    expect(screen.getByText(/private model reasoning is not collected/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Live progress" })).toBeInTheDocument();
+    expect(screen.getByText("Standard · ≥30%")).toBeInTheDocument();
+    expect(screen.queryByText(status.command!)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Analysis stage: Investigate")).toBeInTheDocument();
+    expect(screen.getByText(/private model reasoning is never collected/i)).toBeInTheDocument();
     expect(screen.queryByText(/existing verified report remains visible/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/4 earlier audit events were omitted/i)).toBeInTheDocument();
+    expect(screen.getByText(/reconnecting live updates/i)).toBeInTheDocument();
+    expect(screen.queryByText("Load failed")).not.toBeInTheDocument();
+    expect(screen.getByText(/4 earlier updates were omitted/i)).toBeInTheDocument();
     expect(screen.getByText("Did visit frequency change?")).toBeInTheDocument();
     expect(
       screen.getByText("Did visit frequency change?").closest(".trace-detail"),
@@ -324,11 +397,19 @@ describe("dashboard interactions", () => {
         .closest(".trace-detail"),
     ).toHaveClass("trace-detail--narrative");
     expect(screen.getByText("Household 101")).toBeInTheDocument();
+    expect(screen.queryByText("gemini-3.7-flash")).not.toBeInTheDocument();
+    expect(screen.queryByText("whyback-investigator-v3")).not.toBeInTheDocument();
+    expect(screen.queryByText(/provider-call-1|category_decomposition/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence recorded")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("checkbox", { name: "Evidence writes" }));
-    expect(screen.getByText("Evidence recorded")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Close live audit trace" }));
+    await user.click(screen.getByRole("checkbox", { name: "Evidence summaries" }));
+    const summary = screen.getByText("Evidence summary").closest("article")!;
+    expect(summary).toHaveTextContent("Customer Trend");
+    expect(summary).toHaveTextContent("Weekly Retailer Sales Value");
+    expect(summary).toHaveTextContent("Distinct Trips");
+    expect(summary).toHaveTextContent("Evidence Count2");
+    expect(summary).not.toHaveTextContent(/ev-1|ev-2|call-1/i);
+    await user.click(screen.getByRole("button", { name: "Close live analysis progress" }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -370,18 +451,18 @@ describe("dashboard interactions", () => {
       </>,
     );
 
-    const drawer = await screen.findByRole("dialog", { name: "Live run activity" });
-    const close = within(drawer).getByRole("button", { name: "Close live audit trace" });
+    const drawer = await screen.findByRole("dialog", { name: "Live progress" });
+    const close = within(drawer).getByRole("button", { name: "Close live analysis progress" });
     await waitFor(() => expect(close).toHaveFocus());
     expect(document.querySelector(".skip-link")).toHaveAttribute("inert");
     expect(document.querySelector(".app-header")).toHaveAttribute("inert");
     expect(document.querySelector(".workspace-layout")).toHaveAttribute("inert");
-    expect(within(drawer).getByRole("log", { name: "Live audit event log" })).toHaveAttribute(
+    expect(within(drawer).getByRole("log", { name: "Live analysis activity" })).toHaveAttribute(
       "tabindex",
       "0",
     );
 
-    within(drawer).getByRole("button", { name: "Configure CLI run" }).focus();
+    within(drawer).getByRole("button", { name: "Configure analysis" }).focus();
     await user.tab();
     expect(close).toHaveFocus();
 
@@ -407,7 +488,7 @@ describe("dashboard interactions", () => {
     expect(document.querySelector(".workspace-layout")).not.toHaveAttribute("inert");
   });
 
-  it("offers a genuinely new run after a completed CLI run", async () => {
+  it("offers a genuinely new analysis after a completed review", async () => {
     const user = userEvent.setup();
     const onStartRun = vi.fn();
     const completedStatus: DemoStatusResponse = {
@@ -433,7 +514,7 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Refresh verified reports" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Start new run" }));
+    await user.click(screen.getByRole("button", { name: "Start new analysis" }));
     expect(onStartRun).toHaveBeenCalledOnce();
   });
 
@@ -460,8 +541,8 @@ describe("dashboard interactions", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Start new run" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Reload published reports" }));
+    expect(screen.queryByRole("button", { name: "Start new analysis" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reload dashboard results" }));
     expect(onRefreshReports).toHaveBeenCalledOnce();
   });
 
@@ -478,15 +559,15 @@ describe("dashboard interactions", () => {
       <RunCliDialog {...props} open initialCustomers={8} />,
     );
 
-    expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(8);
+    expect(screen.getByRole("spinbutton", { name: "Households to investigate" })).toHaveValue(8);
     rerender(<RunCliDialog {...props} open={false} initialCustomers={99} />);
     await waitFor(() => {
-      expect(screen.queryByRole("spinbutton", { name: "Households" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("spinbutton", { name: "Households to investigate" })).not.toBeInTheDocument();
     });
     rerender(<RunCliDialog {...props} open initialCustomers={99} />);
 
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(24);
+      expect(screen.getByRole("spinbutton", { name: "Households to investigate" })).toHaveValue(24);
     });
   });
 
@@ -628,7 +709,7 @@ describe("dashboard interactions", () => {
     } as unknown as ReportData;
 
     render(<AuditPanel collectionId="failure" report={failedReport} trace={[]} />);
-    expect(screen.getByText(/sanitized events for this household investigation/i)).toBeInTheDocument();
+    expect(screen.getByText(/recorded analytical steps for this household/i)).toBeInTheDocument();
     expect(screen.getByText("Gemini")).toBeInTheDocument();
     expect(screen.getByText("gemini-2.5-flash")).toBeInTheDocument();
   });

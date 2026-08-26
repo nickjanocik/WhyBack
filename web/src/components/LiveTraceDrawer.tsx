@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Check,
   CircleAlert,
   CircleCheck,
   LoaderCircle,
@@ -13,8 +14,8 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { humanize, meaningfulTrace } from "../lib/report";
-import type { DemoStatusResponse } from "../types";
+import { meaningfulTrace, productMessage } from "../lib/report";
+import type { DemoStatusResponse, LiveTraceEvent } from "../types";
 import { TraceEventRow } from "./TraceEventRow";
 
 interface LiveTraceDrawerProps {
@@ -26,7 +27,7 @@ interface LiveTraceDrawerProps {
   onStartRun: () => void;
 }
 
-/** Renders live job status, optional evidence writes, and per-household audit events. */
+/** Renders live analysis status, optional evidence updates, and reviewable activity. */
 export function LiveTraceDrawer({
   open,
   status,
@@ -42,11 +43,13 @@ export function LiveTraceDrawer({
   const closeRef = useRef<HTMLButtonElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
-  // Evidence writes are useful on demand but hidden initially to keep the audit readable.
-  const events = useMemo(
-    () => (showEvidenceEvents ? status.events : meaningfulTrace(status.events)),
+  // Evidence updates are summarized on demand so the activity feed stays readable.
+  const availableEvents = useMemo(
+    () => compactLiveEvents(status.events, showEvidenceEvents),
     [showEvidenceEvents, status.events],
   );
+  const events = availableEvents.slice(-160);
+  const hiddenUpdateCount = availableEvents.length - events.length;
 
   // Keep the latest close callback available without rebuilding the focus-trap effect.
   useEffect(() => {
@@ -146,14 +149,14 @@ export function LiveTraceDrawer({
         >
           <header className="live-trace-header">
             <div>
-              <span className="eyebrow">WhyBack CLI</span>
-              <h2 id="live-trace-title">Live run activity</h2>
+              <span className="eyebrow">Analysis center</span>
+              <h2 id="live-trace-title">Live progress</h2>
             </div>
             <button
               ref={closeRef}
               type="button"
               onClick={onClose}
-              aria-label="Close live audit trace"
+              aria-label="Close live analysis progress"
             >
               <X size={18} />
             </button>
@@ -170,23 +173,23 @@ export function LiveTraceDrawer({
               <Radio size={16} />
             )}
             <strong>{phaseLabel(status.status)}</strong>
-            <span>{status.eventCount} recorded events</span>
+            <span>{status.eventCount.toLocaleString()} activity updates</span>
           </div>
 
+          <AnalysisProgress status={status} reduced={Boolean(reduceMotion)} />
+
           <p className="live-trace-boundary">
-            Sanitized questions, decisions, deterministic tool activity, and verification from the running CLI. Private model reasoning is not collected.
+            Reviewable questions, analytical checks, and verification steps appear here as they happen. Private model reasoning is never collected.
           </p>
 
           {status.jobId && (
-            <section className="live-run-details" aria-label="CLI execution details">
+            <section className="live-run-details" aria-label="Analysis details">
               <dl>
-                <div><dt>Backend</dt><dd>{humanize(status.backend)}</dd></div>
-                <div><dt>Model</dt><dd><code>{status.model || "—"}</code></dd></div>
                 <div><dt>Households</dt><dd>{status.customers}</dd></div>
                 <div><dt>Started</dt><dd>{formatTimestamp(status.startedAt)}</dd></div>
-                <div><dt>Job</dt><dd><code>{status.jobId.slice(0, 8)}</code></dd></div>
+                <div><dt>Sensitivity</dt><dd>{sensitivityLabel(status.declineThreshold)}</dd></div>
+                <div><dt>Review mode</dt><dd>Population comparison</dd></div>
               </dl>
-              {status.command && <div className="live-run-command"><small>Command</small><code>{status.command}</code></div>}
             </section>
           )}
 
@@ -198,7 +201,7 @@ export function LiveTraceDrawer({
                 onChange={(event) => setShowEvidenceEvents(event.target.checked)}
               />
               <span aria-hidden="true" />
-              Evidence writes
+              Evidence summaries
             </label>
             <label className="switch-label">
               <input
@@ -211,12 +214,24 @@ export function LiveTraceDrawer({
             </label>
           </div>
 
-          {(status.error || status.traceWarning) && (
+          {status.error && (
             <div className="live-trace-error" role="alert">
               <CircleAlert size={16} />
               <span>
-                {status.status === "failed" && <strong>CLI run not published. </strong>}
-                {status.error || status.traceWarning}
+                {status.status === "failed" && <strong>Analysis did not complete. </strong>}
+                {productMessage(status.error, "The analysis could not be completed.")}
+              </span>
+            </div>
+          )}
+
+          {!status.error && status.traceWarning && (
+            <div className="live-trace-notice" role="status">
+              <RefreshCw className={status.status === "running" ? "spin" : ""} size={16} />
+              <span>
+                <strong>{status.status === "running" ? "Reconnecting live updates." : "Some live updates were unavailable."}</strong>{" "}
+                {status.status === "running"
+                  ? "The analysis is still running; progress will resume automatically."
+                  : "Completed results and decision history remain authoritative."}
               </span>
             </div>
           )}
@@ -225,7 +240,7 @@ export function LiveTraceDrawer({
             <div className="live-trace-error" role="status">
               <CircleAlert size={16} />
               <span>
-                {status.droppedEventCount} earlier audit events were omitted from the bounded live window.
+                {status.droppedEventCount} earlier updates were omitted from this live window. The completed decision history remains available.
               </span>
             </div>
           )}
@@ -234,25 +249,30 @@ export function LiveTraceDrawer({
             className="live-trace-log"
             role="log"
             tabIndex={0}
-            aria-label="Live audit event log"
+            aria-label="Live analysis activity"
             aria-live={status.status === "running" ? "polite" : "off"}
             aria-relevant="additions"
           >
+            {hiddenUpdateCount > 0 && (
+              <div className="live-window-note" role="status">
+                Showing the latest {events.length} summarized updates · {hiddenUpdateCount} earlier updates remain in the completed decision history.
+              </div>
+            )}
             {events.map((event) => (
-              <TraceEventRow event={event} showSource key={event.id} />
+              <TraceEventRow event={event} showSource condensed key={event.id} />
             ))}
             {events.length === 0 && status.status === "idle" && (
               <div className="live-trace-empty">
                 <Activity size={20} />
                 <strong>No run activity</strong>
-                <span>Start the WhyBack CLI to populate this audit stream.</span>
+                <span>Start a new analysis to see verified progress here.</span>
               </div>
             )}
             {events.length === 0 && status.status === "running" && (
               <div className="live-trace-empty">
                 <LoaderCircle className="spin" size={20} />
-                <strong>Waiting for the first audit event</strong>
-                <span>The CLI is preparing the run workspace.</span>
+                <strong>Preparing the analysis</strong>
+                <span>WhyBack is selecting the cohort and validating inputs.</span>
               </div>
             )}
             <div ref={endRef} />
@@ -262,12 +282,12 @@ export function LiveTraceDrawer({
             <footer className="live-trace-footer">
               {status.status === "completed" && reportRefreshFailed ? (
                 <button type="button" onClick={onRefreshReports}>
-                  <CircleCheck size={15} /> Reload published reports
+                  <CircleCheck size={15} /> Reload dashboard results
                 </button>
               ) : (
                 <button type="button" onClick={onStartRun}>
                   {status.status === "idle" ? <Play size={15} /> : <RefreshCw size={15} />}
-                  {status.status === "idle" ? "Configure CLI run" : "Start new run"}
+                  {status.status === "idle" ? "Configure analysis" : "Start new analysis"}
                 </button>
               )}
             </footer>
@@ -278,12 +298,130 @@ export function LiveTraceDrawer({
   );
 }
 
+/** Collapses consecutive ledger writes into one readable evidence summary. */
+function compactLiveEvents(
+  events: LiveTraceEvent[],
+  includeEvidence: boolean,
+): LiveTraceEvent[] {
+  if (!includeEvidence) return meaningfulTrace(events);
+  const compacted: LiveTraceEvent[] = [];
+  let evidenceBatchKey: string | null = null;
+  for (const event of events) {
+    if (event.event !== "evidence_added") {
+      evidenceBatchKey = null;
+      compacted.push(event);
+      continue;
+    }
+    const source = String(event.details.source_tool ?? "analysis");
+    const call = String(event.details.source_tool_call_id ?? source);
+    const batchKey = `${event.householdId}:${call}`;
+    const metric = String(event.details.metric ?? "observed signal");
+    const limitations = Array.isArray(event.details.limitations)
+      ? event.details.limitations.map(String).filter(Boolean)
+      : [];
+    const previous = compacted.at(-1);
+    if (previous?.event === "evidence_batch" && evidenceBatchKey === batchKey) {
+      const signals = Array.isArray(previous.details.signals)
+        ? previous.details.signals.map(String)
+        : [];
+      compacted[compacted.length - 1] = {
+        ...previous,
+        id: event.id,
+        cursor: event.cursor,
+        timestamp: event.timestamp,
+        details: {
+          ...previous.details,
+          evidence_count: Number(previous.details.evidence_count ?? 1) + 1,
+          signals: [...new Set([...signals, metric])],
+          scope_note: previous.details.scope_note ?? limitations[0],
+        },
+      };
+      continue;
+    }
+    evidenceBatchKey = batchKey;
+    compacted.push({
+      ...event,
+      event: "evidence_batch",
+      details: {
+        analytical_check: source,
+        evidence_count: 1,
+        signals: [metric],
+        ...(limitations[0] ? { scope_note: limitations[0] } : {}),
+      },
+    });
+  }
+  return compacted;
+}
+
 /** Converts the machine live-run phase into its compact display label. */
 function phaseLabel(status: DemoStatusResponse["status"]): string {
   if (status === "idle") return "Not started";
-  if (status === "running") return "CLI running";
-  if (status === "completed") return "Run finished · artifacts published";
-  return "CLI failed";
+  if (status === "running") return "Analysis in progress";
+  if (status === "completed") return "Analysis complete · insights ready";
+  return "Analysis interrupted";
+}
+
+/** Names the cohort threshold without implying an action-evidence change. */
+function sensitivityLabel(threshold: DemoStatusResponse["declineThreshold"]): string {
+  if (threshold === 0.2) return "Broad · ≥20%";
+  if (threshold === 0.4) return "Focused · ≥40%";
+  return "Standard · ≥30%";
+}
+
+const analysisStages = [
+  { label: "Select", events: ["run_started"] },
+  { label: "Investigate", events: ["model_decision_requested", "model_decision_received", "tool_started", "tool_completed", "tool_partial", "tool_failed", "finish_requested"] },
+  { label: "Verify", events: ["verification_started", "verification_passed"] },
+  { label: "Ready", events: ["run_completed"] },
+];
+
+/** Shows the current analysis phase without exposing execution implementation. */
+function AnalysisProgress({
+  status,
+  reduced,
+}: {
+  status: DemoStatusResponse;
+  reduced: boolean;
+}) {
+  const eventNames = new Set(status.events.map((event) => event.event));
+  const reached = analysisStages.map((stage, index) =>
+    index === 0
+      ? status.status !== "idle"
+      : index === analysisStages.length - 1
+        ? status.status === "completed"
+        : stage.events.some((event) => eventNames.has(event)),
+  );
+  const latestReached = reached.reduce(
+    (latest, value, index) => (value ? index : latest),
+    0,
+  );
+  const activeIndex = status.status === "completed"
+    ? analysisStages.length - 1
+    : latestReached;
+
+  return (
+    <div className="analysis-progress" aria-label={`Analysis stage: ${analysisStages[activeIndex]?.label ?? "Select"}`}>
+      <motion.span
+        className="analysis-progress__line"
+        aria-hidden="true"
+        initial={reduced ? false : { scaleX: 0 }}
+        animate={{ scaleX: status.status === "idle" ? 0 : activeIndex / (analysisStages.length - 1) }}
+        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 140, damping: 24 }}
+      />
+      <ol>
+        {analysisStages.map((stage, index) => {
+          const complete = index < activeIndex || status.status === "completed";
+          const active = index === activeIndex && status.status !== "idle" && status.status !== "completed";
+          return (
+            <li className={complete ? "complete" : active ? "active" : ""} key={stage.label}>
+              <span>{complete ? <Check size={11} /> : index + 1}</span>
+              <small>{stage.label}</small>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
 }
 
 /** Formats a live timestamp as local time and handles missing or invalid values. */
