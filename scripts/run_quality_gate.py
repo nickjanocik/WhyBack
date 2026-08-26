@@ -31,9 +31,11 @@ _SOURCE_DIRECTORIES = (
     "configs",
     "docs",
     ".github",
+    "web",
 )
 _SOURCE_FILES = (
     ".env.example",
+    ".gitleaksignore",
     ".gitignore",
     "AGENTS.md",
     "Makefile",
@@ -51,6 +53,8 @@ _IGNORED_PARTS = frozenset(
         ".ruff_cache",
         ".venv",
         "__pycache__",
+        "dist",
+        "node_modules",
     }
 )
 _REQUIRED_STEP_NAMES = frozenset(

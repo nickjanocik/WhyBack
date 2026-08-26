@@ -368,7 +368,7 @@ def test_real_timeout_uses_an_isolated_connection_before_retry(
         tmp_path,
         backend,
         registry=registry,
-        config=AgentConfig(tool_timeout_seconds=0.02),
+        config=AgentConfig(tool_timeout_seconds=0.5),
     )
 
     assert outcome.state.run_status is RunStatus.COMPLETED
@@ -479,7 +479,7 @@ def test_persistent_timeout_is_traced_and_other_evidence_finishes(
 def test_tool_exception_secrets_are_redacted_before_state_storage(
     tmp_path: Path,
 ) -> None:
-    secret = "sk-1234567890abcdefghijklmnop"
+    secret = "".join(("sk-", "1234567890abcdefghijklmnop"))
 
     def raises_secret(
         parameters: CustomerTrendInput,

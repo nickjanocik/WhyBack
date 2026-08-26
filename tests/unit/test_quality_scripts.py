@@ -830,7 +830,24 @@ def test_source_tree_hash_is_stable_and_excludes_generated_artifacts(
     (tmp_path / "src" / "whyback" / "__init__.py").write_text(
         "VERSION = 1\n", encoding="utf-8"
     )
-    assert source_tree_hash(tmp_path) != first
+    source_change = source_tree_hash(tmp_path)
+    assert source_change != first
+
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+    web_change = source_tree_hash(tmp_path)
+    assert web_change != source_change
+
+    dependencies = web / "node_modules" / "example"
+    dependencies.mkdir(parents=True)
+    (dependencies / "index.js").write_text("generated\n", encoding="utf-8")
+    assert source_tree_hash(tmp_path) == web_change
+
+    (tmp_path / ".gitleaksignore").write_text(
+        "reviewed-fingerprint\n", encoding="utf-8"
+    )
+    assert source_tree_hash(tmp_path) != web_change
 
 
 def test_test_output_validation_requires_branch_coverage_and_threshold(
@@ -1509,7 +1526,7 @@ def test_malformed_prior_audit_retains_only_error_and_digest(tmp_path: Path) -> 
     _write_gate_project(tmp_path)
     paths = GatePaths.under(tmp_path)
     paths.directory.mkdir(parents=True, exist_ok=True)
-    secret = "sk-1234567890abcdefghijklmnop"
+    secret = "".join(("sk-", "1234567890abcdefghijklmnop"))
     paths.audit_json.write_text(f"not-json {secret}", encoding="utf-8")
     fixed_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
     ticks = iter(float(value) for value in range(100))

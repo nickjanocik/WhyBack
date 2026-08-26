@@ -51,9 +51,27 @@ line-length = 88
 extend-exclude = ["artifacts"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "S"]
 
 [tool.ruff.lint.per-file-ignores]
+# These subprocesses use internal argument vectors and never invoke a shell.
+"scripts/build_demo.py" = ["S603"]
+"scripts/run_quality_gate.py" = ["S314", "S603"]
+"src/whyback/cli.py" = ["S603"]
+# These assertions narrow already-validated application-owned state.
+"scripts/verify_artifacts.py" = ["S101"]
+"src/whyback/agent/runner.py" = ["S101"]
+"src/whyback/methodology.py" = ["S101"]
+"src/whyback/reporting/models.py" = ["S101"]
+# Source URLs are fixed HTTPS locations with pinned size and SHA-256 checks.
+"src/whyback/data/download.py" = ["S310"]
+# Dynamic SQL contains escaped paths, allow-listed identifiers, or placeholders.
+"src/whyback/data/prepare.py" = ["S607", "S608"]
+"src/whyback/data/repository.py" = ["S608"]
+"src/whyback/tools/category.py" = ["S608"]
+# HTML rendering enables autoescape; Markdown uses explicit escaping filters.
+"src/whyback/reporting/render.py" = ["S701"]
+# Tests intentionally use assertions for executable specifications.
 "tests/**/*.py" = ["S101"]
 
 [tool.pyright]

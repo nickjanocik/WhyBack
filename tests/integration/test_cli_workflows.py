@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from rich.text import Text
 from typer.testing import CliRunner
 
 from whyback.cli import app
@@ -36,7 +37,7 @@ def test_cli_config_status_and_full_prepare_guard(tmp_path: Path) -> None:
     assert data_root.name in status_result.stdout
     assert "Prepared manifest: available" in status_result.stdout
     assert guarded_prepare.exit_code == 2
-    assert "pass --full" in guarded_prepare.stderr
+    assert "pass --full" in Text.from_ansi(guarded_prepare.stderr).plain
 
 
 def test_cli_detect_investigate_and_verify_round_trip(tmp_path: Path) -> None:
