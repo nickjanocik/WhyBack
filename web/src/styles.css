@@ -4595,6 +4595,11 @@ select:focus-visible {
   margin: 0 auto;
 }
 
+.percentile-ribbon svg text,
+.sensitivity-chart svg text {
+  font-size: 10px;
+}
+
 .population-figure svg text,
 .percentile-ribbon svg text,
 .density-plot svg text,
@@ -4940,6 +4945,12 @@ select:focus-visible {
 .outcome-chip--failed {
   color: var(--danger);
   background: var(--danger-soft);
+}
+
+@media (max-width: 1320px) {
+  .explorer-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1180px) {
