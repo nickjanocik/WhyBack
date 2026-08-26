@@ -170,6 +170,8 @@ export function LiveTraceDrawer({
             <details className="live-run-details">
               <summary>Run details</summary>
               <dl>
+                <div><dt>Backend</dt><dd>{humanize(status.backend)}</dd></div>
+                <div><dt>Model</dt><dd><code>{status.model || "—"}</code></dd></div>
                 <div><dt>Households</dt><dd>{status.customers}</dd></div>
                 <div><dt>Started</dt><dd>{formatTimestamp(status.startedAt)}</dd></div>
                 <div><dt>Job</dt><dd><code>{status.jobId.slice(0, 8)}</code></dd></div>
@@ -230,7 +232,7 @@ export function LiveTraceDrawer({
               <div className="live-trace-empty">
                 <Activity size={20} />
                 <strong>No run activity</strong>
-                <span>Start a scripted run to populate this trace.</span>
+                <span>Start a live Gemini run to populate this trace.</span>
               </div>
             )}
             {events.length === 0 && status.status === "running" && (
@@ -257,7 +259,7 @@ export function LiveTraceDrawer({
               <span><LoaderCircle className="spin" size={14} /> Run in progress</span>
             ) : (
               <button type="button" onClick={onStartRun}>
-                <Play size={15} /> {status.status === "failed" ? "Run again" : "Start run"}
+                <Play size={15} /> {status.status === "failed" ? "Run live again" : "Start live run"}
               </button>
             )}
           </footer>

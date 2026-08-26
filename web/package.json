@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "server": "node server/index.mjs",
+    "server": "node server/start.mjs",
     "build": "tsc -b && vite build",
-    "preview": "node server/index.mjs",
+    "preview": "node server/start.mjs",
     "test": "vitest run src && node --test server/*.test.mjs",
     "test:watch": "vitest",
     "lint": "eslint .",

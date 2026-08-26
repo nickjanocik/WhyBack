@@ -266,6 +266,71 @@ test("returns monotonic reader deltas without replaying previously consumed line
   assert.deepEqual(await reader.readNew(), []);
 });
 
+test("does not consume valid trace batches when another source is malformed", async (context) => {
+  const root = await makeRoot(context);
+  const staging = await makeStaging(root);
+  await writeCustomerTrace(
+    staging,
+    "7",
+    asJsonl(auditEvent({ householdId: "7" })),
+  );
+  const malformedPath = await writeCustomerTrace(staging, "8", "not-json\n");
+  const reader = createLiveTraceReader(root, Date.now());
+
+  await assert.rejects(reader.readNew(), /customer_8 is invalid/u);
+  await writeFile(
+    malformedPath,
+    asJsonl(auditEvent({ householdId: "8" })),
+  );
+  const recovered = await reader.readNew();
+  assert.deepEqual(
+    recovered.map((event) => event.householdId),
+    ["7", "8"],
+  );
+  assert.deepEqual(await reader.readNew(), []);
+});
+
+test("streams only from an explicit owned live-run directory", async (context) => {
+  const root = await makeRoot(context);
+  const liveRun = await makeStaging(
+    root,
+    "live-runs/live-123e4567-e89b-42d3-a456-426614174000",
+  );
+  await writeCustomerTrace(
+    liveRun,
+    "7",
+    asJsonl(auditEvent({ householdId: "7" })),
+  );
+  const distractor = await makeStaging(root, ".dashboard.staging-distractor");
+  await writeCustomerTrace(
+    distractor,
+    "999",
+    asJsonl(auditEvent({ householdId: "999" })),
+  );
+  const reader = createLiveTraceReader(root, Date.now(), {
+    runDirectory: liveRun,
+  });
+
+  const events = await reader.readNew();
+  assert.deepEqual(events.map((event) => event.householdId), ["7"]);
+  assert.equal(JSON.stringify(events).includes("999"), false);
+});
+
+test("rejects an explicit trace root outside the repository", async (context) => {
+  const root = await makeRoot(context);
+  const outside = await makeRoot(context);
+  const liveRun = await makeStaging(
+    outside,
+    "live-runs/live-123e4567-e89b-42d3-a456-426614174000",
+  );
+  await writeCustomerTrace(liveRun, "7", asJsonl(auditEvent()));
+
+  const reader = createLiveTraceReader(root, Date.now(), {
+    runDirectory: liveRun,
+  });
+  assert.deepEqual(await reader.readNew(), []);
+});
+
 test("manager ignores staging directories that existed before its run", async (context) => {
   const root = await makeRoot(context);
   const stale = await makeStaging(root, ".dashboard.staging-stale");
@@ -498,7 +563,7 @@ test("manager preserves partial events, records failure, and releases the runnin
   const failed = await waitForStatus(manager, started.jobId, "failed");
   assert.equal(failed.eventCount, 2);
   assert.equal(failed.events.at(-1).event, "tool_failed");
-  assert.equal(failed.error, "The scripted run failed before completion.");
+  assert.equal(failed.error, "The live Gemini run failed before completion.");
   assert.equal(JSON.stringify(failed).includes("must-not-cross"), false);
   assert.ok(failed.completedAt);
   assert.equal(manager.running, false);
@@ -506,4 +571,50 @@ test("manager preserves partial events, records failure, and releases the runnin
   const next = manager.start(1);
   assert.notEqual(next.jobId, started.jobId);
   await waitForStatus(manager, next.jobId, "completed");
+});
+
+test("manager carries a unique live descriptor through execution and status", async (context) => {
+  const root = await makeRoot(context);
+  let receivedDescriptor = null;
+  const manager = createDemoRunManager({
+    repositoryRoot: root,
+    backend: "gemini",
+    model: "gemini-test-model",
+    describeRun: (customers, jobId) => ({
+      backend: "gemini",
+      collectionId: `live-${jobId}`,
+      command: `uv run whyback demo --customers ${customers} --backend gemini`,
+      model: "gemini-test-model",
+      runDirectory: path.join(root, "artifacts", "local", "live-runs", `live-${jobId}`),
+    }),
+    execute: async (_customers, descriptor) => {
+      receivedDescriptor = descriptor;
+      await mkdir(descriptor.runDirectory, { recursive: true });
+      await writeFile(
+        path.join(descriptor.runDirectory, ".whyback-owned-artifact-root.json"),
+        `${JSON.stringify({
+          schema_version: 1,
+          product: "WhyBack",
+          scope: "replaceable_generated_artifact_tree",
+        })}\n`,
+      );
+      await writeCustomerTrace(
+        descriptor.runDirectory,
+        "7",
+        asJsonl(auditEvent({ event: "run_completed" })),
+      );
+    },
+    intervalMs: 60_000,
+  });
+  context.after(() => manager.dispose());
+
+  const started = manager.start(5);
+  assert.equal(started.backend, "gemini");
+  assert.equal(started.model, "gemini-test-model");
+  assert.match(started.collectionId, /^live-/u);
+  assert.match(started.command, /--backend gemini/u);
+
+  const completed = await waitForStatus(manager, started.jobId, "completed");
+  assert.equal(receivedDescriptor.collectionId, completed.collectionId);
+  assert.equal(completed.events.at(-1).event, "run_completed");
 });

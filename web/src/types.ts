@@ -36,10 +36,18 @@ export interface DemoCustomerLimits {
   maximum: number;
 }
 
+export interface LiveRunConfiguration {
+  backend: "gemini";
+  model: string;
+  ready: boolean;
+  blockedReason: string | null;
+}
+
 export interface Workspace {
   schemaVersion: 1;
   productName: "WhyBack";
   demoCustomerLimits: DemoCustomerLimits;
+  liveRun: LiveRunConfiguration;
   collectionWarnings: string[];
   collections: ArtifactCollection[];
 }
@@ -246,6 +254,8 @@ export type DemoRunPhase = "idle" | "running" | "completed" | "failed";
 export interface DemoStatusResponse {
   jobId: string | null;
   status: DemoRunPhase;
+  backend: "gemini";
+  model: string;
   customers: number | null;
   command: string | null;
   startedAt: string | null;
@@ -257,7 +267,7 @@ export interface DemoStatusResponse {
   events: LiveTraceEvent[];
   error: string | null;
   traceWarning: string | null;
-  collectionId: "dashboard" | null;
+  collectionId: string | null;
 }
 
 export interface InvestigationResponse {

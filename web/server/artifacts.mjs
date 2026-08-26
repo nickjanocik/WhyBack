@@ -2,6 +2,11 @@ import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import { DEMO_CUSTOMER_LIMITS } from "./demo-limits.mjs";
+import {
+  discoverLiveRunCollections,
+  liveRunCollectionDefinition,
+  resolveVerifiedLiveRunDirectory,
+} from "./live-runs.mjs";
 
 const COLLECTIONS = [
   {
@@ -117,6 +122,16 @@ async function isRealDirectory(directory) {
   }
 }
 
+async function isRealFile(filePath) {
+  try {
+    const details = await lstat(filePath);
+    return details.isFile() && !details.isSymbolicLink();
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return false;
+    throw error;
+  }
+}
+
 function summarizeReport(report) {
   const decline = isPlainObject(report.decline) ? report.decline : {};
   const action = isPlainObject(report.action) ? report.action : null;
@@ -156,14 +171,20 @@ async function reportDirectories(collectionPath) {
 }
 
 async function loadCollection(repositoryRoot, definition) {
-  const collectionPath = path.resolve(repositoryRoot, definition.relativePath);
+  const collectionPath = definition.liveRun
+    ? await resolveVerifiedLiveRunDirectory(repositoryRoot, definition.id)
+    : path.resolve(repositoryRoot, definition.relativePath);
+  if (!collectionPath) return null;
   if (!(await isRealDirectory(collectionPath))) return null;
 
   let manifest = {};
-  try {
-    manifest = await readJson(path.join(collectionPath, "manifest.json"));
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
+  const manifestPath = path.join(collectionPath, "manifest.json");
+  if (!definition.liveRun || (await isRealFile(manifestPath))) {
+    try {
+      manifest = await readJson(manifestPath);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
   }
 
   const reportFiles = definition.flat
@@ -173,6 +194,7 @@ async function loadCollection(repositoryRoot, definition) {
       );
   const reports = [];
   for (const reportFile of reportFiles) {
+    if (definition.liveRun && !(await isRealFile(reportFile))) continue;
     try {
       const report = await readJson(reportFile);
       reports.push(summarizeReport(report));
@@ -210,17 +232,27 @@ async function loadCollection(repositoryRoot, definition) {
 }
 
 export async function loadWorkspace(repositoryRoot) {
+  let liveRunDefinitions = [];
+  const collectionWarnings = [];
+  try {
+    liveRunDefinitions = await discoverLiveRunCollections(repositoryRoot);
+  } catch {
+    collectionWarnings.push("Live Gemini runs could not be discovered.");
+  }
+  const definitions = [...liveRunDefinitions, ...COLLECTIONS];
   const results = await Promise.allSettled(
-    COLLECTIONS.map((definition) => loadCollection(repositoryRoot, definition)),
+    definitions.map((definition) => loadCollection(repositoryRoot, definition)),
   );
   const collections = results
     .filter((result) => result.status === "fulfilled")
     .map((result) => result.value)
     .filter(Boolean);
-  const collectionWarnings = results.flatMap((result, index) =>
-    result.status === "rejected"
-      ? [`${COLLECTIONS[index].title} artifacts could not be read.`]
-      : [],
+  collectionWarnings.push(
+    ...results.flatMap((result, index) =>
+      result.status === "rejected"
+        ? [`${definitions[index].title} artifacts could not be read.`]
+        : [],
+    ),
   );
   return {
     schemaVersion: 1,
@@ -231,14 +263,17 @@ export async function loadWorkspace(repositoryRoot) {
   };
 }
 
-export function resolveCollection(repositoryRoot, collectionId) {
+export async function resolveCollection(repositoryRoot, collectionId) {
   const definition = COLLECTIONS.find((item) => item.id === collectionId);
-  if (!definition) return null;
-  return path.resolve(repositoryRoot, definition.relativePath);
+  if (definition) return path.resolve(repositoryRoot, definition.relativePath);
+  return resolveVerifiedLiveRunDirectory(repositoryRoot, collectionId);
 }
 
 function collectionDefinition(collectionId) {
-  return COLLECTIONS.find((item) => item.id === collectionId) ?? null;
+  return (
+    COLLECTIONS.find((item) => item.id === collectionId) ??
+    liveRunCollectionDefinition(collectionId)
+  );
 }
 
 export function validateHouseholdId(householdId) {
@@ -304,7 +339,7 @@ async function readTrace(tracePath) {
 export async function loadInvestigation(repositoryRoot, collectionId, householdId) {
   if (!validateHouseholdId(householdId)) return null;
   const definition = collectionDefinition(collectionId);
-  const collectionPath = resolveCollection(repositoryRoot, collectionId);
+  const collectionPath = await resolveCollection(repositoryRoot, collectionId);
   if (!definition || !collectionPath || !(await isRealDirectory(collectionPath))) {
     return null;
   }
@@ -312,6 +347,13 @@ export async function loadInvestigation(repositoryRoot, collectionId, householdI
     ? collectionPath
     : path.join(collectionPath, `customer_${householdId}`);
   if (!(await isRealDirectory(customerDirectory))) return null;
+  if (
+    definition.liveRun &&
+    (!(await isRealFile(path.join(customerDirectory, "report.json"))) ||
+      !(await isRealFile(path.join(customerDirectory, "trace.jsonl"))))
+  ) {
+    return null;
+  }
   try {
     const [report, trace] = await Promise.all([
       readJson(path.join(customerDirectory, "report.json")),
@@ -334,7 +376,7 @@ export async function resolveArtifactFile(
   const allowedFiles = new Set(["report.html", "report.md", "trace.html"]);
   if (!allowedFiles.has(fileName) || !validateHouseholdId(householdId)) return null;
   const definition = collectionDefinition(collectionId);
-  const collectionPath = resolveCollection(repositoryRoot, collectionId);
+  const collectionPath = await resolveCollection(repositoryRoot, collectionId);
   if (!definition || !collectionPath || !(await isRealDirectory(collectionPath))) {
     return null;
   }

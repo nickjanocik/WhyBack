@@ -17,8 +17,8 @@ evidence, author recommendations, or execute customer actions.
   evidence role, source tool, or investigation step.
 - Review the sanitized run timeline, provenance, and deterministic report
   artifacts.
-- Run a bounded scripted batch through the local CLI and monitor its audited
-  activity while it is running.
+- Run a bounded live Gemini batch against prepared official data and monitor
+  its sanitized audit activity while it is running.
 - Use the interface with a keyboard, reduced-motion preferences, or a narrow
   viewport.
 
@@ -47,23 +47,40 @@ npm run server
 
 Open <http://127.0.0.1:4173>.
 
-## Scripted batch and live audited activity
+## Live Gemini batch and audited activity
 
-**Run scripted batch** executes this fixed command through an argument array,
-not a shell string:
+The web launcher is Gemini-only. It executes a fixed command through an
+argument array, never a shell string or a browser-selected backend:
 
 ```bash
-uv run whyback demo --customers <5-24> --backend scripted \
-  --output-dir artifacts/local/dashboard
+uv run whyback demo --customers <5-24> --backend gemini \
+  --output-dir artifacts/local/live-runs/live-<job-id>
 ```
 
-The range is inclusive: five is the minimum batch and 24 is the full current
-synthetic household population.
+The range is inclusive: five is the minimum and 24 is the configured maximum.
+Every household can make up to six real model decisions, so larger batches take
+longer and can consume more provider quota.
+
+Before startup, put a rotated credential in the ignored repository-root `.env`
+or export it in the server environment:
+
+```dotenv
+GEMINI_API_KEY=your-rotated-key
+```
+
+`npm run dev`, `npm run server`, and `npm run preview` load that file only into
+the local server-side bridge and its Python run process. An exported value takes
+precedence. The credential is never sent to React, Vite, an API request or
+response, a displayed command, or an audit event. Before enabling the control,
+the bridge runs `whyback data validate --official` to verify the prepared-data
+identity, schemas, transform version, files, and hashes. If either boundary is
+unavailable, the run endpoint fails closed; there is no scripted fallback.
 
 The run API is asynchronous:
 
-- `POST /api/demo` validates the requested customer count, starts the serialized
-  local job, and returns HTTP `202` with a job ID.
+- `POST /api/demo` checks server-side Gemini readiness, validates the requested
+  customer count, starts the serialized local job, and returns HTTP `202` with
+  a job ID.
 - `GET /api/demo/status?job=<job-id>&after=<cursor>` returns the current job
   state and only the audited events recorded after the supplied cursor. The
   browser polls this endpoint while the job is running.
@@ -82,13 +99,19 @@ raw process output.
 
 ## Operational boundaries
 
-- Generated output stays below the Git-ignored
-  `artifacts/local/dashboard/` tree.
+- Every live job gets a preserved, Git-ignored collection below
+  `artifacts/local/live-runs/live-<job-id>/`; a later job never overwrites its
+  reports or trace. A collection becomes browseable only after the deterministic
+  artifact verifier succeeds and the bridge writes a manifest-bound verification
+  seal.
 - The bridge binds to `127.0.0.1`, accepts no browser-supplied paths, has a
-  120-second process boundary, and permits only one scripted batch at a time.
-- There is no endpoint for data download/preparation, Gemini execution,
-  outreach, CRM mutation, or action execution. Recommended actions always
-  remain subject to human review.
+  bounded process deadline, and permits only one live Gemini batch at a time.
+  The default deadline is four hours; `WHYBACK_LIVE_TIMEOUT_MS` can set a value
+  from one minute through six hours. Stopping the bridge terminates and waits for
+  any active live process before it exits.
+- There is no endpoint for data download/preparation, outreach, CRM mutation,
+  or action execution. Recommended actions always remain subject to human
+  review.
 
 ## Frontend quality checks
 

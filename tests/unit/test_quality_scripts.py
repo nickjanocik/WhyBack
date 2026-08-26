@@ -912,6 +912,17 @@ def test_artifact_verifier_accepts_strict_standalone_run_profile(
     assert result.execution_modes == ("scripted",)
 
 
+def test_artifact_verifier_allows_the_server_verification_seal(tmp_path: Path) -> None:
+    _write_valid_artifacts(tmp_path)
+    (tmp_path / ".whyback-live-verification.json").write_text(
+        '{"status":"verified_live_gemini"}\n', encoding="utf-8"
+    )
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+
+    assert result.passed, result.issues
+
+
 def test_artifact_verifier_reconciles_complete_detector_and_failure_reason(
     tmp_path: Path,
 ) -> None:

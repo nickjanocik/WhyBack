@@ -28,6 +28,10 @@ def test_cli_config_status_and_full_prepare_guard(tmp_path: Path) -> None:
 
     config_result = runner.invoke(app, ["config"], env=environment)
     status_result = runner.invoke(app, ["data", "status"], env=environment)
+    validation_result = runner.invoke(app, ["data", "validate"], env=environment)
+    official_validation = runner.invoke(
+        app, ["data", "validate", "--official"], env=environment
+    )
     guarded_prepare = runner.invoke(app, ["data", "prepare"], env=environment)
 
     assert config_result.exit_code == 0
@@ -36,6 +40,10 @@ def test_cli_config_status_and_full_prepare_guard(tmp_path: Path) -> None:
     assert "Data directory:" in status_result.stdout
     assert data_root.name in status_result.stdout
     assert "Prepared manifest: available" in status_result.stdout
+    assert validation_result.exit_code == 0
+    assert "Validated prepared data" in validation_result.stdout
+    assert official_validation.exit_code == 1
+    assert "not the pinned official" in official_validation.stdout
     assert guarded_prepare.exit_code == 2
     assert "pass --full" in Text.from_ansi(guarded_prepare.stderr).plain
 

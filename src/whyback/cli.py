@@ -63,6 +63,41 @@ def data_status() -> None:
     )
 
 
+@data_app.command("validate")
+def data_validate(
+    official: Annotated[
+        bool,
+        typer.Option(
+            "--official",
+            help="Require the pinned official Complete Journey source identity.",
+        ),
+    ] = False,
+) -> None:
+    """Validate prepared schemas, source identity, transform, files, and hashes."""
+
+    from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY
+    from whyback.data.repository import DataRepository, PreparedDataError
+
+    settings = load_settings()
+    prepared = settings.data_dir / "prepared"
+    try:
+        with DataRepository(prepared) as repository:
+            manifest = repository.manifest
+            if manifest is None:
+                raise PreparedDataError("Prepared data manifest validation was skipped")
+            if official and (
+                manifest.source_repository != SOURCE_REPOSITORY
+                or manifest.source_commit != SOURCE_COMMIT
+            ):
+                raise PreparedDataError(
+                    "Prepared data is not the pinned official Complete Journey dataset"
+                )
+    except (OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Prepared data validation failed:[/red] {error}")
+        raise typer.Exit(code=1) from error
+    console.print(f"Validated prepared data: {prepared}")
+
+
 @data_app.command("download")
 def data_download(
     force: Annotated[

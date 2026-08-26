@@ -25,6 +25,9 @@ import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./typ
 
 type View = "overview" | "evidence" | "audit";
 
+const LIVE_COLLECTION_ID =
+  /^live-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+
 const views: Array<{ id: View; label: string; icon: typeof Activity }> = [
   { id: "overview", label: "Investigation", icon: FileSearch },
   { id: "evidence", label: "Evidence", icon: FlaskConical },
@@ -34,6 +37,8 @@ const views: Array<{ id: View; label: string; icon: typeof Activity }> = [
 const emptyLiveStatus: DemoStatusResponse = {
   jobId: null,
   status: "idle",
+  backend: "gemini",
+  model: "",
   customers: null,
   command: null,
   startedAt: null,
@@ -69,6 +74,7 @@ export default function App() {
   const [liveOpen, setLiveOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [railOpen, setRailOpen] = useState(false);
+  const [workspaceRefreshAttempt, setWorkspaceRefreshAttempt] = useState(0);
   const mobileMenuRef = useRef<HTMLButtonElement>(null);
   const activeJobRef = useRef<string | null>(null);
   const liveCursorRef = useRef(0);
@@ -87,11 +93,12 @@ export default function App() {
     setWorkspace(nextWorkspace);
     const collection =
       nextWorkspace.collections.find((item) => item.id === preferredCollection) ??
+      nextWorkspace.collections.find((item) => LIVE_COLLECTION_ID.test(item.id)) ??
       nextWorkspace.collections.find((item) => item.id === "dashboard") ??
       nextWorkspace.collections.find((item) => item.id === "demo") ??
       nextWorkspace.collections[0];
     if (!collection) {
-      setError("No WhyBack report artifacts are available. Run a scripted batch to create them.");
+      setError("No WhyBack report artifacts are available. Run a live Gemini batch to create them.");
       setLoading(false);
       return;
     }
@@ -120,7 +127,7 @@ export default function App() {
         if (activeJobRef.current && activeJobRef.current !== status.jobId) return;
         activeJobRef.current = status.jobId;
         liveCursorRef.current = status.cursor;
-        if (status.status !== "running") {
+        if (status.status !== "running" && status.status !== "completed") {
           refreshedJobRef.current = status.jobId;
         }
         setLiveStatus(status);
@@ -196,20 +203,35 @@ export default function App() {
     }
     refreshedJobRef.current = liveStatus.jobId;
     const controller = new AbortController();
+    let retryTimer: number | undefined;
     getWorkspace(controller.signal)
       .then((nextWorkspace) => {
-        initializeWorkspace(nextWorkspace, "dashboard");
-        setToast(
-          `${liveStatus.customers ?? 0} investigation${liveStatus.customers === 1 ? "" : "s"} completed.`,
-        );
+        setWorkspaceRefreshAttempt(0);
+        initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
+        setToast("Live Gemini batch finished. Reports refreshed.");
       })
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name !== "AbortError") {
-          setToast("Run completed, but the workspace refresh failed.");
+          setToast("Live Gemini batch finished, but the workspace refresh failed.");
+          if (workspaceRefreshAttempt < 3) {
+            retryTimer = window.setTimeout(() => {
+              refreshedJobRef.current = null;
+              setWorkspaceRefreshAttempt((attempt) => attempt + 1);
+            }, 500 * (workspaceRefreshAttempt + 1));
+          }
         }
       });
-    return () => controller.abort();
-  }, [initializeWorkspace, liveStatus.customers, liveStatus.jobId, liveStatus.status]);
+    return () => {
+      controller.abort();
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+    };
+  }, [
+    initializeWorkspace,
+    liveStatus.collectionId,
+    liveStatus.jobId,
+    liveStatus.status,
+    workspaceRefreshAttempt,
+  ]);
 
   useEffect(() => {
     if (!collectionId || !householdId) return;
@@ -266,19 +288,44 @@ export default function App() {
       activeJobRef.current = status.jobId;
       liveCursorRef.current = status.cursor;
       refreshedJobRef.current = null;
+      setWorkspaceRefreshAttempt(0);
       setLiveStatus(status);
       setDialogOpen(false);
       setLiveOpen(true);
     } catch (caught) {
-      setDemoError(caught instanceof Error ? caught.message : "The scripted run could not start.");
+      setDemoError(caught instanceof Error ? caught.message : "The live Gemini run could not start.");
     } finally {
       setDemoStarting(false);
+    }
+  }
+
+  async function handleOpenLiveResults() {
+    setLiveOpen(false);
+    if (
+      liveStatus.collectionId &&
+      workspace?.collections.some(
+        (collection) => collection.id === liveStatus.collectionId,
+      )
+    ) {
+      changeCollection(liveStatus.collectionId);
+      return;
+    }
+    if (liveStatus.status !== "completed") {
+      changeView("overview");
+      return;
+    }
+    try {
+      const nextWorkspace = await getWorkspace();
+      initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
+    } catch {
+      setToast("Could not refresh the completed live run. Try opening results again.");
     }
   }
 
   const demoRunning = liveStatus.status === "running";
   const demoBusy = demoStarting || demoRunning;
   const demoCustomerLimits = workspace?.demoCustomerLimits;
+  const liveRun = workspace?.liveRun;
 
   return (
     <div className="app-shell">
@@ -313,12 +360,12 @@ export default function App() {
             <button
               className="run-button"
               type="button"
-              disabled={demoBusy || !demoCustomerLimits}
+              disabled={demoBusy || !demoCustomerLimits || !liveRun}
               onClick={() => { setDemoError(null); setDialogOpen(true); }}
-              aria-label={demoRunning ? "Scripted batch running" : "Run scripted batch"}
+              aria-label={demoRunning ? "Live Gemini batch running" : "Run live Gemini batch"}
             >
               {demoRunning ? <LoaderCircle className="spin" size={15} /> : <Play size={15} />}
-              <span className="run-button__label">{demoRunning ? "Running" : "Run scripted batch"}</span>
+              <span className="run-button__label">{demoRunning ? "Running live" : "Run live Gemini"}</span>
             </button>
           </div>
         </header>
@@ -392,10 +439,7 @@ export default function App() {
           open={liveOpen}
           status={liveStatus}
           onClose={() => setLiveOpen(false)}
-          onOpenResults={() => {
-            setLiveOpen(false);
-            changeView("overview");
-          }}
+          onOpenResults={() => void handleOpenLiveResults()}
           onStartRun={() => {
             setLiveOpen(false);
             setDemoError(null);
@@ -404,12 +448,13 @@ export default function App() {
         />
       </div>
 
-      {demoCustomerLimits && (
+      {demoCustomerLimits && liveRun && (
         <RunDemoDialog
           open={dialogOpen}
           running={demoStarting}
           error={demoError}
           customerLimits={demoCustomerLimits}
+          liveRun={liveRun}
           onClose={() => !demoStarting && setDialogOpen(false)}
           onRun={handleRunDemo}
         />

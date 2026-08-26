@@ -2,7 +2,13 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ArtifactCollection, DemoStatusResponse, ReportData } from "../types";
+import { runDemo } from "../api";
+import type {
+  ArtifactCollection,
+  DemoStatusResponse,
+  LiveRunConfiguration,
+  ReportData,
+} from "../types";
 import { AuditPanel } from "./AuditPanel";
 import { CandidateRail } from "./CandidateRail";
 import { LiveTraceDrawer } from "./LiveTraceDrawer";
@@ -71,10 +77,18 @@ const collections: ArtifactCollection[] = [
 ];
 
 const demoCustomerLimits = { minimum: 5, maximum: 24 };
+const readyLiveRun: LiveRunConfiguration = {
+  backend: "gemini",
+  model: "gemini-2.5-flash",
+  ready: true,
+  blockedReason: null,
+};
 
 const idleStatus: DemoStatusResponse = {
   jobId: null,
   status: "idle",
+  backend: "gemini",
+  model: "gemini-2.5-flash",
   customers: null,
   command: null,
   startedAt: null,
@@ -136,7 +150,7 @@ describe("dashboard interactions", () => {
     expect(screen.queryByRole("button", { name: /household 101/i })).not.toBeInTheDocument();
   });
 
-  it("runs the selected bounded demo size", async () => {
+  it("runs the selected bounded live Gemini batch size", async () => {
     const user = userEvent.setup();
     const onRun = vi.fn().mockResolvedValue(undefined);
     render(
@@ -145,6 +159,7 @@ describe("dashboard interactions", () => {
         running={false}
         error={null}
         customerLimits={demoCustomerLimits}
+        liveRun={readyLiveRun}
         onClose={vi.fn()}
         onRun={onRun}
       />,
@@ -154,25 +169,74 @@ describe("dashboard interactions", () => {
     expect(screen.queryByRole("button", { name: "4" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "24" }));
     expect(screen.getByRole("button", { name: "24" })).toHaveAttribute("aria-pressed", "true");
-    await user.click(screen.getByRole("button", { name: /start run/i }));
+    await user.click(screen.getByRole("button", { name: /start live run/i }));
     expect(onRun).toHaveBeenCalledWith(24);
   });
 
-  it("keeps the safety boundary visible in the run dialog", () => {
+  it("states the live Gemini and customer-action boundaries in the run dialog", () => {
     render(
       <RunDemoDialog
         open
         running={false}
         error={null}
         customerLimits={demoCustomerLimits}
+        liveRun={readyLiveRun}
         onClose={vi.fn()}
         onRun={vi.fn()}
       />,
     );
 
-    expect(
-      screen.getByText(/scripted backend only.*no live model call or external action/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/the api key stays in local server-side processes/i)).toBeInTheDocument();
+    expect(screen.getByText(/real provider calls and may consume quota/i)).toBeInTheDocument();
+    expect(screen.getByText(/up to six live gemini decisions/i)).toBeInTheDocument();
+    expect(screen.getByText(/no outreach or customer action is executed/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+  });
+
+  it("explains blocked live readiness without collecting a credential or starting", async () => {
+    const user = userEvent.setup();
+    const onRun = vi.fn().mockResolvedValue(undefined);
+    render(
+      <RunDemoDialog
+        open
+        running={false}
+        error={null}
+        customerLimits={demoCustomerLimits}
+        liveRun={{
+          ...readyLiveRun,
+          ready: false,
+          blockedReason: "GEMINI_API_KEY is not configured. Restart the local bridge after adding it.",
+        }}
+        onClose={vi.fn()}
+        onRun={onRun}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/gemini_api_key is not configured/i);
+    const start = screen.getByRole("button", { name: /start live run/i });
+    expect(start).toBeDisabled();
+    expect(screen.queryByLabelText(/api key/i)).not.toBeInTheDocument();
+    await user.click(start);
+    expect(onRun).not.toHaveBeenCalled();
+  });
+
+  it("submits only the selected household count to the local live-run bridge", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => idleStatus,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      await runDemo(5);
+      const request = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/demo");
+      expect(request?.method).toBe("POST");
+      expect(JSON.parse(String(request?.body))).toEqual({ customers: 5 });
+      expect(String(request?.body)).not.toMatch(/api.?key|credential|gemini/i);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("renders sanitized live activity while hiding evidence writes by default", async () => {
@@ -181,8 +245,10 @@ describe("dashboard interactions", () => {
     const status: DemoStatusResponse = {
       jobId: "job-12345678",
       status: "running",
-      customers: 2,
-      command: "uv run whyback demo --customers 2 --backend scripted",
+      backend: "gemini",
+      model: "gemini-2.5-flash",
+      customers: 5,
+      command: "uv run whyback demo --customers 5 --backend gemini",
       startedAt: "2026-08-25T12:00:00Z",
       completedAt: null,
       cursor: 2,
@@ -308,7 +374,7 @@ describe("dashboard interactions", () => {
       "0",
     );
 
-    within(drawer).getByRole("button", { name: "Start run" }).focus();
+    within(drawer).getByRole("button", { name: "Start live run" }).focus();
     await user.tab();
     expect(close).toHaveFocus();
 
@@ -339,6 +405,7 @@ describe("dashboard interactions", () => {
       running: false,
       error: null,
       customerLimits: demoCustomerLimits,
+      liveRun: readyLiveRun,
       onClose: vi.fn(),
       onRun: vi.fn(),
     };

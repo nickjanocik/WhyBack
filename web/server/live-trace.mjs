@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { lstat, open, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { StringDecoder } from "node:string_decoder";
 import { clearInterval, setInterval } from "node:timers";
+import { TextDecoder } from "node:util";
 
 import { normalizeTraceEvent } from "./artifacts.mjs";
 import { MAX_LIVE_TRACE_EVENTS } from "./demo-limits.mjs";
+import { resolveOwnedLiveRunDirectory } from "./live-runs.mjs";
 
 const STAGING_NAME = /^\.dashboard\.staging-[A-Za-z0-9._-]+$/u;
 const CUSTOMER_NAME = /^customer_([A-Za-z0-9_-]+)$/u;
@@ -145,13 +146,21 @@ async function customerTraceFiles(root) {
 export function createLiveTraceReader(
   repositoryRoot,
   startedAtMs,
-  { excludedStagingNames = new Set() } = {},
+  { excludedStagingNames = new Set(), runDirectory = null } = {},
 ) {
   const files = new Map();
   let activeStaging = null;
   const excludedNames = new Set(excludedStagingNames);
+  const explicitRoot = runDirectory ? path.resolve(runDirectory) : null;
 
   async function traceRoot(includePublished) {
+    if (explicitRoot) {
+      const owned = await resolveOwnedLiveRunDirectory(
+        repositoryRoot,
+        path.basename(explicitRoot),
+      );
+      return owned === explicitRoot ? owned : null;
+    }
     if (includePublished) {
       const published = path.join(
         repositoryRoot,
@@ -172,48 +181,61 @@ export function createLiveTraceReader(
     return activeStaging;
   }
 
-  async function readFileIncrement(file) {
-    if (!(await isRealFile(file.filePath))) return [];
-    let state = files.get(file.filePath);
-    if (!state) {
-      state = {
-        decoder: new StringDecoder("utf8"),
-        lineNumber: 0,
-        offset: 0,
-        remainder: "",
-      };
-      files.set(file.filePath, state);
+  async function previewFileIncrement(file) {
+    if (!(await isRealFile(file.filePath))) {
+      return { events: [], commit() {} };
     }
+    const previous = files.get(file.filePath) ?? { lineNumber: 0, offset: 0 };
     let handle;
     try {
       handle = await open(file.filePath, "r");
     } catch (error) {
-      if (error?.code === "ENOENT") return [];
+      if (error?.code === "ENOENT") return { events: [], commit() {} };
       throw error;
     }
     try {
       const details = await handle.stat();
-      if (details.size < state.offset) {
-        state.decoder = new StringDecoder("utf8");
-        state.lineNumber = 0;
-        state.offset = 0;
-        state.remainder = "";
+      const baseOffset = details.size < previous.offset ? 0 : previous.offset;
+      const baseLineNumber = details.size < previous.offset
+        ? 0
+        : previous.lineNumber;
+      const byteCount = details.size - baseOffset;
+      if (byteCount <= 0) {
+        return {
+          events: [],
+          commit() {
+            files.set(file.filePath, {
+              lineNumber: baseLineNumber,
+              offset: baseOffset,
+            });
+          },
+        };
       }
-      const byteCount = details.size - state.offset;
-      if (byteCount <= 0) return [];
       const buffer = Buffer.allocUnsafe(byteCount);
-      const { bytesRead } = await handle.read(buffer, 0, byteCount, state.offset);
-      state.offset += bytesRead;
-      const decoded = state.decoder.write(buffer.subarray(0, bytesRead));
-      const lines = `${state.remainder}${decoded}`.split("\n");
-      state.remainder = lines.pop() ?? "";
+      const { bytesRead } = await handle.read(buffer, 0, byteCount, baseOffset);
+      const appended = buffer.subarray(0, bytesRead);
+      const finalNewline = appended.lastIndexOf(0x0a);
+      if (finalNewline < 0) return { events: [], commit() {} };
+      let decoded;
+      try {
+        decoded = new TextDecoder("utf-8", { fatal: true }).decode(
+          appended.subarray(0, finalNewline + 1),
+        );
+      } catch (error) {
+        throw new Error(`Live trace ${file.source} is not valid UTF-8.`, {
+          cause: error,
+        });
+      }
+      const lines = decoded.split("\n");
+      lines.pop();
       const events = [];
+      let nextLineNumber = baseLineNumber;
       for (const rawLine of lines) {
         const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-        state.lineNumber += 1;
+        nextLineNumber += 1;
         if (!line) {
           throw new Error(
-            `Live trace ${file.source} contains a blank record at line ${state.lineNumber}.`,
+            `Live trace ${file.source} contains a blank record at line ${nextLineNumber}.`,
           );
         }
         let parsed;
@@ -221,24 +243,32 @@ export function createLiveTraceReader(
           parsed = JSON.parse(line);
         } catch (error) {
           throw new Error(
-            `Live trace ${file.source} is invalid at line ${state.lineNumber}: ${error.message}`,
+            `Live trace ${file.source} is invalid at line ${nextLineNumber}: ${error.message}`,
             { cause: error },
           );
         }
         const event = normalizeTraceEvent(parsed);
         if (!event) {
           throw new Error(
-            `Live trace ${file.source} contains a non-object record at line ${state.lineNumber}.`,
+            `Live trace ${file.source} contains a non-object record at line ${nextLineNumber}.`,
           );
         }
         events.push({
           ...event,
-          id: `${file.source}:${state.lineNumber}`,
+          id: `${file.source}:${nextLineNumber}`,
           source: file.source,
           sourceLabel: file.sourceLabel,
         });
       }
-      return events;
+      return {
+        events,
+        commit() {
+          files.set(file.filePath, {
+            lineNumber: nextLineNumber,
+            offset: baseOffset + finalNewline + 1,
+          });
+        },
+      };
     } finally {
       await handle.close();
     }
@@ -249,8 +279,9 @@ export function createLiveTraceReader(
       const root = await traceRoot(includePublished);
       if (!root) return [];
       const traceFiles = await customerTraceFiles(root);
-      const batches = await Promise.all(traceFiles.map(readFileIncrement));
-      return batches.flat().sort((left, right) => {
+      const previews = await Promise.all(traceFiles.map(previewFileIncrement));
+      previews.forEach((preview) => preview.commit());
+      return previews.flatMap((preview) => preview.events).sort((left, right) => {
         const timeOrder = left.timestamp.localeCompare(right.timestamp);
         return timeOrder || left.id.localeCompare(right.id, undefined, { numeric: true });
       });
@@ -268,14 +299,14 @@ export class DemoRunError extends Error {
 function publicRunError(error) {
   return error instanceof DemoRunError
     ? error.message.slice(0, 1_000)
-    : "The scripted run failed before completion.";
+    : "The live Gemini run failed before completion.";
 }
 
 function traceWarningMessage() {
   return "Some live audit events could not be read. The generated report remains authoritative.";
 }
 
-function idleStatus(eventCapacity) {
+function idleStatus(eventCapacity, backend, model) {
   return {
     jobId: null,
     status: "idle",
@@ -291,12 +322,17 @@ function idleStatus(eventCapacity) {
     error: null,
     traceWarning: null,
     collectionId: null,
+    backend,
+    model,
   };
 }
 
 export function createDemoRunManager({
   repositoryRoot,
   execute,
+  describeRun = null,
+  backend = "gemini",
+  model = "configured Gemini model",
   intervalMs = 250,
   maxEvents = MAX_LIVE_TRACE_EVENTS,
   now = () => Date.now(),
@@ -319,7 +355,7 @@ export function createDemoRunManager({
       : latestJobId
         ? jobs.get(latestJobId)
         : null;
-    if (!target) return jobId ? null : idleStatus(maxEvents);
+    if (!target) return jobId ? null : idleStatus(maxEvents, backend, model);
     return {
       jobId: target.jobId,
       status: target.status,
@@ -335,6 +371,8 @@ export function createDemoRunManager({
       error: target.error,
       traceWarning: target.traceWarning,
       collectionId: target.collectionId,
+      backend: target.backend,
+      model: target.model,
     };
   }
 
@@ -381,18 +419,27 @@ export function createDemoRunManager({
 
   function start(customers) {
     if (runningJobId && jobs.get(runningJobId)?.status === "running") {
-      const error = new Error("A scripted run is already active.");
+      const error = new Error("A live Gemini run is already active.");
       error.statusCode = 409;
       throw error;
     }
     clearTimer();
     const jobId = randomUUID();
     const startedAtMs = now();
+    const descriptor = describeRun
+      ? describeRun(customers, jobId)
+      : {
+          backend,
+          collectionId: "dashboard",
+          command: `uv run whyback demo --customers ${customers} --backend gemini --output-dir artifacts/local/dashboard`,
+          model,
+          runDirectory: null,
+        };
     const job = {
       jobId,
       status: "running",
       customers,
-      command: `uv run whyback demo --customers ${customers} --backend scripted --output-dir artifacts/local/dashboard`,
+      command: descriptor.command,
       startedAt: new Date(startedAtMs).toISOString(),
       completedAt: null,
       cursor: 0,
@@ -401,7 +448,9 @@ export function createDemoRunManager({
       droppedEventCount: 0,
       error: null,
       traceWarning: null,
-      collectionId: null,
+      collectionId: descriptor.collectionId ?? null,
+      backend: descriptor.backend ?? backend,
+      model: descriptor.model ?? model,
       reader: null,
     };
     jobs.set(jobId, job);
@@ -415,16 +464,19 @@ export function createDemoRunManager({
 
     void (async () => {
       try {
-        const excludedStagingNames = await stagingDirectoryNames(repositoryRoot);
+        const excludedStagingNames = descriptor.runDirectory
+          ? new Set()
+          : await stagingDirectoryNames(repositoryRoot);
         job.reader = createLiveTraceReader(repositoryRoot, startedAtMs, {
           excludedStagingNames,
+          runDirectory: descriptor.runDirectory ?? null,
         });
-        await execute(customers);
+        await execute(customers, descriptor);
         const finalCollectionSucceeded = await collect(jobId, true);
         if (finalCollectionSucceeded) job.traceWarning = null;
         job.status = "completed";
         job.completedAt = new Date(now()).toISOString();
-        job.collectionId = "dashboard";
+        job.collectionId = descriptor.collectionId ?? null;
       } catch (error) {
         await collect(jobId, false);
         job.status = "failed";

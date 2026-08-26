@@ -64,6 +64,7 @@ ArtifactIdentity = tuple[str, str]
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _REPORT_NAMES = frozenset({"report.json", "customer_report.json"})
+_OPERATIONAL_SEAL_NAMES = frozenset({".whyback-live-verification.json"})
 _BRANDING = (
     "WhyBack",
     "Find the why. Choose the way back.",
@@ -1559,6 +1560,10 @@ def _validate_manifest(path: Path, root: Path, value: object) -> ManifestValidat
             if candidate.is_file()
             and not candidate.is_symlink()
             and candidate.resolve() != path.resolve()
+            and not (
+                candidate.parent == path.parent
+                and candidate.name in _OPERATIONAL_SEAL_NAMES
+            )
         }
         for missing in sorted(
             expected_files - declared_files,

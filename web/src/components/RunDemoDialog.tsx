@@ -2,13 +2,14 @@ import { LoaderCircle, Play, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-import type { DemoCustomerLimits } from "../types";
+import type { DemoCustomerLimits, LiveRunConfiguration } from "../types";
 
 interface RunDemoDialogProps {
   open: boolean;
   running: boolean;
   error: string | null;
   customerLimits: DemoCustomerLimits;
+  liveRun: LiveRunConfiguration;
   onClose: () => void;
   onRun: (customers: number) => Promise<void>;
 }
@@ -18,6 +19,7 @@ export function RunDemoDialog({
   running,
   error,
   customerLimits,
+  liveRun,
   onClose,
   onRun,
 }: RunDemoDialogProps) {
@@ -107,13 +109,13 @@ export function RunDemoDialog({
             <button className="dialog-close" type="button" onClick={onClose} disabled={running} aria-label="Close">
               <X size={18} />
             </button>
-            <span className="eyebrow">Scripted batch</span>
-            <h2 id="run-demo-title">Run investigations</h2>
+            <span className="eyebrow">Live Gemini batch</span>
+            <h2 id="run-demo-title">Run live Gemini investigations</h2>
             <p>
-              Run the local scripted CLI over synthetic data and publish the resulting report artifacts.
+              Use {liveRun.model} through the Gemini API. The API key stays in local server-side processes and is never sent to the browser.
             </p>
 
-            <fieldset disabled={running}>
+            <fieldset disabled={running || !liveRun.ready}>
               <legend>
                 Households to investigate ({customerLimits.minimum}–{customerLimits.maximum})
               </legend>
@@ -133,15 +135,26 @@ export function RunDemoDialog({
             </fieldset>
 
             <p className="run-boundary">
-              Scripted backend only. No live model call or external action is available from this control.
+              This makes real provider calls and may consume quota. Each household may use up to six live Gemini decisions. Deterministic Python tools calculate the evidence, and no outreach or customer action is executed.
             </p>
 
+            {!liveRun.ready && (
+              <div className="dialog-error" role="alert">
+                {liveRun.blockedReason ?? "Live Gemini runs are not configured on this local bridge."}
+              </div>
+            )}
             {error && <div className="dialog-error" role="alert">{error}</div>}
 
-            <button className="run-submit" type="button" onClick={() => void onRun(customers)} disabled={running}>
-              {running ? <><LoaderCircle className="spin" size={18} /> Starting…</> : <><Play size={18} /> Start run</>}
+            <button
+              className="run-submit"
+              type="button"
+              aria-busy={running}
+              onClick={() => { if (liveRun.ready) void onRun(customers); }}
+              disabled={running || !liveRun.ready}
+            >
+              {running ? <><LoaderCircle className="spin" size={18} /> Starting live run…</> : <><Play size={18} /> Start live run</>}
             </button>
-            {running && <p className="running-note" role="status">Starting the local CLI process.</p>}
+            {running && <p className="running-note" role="status">Starting the live Gemini process.</p>}
           </motion.section>
         </motion.div>
       )}

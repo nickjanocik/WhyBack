@@ -6,10 +6,10 @@ import { URL } from "node:url";
 const children = [];
 let stopping = false;
 
-function start(command, args) {
+function start(command, args, environment = process.env) {
   const child = spawn(command, args, {
     cwd: new URL("..", import.meta.url),
-    env: process.env,
+    env: environment,
     stdio: "inherit",
     shell: false,
   });
@@ -33,5 +33,7 @@ function stop(code = 0) {
 process.on("SIGINT", () => stop(0));
 process.on("SIGTERM", () => stop(0));
 
-start(process.execPath, ["server/index.mjs"]);
-start("npx", ["vite"]);
+start(process.execPath, ["server/start.mjs"]);
+const viteEnvironment = { ...process.env };
+delete viteEnvironment.GEMINI_API_KEY;
+start("npx", ["vite"], viteEnvironment);
