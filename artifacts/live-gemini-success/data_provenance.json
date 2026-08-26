@@ -1,0 +1,359 @@
+{
+  "dataset_kind": "official_complete_journey",
+  "manifest": {
+    "application_version": "0.1.0",
+    "diagnostics": {
+      "promotion_duplicate_key_rows": 12785,
+      "promotion_rows": 20940529,
+      "promotion_rows_collapsed": 12785,
+      "promotion_state_rows": 20927744,
+      "transaction_product_mapping_coverage": 0.999751857420193,
+      "transaction_rows": 1469307,
+      "transaction_week_max": 53,
+      "transaction_week_min": 1
+    },
+    "manifest_version": 2,
+    "preparation_code_sha256": "26a567d805b2eb614d7374573b6398c5239499fcbcf1c645bd55d037acf608be",
+    "preparation_timestamp": "2026-08-26T05:42:00.290229Z",
+    "preparation_transform_version": "whyback-complete-journey-v1",
+    "prepared": [
+      {
+        "definition": "Normalized official transaction line items; sales_value renamed retailer_sales_value.",
+        "filename": "transactions.parquet",
+        "row_count": 1469307,
+        "schema_summary": {
+          "basket_id": "large_string",
+          "coupon_discount": "double",
+          "coupon_match_discount": "double",
+          "household_id": "large_string",
+          "product_id": "large_string",
+          "quantity": "double",
+          "retail_discount": "double",
+          "retailer_sales_value": "double",
+          "store_id": "large_string",
+          "transaction_timestamp": "timestamp[ms, tz=America/New_York]",
+          "week": "int16"
+        },
+        "sha256": "08bc0f6cfaa064533f7e910d4c2b3bde0f42901b197f4077ccc16fb85d74c797",
+        "size_bytes": 10505110,
+        "table": "transactions"
+      },
+      {
+        "definition": "Unique product hierarchy with missing descriptive metadata mapped to UNKNOWN.",
+        "filename": "products.parquet",
+        "row_count": 92331,
+        "schema_summary": {
+          "brand": "large_string",
+          "department": "large_string",
+          "manufacturer_id": "large_string",
+          "package_size": "large_string",
+          "product_category": "large_string",
+          "product_id": "large_string",
+          "product_type": "large_string"
+        },
+        "sha256": "e7d9b1dede14dd2848695c6b784f3d42321c977fb665b09fbadab9327e7b9592",
+        "size_bytes": 1051806,
+        "table": "products"
+      },
+      {
+        "definition": "Normalized official household demographics; retained for context, not recommendation targeting.",
+        "filename": "demographics.parquet",
+        "row_count": 801,
+        "schema_summary": {
+          "age": "dictionary<values=string, indices=int8, ordered=0>",
+          "home_ownership": "dictionary<values=string, indices=int8, ordered=0>",
+          "household_comp": "dictionary<values=string, indices=int8, ordered=0>",
+          "household_id": "large_string",
+          "household_size": "dictionary<values=string, indices=int8, ordered=0>",
+          "income": "dictionary<values=string, indices=int8, ordered=0>",
+          "kids_count": "dictionary<values=string, indices=int8, ordered=0>",
+          "marital_status": "dictionary<values=string, indices=int8, ordered=0>"
+        },
+        "sha256": "0d6809a02a9907a29f951d801f687517f42b6efe1897c6810be651f37f9caeb8",
+        "size_bytes": 10805,
+        "table": "demographics"
+      },
+      {
+        "definition": "Normalized official household campaign participation.",
+        "filename": "campaigns.parquet",
+        "row_count": 6589,
+        "schema_summary": {
+          "campaign_id": "large_string",
+          "household_id": "large_string"
+        },
+        "sha256": "664d2cdfdfa52d4902bb2002c3387ccd69f01392a0b02e22721ad9aa9cade3d6",
+        "size_bytes": 14674,
+        "table": "campaigns"
+      },
+      {
+        "definition": "Normalized campaign type and date ranges.",
+        "filename": "campaign_descriptions.parquet",
+        "row_count": 27,
+        "schema_summary": {
+          "campaign_id": "large_string",
+          "campaign_type": "large_string",
+          "end_date": "timestamp[ms]",
+          "start_date": "timestamp[ms]"
+        },
+        "sha256": "84f7fa81c8a73659a9f0e4136b0ac99a1cac5f0c72fadae067346832acbdf352",
+        "size_bytes": 3400,
+        "table": "campaign_descriptions"
+      },
+      {
+        "definition": "Campaign coupon-to-product bridge after exact composite-key deduplication.",
+        "filename": "coupons.parquet",
+        "row_count": 111332,
+        "schema_summary": {
+          "campaign_id": "large_string",
+          "coupon_upc": "large_string",
+          "product_id": "large_string"
+        },
+        "sha256": "741b1f9aba167760e6b417bb0c77ec4631b057e731f052b478e4b3dc1f4f2575",
+        "size_bytes": 376766,
+        "table": "coupons"
+      },
+      {
+        "definition": "Normalized observed household coupon redemptions.",
+        "filename": "coupon_redemptions.parquet",
+        "row_count": 2102,
+        "schema_summary": {
+          "campaign_id": "large_string",
+          "coupon_upc": "large_string",
+          "household_id": "large_string",
+          "redemption_date": "timestamp[ms]"
+        },
+        "sha256": "c3f89bd018c5e32c983a7a970774010dbe5c4ed13eec93ed50f6befcf93bf00e",
+        "size_bytes": 13384,
+        "table": "coupon_redemptions"
+      },
+      {
+        "definition": "One row per product_id, store_id, week; location presence is OR-aggregated and nonzero codes are sorted into explicit lists.",
+        "filename": "promotion_state.parquet",
+        "row_count": 20927744,
+        "schema_summary": {
+          "any_display": "bool",
+          "any_mailer": "bool",
+          "display_locations": "string",
+          "mailer_locations": "string",
+          "product_id": "string",
+          "store_id": "string",
+          "week": "int16"
+        },
+        "sha256": "d586f7ec968d384cdf9e08e9a5562aa992b4544569b4252f9998d0cd8a7b6fac",
+        "size_bytes": 23469947,
+        "table": "promotion_state"
+      },
+      {
+        "definition": "Transaction line items grouped by household_id and week with retailer sales value, units, baskets, and active transaction days.",
+        "filename": "household_week.parquet",
+        "row_count": 69674,
+        "schema_summary": {
+          "active_days": "int64",
+          "distinct_baskets": "int64",
+          "household_id": "string",
+          "retailer_sales_value": "double",
+          "units": "double",
+          "week": "int16"
+        },
+        "sha256": "c73553e7be44749ca8e536f3ddd22e2c762dbdf025bea492959c93bd3f5439df",
+        "size_bytes": 456765,
+        "table": "household_week"
+      },
+      {
+        "definition": "Transaction line items grouped by household_id and basket_id with store/week, retailer sales value, units, products, categories, and timestamps.",
+        "filename": "baskets.parquet",
+        "row_count": 155848,
+        "schema_summary": {
+          "basket_id": "string",
+          "distinct_categories": "int64",
+          "distinct_products": "int64",
+          "household_id": "string",
+          "retailer_sales_value": "double",
+          "store_id": "string",
+          "transaction_timestamp": "timestamp[us, tz=UTC]",
+          "units": "double",
+          "week": "int16"
+        },
+        "sha256": "75fcdc22a7ffbe99a28d2d33164420be0417c24f22329a123a7677b4b3e28ea4",
+        "size_bytes": 2881068,
+        "table": "baskets"
+      }
+    ],
+    "source_commit": "5b5d06192b9856edd04e4d405787af2f2e4a1fef",
+    "source_repository": "bradleyboehmke/completejourney",
+    "source_tree_dirty": true,
+    "source_tree_version": "29d16cfc261c51432120a8983fcac1d6abb00081",
+    "sources": [
+      {
+        "filename": "transactions.rds",
+        "missing_values": {
+          "basket_id": 0,
+          "coupon_disc": 0,
+          "coupon_match_disc": 0,
+          "household_id": 0,
+          "product_id": 0,
+          "quantity": 0,
+          "retail_disc": 0,
+          "sales_value": 0,
+          "store_id": 0,
+          "transaction_timestamp": 0,
+          "week": 0
+        },
+        "row_count": 1469307,
+        "schema_summary": {
+          "basket_id": "str",
+          "coupon_disc": "float64",
+          "coupon_match_disc": "float64",
+          "household_id": "str",
+          "product_id": "str",
+          "quantity": "float64",
+          "retail_disc": "float64",
+          "sales_value": "float64",
+          "store_id": "str",
+          "transaction_timestamp": "datetime64[s, America/New_York]",
+          "week": "int32"
+        },
+        "sha256": "1fa0700033f1e5d9bb6b09e2be063d8d68474d346e95c50f2833e09d083e0007",
+        "size_bytes": 12775661
+      },
+      {
+        "filename": "promotions.rds",
+        "missing_values": {
+          "display_location": 0,
+          "mailer_location": 0,
+          "product_id": 0,
+          "store_id": 0,
+          "week": 0
+        },
+        "row_count": 20940529,
+        "schema_summary": {
+          "display_location": "category",
+          "mailer_location": "category",
+          "product_id": "str",
+          "store_id": "str",
+          "week": "int32"
+        },
+        "sha256": "15a729fdad31b10d3afedb058da31bcd6e9e68cb0207a43b3121264cd80198ba",
+        "size_bytes": 24976951
+      },
+      {
+        "filename": "products.rda",
+        "missing_values": {
+          "brand": 0,
+          "department": 0,
+          "manufacturer_id": 0,
+          "package_size": 30586,
+          "product_category": 540,
+          "product_id": 0,
+          "product_type": 528
+        },
+        "row_count": 92331,
+        "schema_summary": {
+          "brand": "category",
+          "department": "str",
+          "manufacturer_id": "str",
+          "package_size": "str",
+          "product_category": "str",
+          "product_id": "str",
+          "product_type": "str"
+        },
+        "sha256": "a80c6df33623b4af296ae9f317a6647e369db7e8ce7e7baed0e1bf44b9d979e5",
+        "size_bytes": 869019
+      },
+      {
+        "filename": "demographics.rda",
+        "missing_values": {
+          "age": 0,
+          "home_ownership": 233,
+          "household_comp": 0,
+          "household_id": 0,
+          "household_size": 0,
+          "income": 0,
+          "kids_count": 0,
+          "marital_status": 137
+        },
+        "row_count": 801,
+        "schema_summary": {
+          "age": "category",
+          "home_ownership": "category",
+          "household_comp": "category",
+          "household_id": "str",
+          "household_size": "category",
+          "income": "category",
+          "kids_count": "category",
+          "marital_status": "category"
+        },
+        "sha256": "8b80455bc841003b64e47f5e5c2221f6093b995e923d59e72a1f852c7e268980",
+        "size_bytes": 4237
+      },
+      {
+        "filename": "campaigns.rda",
+        "missing_values": {
+          "campaign_id": 0,
+          "household_id": 0
+        },
+        "row_count": 6589,
+        "schema_summary": {
+          "campaign_id": "str",
+          "household_id": "str"
+        },
+        "sha256": "33c7b3dc1bc722d465f97416fb1327c6a9a640190e464c73e354bce8c001a772",
+        "size_bytes": 8264
+      },
+      {
+        "filename": "campaign_descriptions.rda",
+        "missing_values": {
+          "campaign_id": 0,
+          "campaign_type": 0,
+          "end_date": 0,
+          "start_date": 0
+        },
+        "row_count": 27,
+        "schema_summary": {
+          "campaign_id": "str",
+          "campaign_type": "category",
+          "end_date": "object",
+          "start_date": "object"
+        },
+        "sha256": "601bd17ea1a6de92cc288f393164813fbaf293b997d44054dcf1f3ebbe8dacee",
+        "size_bytes": 496
+      },
+      {
+        "filename": "coupons.rda",
+        "missing_values": {
+          "campaign_id": 0,
+          "coupon_upc": 0,
+          "product_id": 0
+        },
+        "row_count": 116204,
+        "schema_summary": {
+          "campaign_id": "str",
+          "coupon_upc": "str",
+          "product_id": "str"
+        },
+        "sha256": "4d87effce5b8813c0934b581a83292707347577743320ca746878de89cc16f34",
+        "size_bytes": 324969
+      },
+      {
+        "filename": "coupon_redemptions.rda",
+        "missing_values": {
+          "campaign_id": 0,
+          "coupon_upc": 0,
+          "household_id": 0,
+          "redemption_date": 0
+        },
+        "row_count": 2102,
+        "schema_summary": {
+          "campaign_id": "str",
+          "coupon_upc": "str",
+          "household_id": "str",
+          "redemption_date": "object"
+        },
+        "sha256": "4b68148175ed19300bb2615d68d1a0300a5f971db3240819ab5d92e5919e1598",
+        "size_bytes": 8370
+      }
+    ]
+  },
+  "manifest_sha256": "fba76046cf6f772a1c2ecc858d08d29ceac4bd2c275f1749a698f9bfa5138785",
+  "schema_version": 1
+}

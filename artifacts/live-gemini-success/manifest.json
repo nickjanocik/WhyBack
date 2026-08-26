@@ -1,0 +1,31 @@
+{
+  "artifact_profile": "standalone_run",
+  "backend": "gemini",
+  "completed_household_ids": [
+    "5"
+  ],
+  "customer_outreach_executed": false,
+  "dataset_kind": "official_complete_journey",
+  "dataset_source_commit": "5b5d06192b9856edd04e4d405787af2f2e4a1fef",
+  "dataset_source_repository": "bradleyboehmke/completejourney",
+  "execution_mode": "live",
+  "failed_household_ids": [],
+  "files": {
+    "data_provenance.json": "d26eeac9e6fb8b7ff209650d0d045f4a589bb15c3f8cc62a326d592cbff5f962",
+    "report.html": "aa851dcb0e625cf5aba981d2b05d93f2da60b7c1cca05f9c67d40d9f7eef4ab6",
+    "report.json": "47252df62b30f2447367e7e1a3529700dcaf4517521afaf0442d0c8501b8bc53",
+    "report.md": "127c84fc1d69ecc61cda1b2d47aa4a32eaf7c681150271cc69ee4249e9956b8f",
+    "trace.html": "252e1f42e7d3dee951eed12283db8b1c0aa21898edd185cf839fcb144e435840",
+    "trace.jsonl": "200d46a3cccf6c2db7ae5eccc9acde18f62e09d8d9cbbe772aa9cadffffeef89"
+  },
+  "human_review_required": true,
+  "model_execution": "live_gemini",
+  "product": "WhyBack",
+  "schema_version": 1,
+  "selected_household_ids": [
+    "5"
+  ],
+  "skipped_household_ids": [],
+  "source_manifest": "data_provenance.json",
+  "timing_mode": "actual_utc_and_monotonic"
+}
