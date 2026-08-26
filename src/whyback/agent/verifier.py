@@ -870,6 +870,42 @@ def _resolved_drivers(
         else _DRIVER_TEMPLATES
     )
     template = templates.get(action.action_id)
+    if action.action_id is ActionId.CATEGORY_WINBACK:
+        contribution_records = tuple(
+            record
+            for record in matching_records
+            if record.metric == "contribution_to_lost_retailer_sales_value"
+            and record.value is not None
+        )
+        category_records = contribution_records or tuple(
+            record
+            for record in matching_records
+            if record.metric == "category_retailer_sales_value"
+        )
+        if category_records:
+            if contribution_records:
+                selected_category = max(
+                    category_records,
+                    key=lambda record: record.value or 0.0,
+                )
+            else:
+                selected_category = min(
+                    category_records,
+                    key=lambda record: record.change or 0.0,
+                )
+            department = selected_category.dimensions.get("department")
+            product_category = selected_category.dimensions.get("product_category")
+            if department and product_category:
+                if claim_type is ClaimType.DESCRIPTIVE:
+                    template = (
+                        f"A recorded loss in {department} / {product_category} is "
+                        "present in the observed decline."
+                    )
+                else:
+                    template = (
+                        f"A recorded loss in {department} / {product_category} is a "
+                        "plausible contributor to the observed engagement decline."
+                    )
     if template is None:
         return ()
     limitations = _deduplicate(

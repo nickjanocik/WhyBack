@@ -13,7 +13,12 @@ from google import genai
 from google.genai import interactions, types
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
 
-from whyback.agent.actions import ActionCatalog, ActionId, load_action_catalog
+from whyback.agent.actions import (
+    ActionCatalog,
+    ActionDefinition,
+    ActionId,
+    load_action_catalog,
+)
 from whyback.agent.backend import (
     BackendDecision,
     MalformedModelResponse,
@@ -31,8 +36,12 @@ from whyback.agent.state import (
     ModelUsage,
     ToolDecision,
 )
+from whyback.agent.verifier import (
+    is_relevant_counterevidence,
+    required_context_counterevidence_ids,
+)
 from whyback.methodology import ClaimType
-from whyback.tools.contracts import ToolDefinition, ToolName
+from whyback.tools.contracts import EvidenceRecord, ToolDefinition, ToolName
 
 
 class _InteractionsResource(Protocol):
@@ -366,6 +375,148 @@ def _finish_function() -> interactions.Function:
     )
 
 
+def _matching_action_records(
+    action: ActionDefinition,
+    records: Sequence[EvidenceRecord],
+) -> tuple[EvidenceRecord, ...]:
+    """Return ledger records that satisfy a selected action predicate."""
+
+    return tuple(
+        record
+        for record in records
+        if any(
+            record.source_tool in rule.source_tools
+            and record.metric in rule.metrics
+            and any(predicate.matches(record) for predicate in rule.predicates)
+            for rule in action.evidence_prerequisites
+        )
+    )
+
+
+def _action_is_supported(
+    action: ActionDefinition,
+    records: Sequence[EvidenceRecord],
+) -> bool:
+    """Return whether the full ledger satisfies one complete action rule."""
+
+    for rule in action.evidence_prerequisites:
+        matching = tuple(
+            record
+            for record in records
+            if record.source_tool in rule.source_tools
+            and record.metric in rule.metrics
+            and any(predicate.matches(record) for predicate in rule.predicates)
+        )
+        if rule.metric_match == "all" and not set(rule.metrics).issubset(
+            {record.metric for record in matching}
+        ):
+            continue
+        if len(matching) < rule.minimum_matching_records:
+            continue
+        if (
+            len({record.source_tool for record in matching})
+            < rule.minimum_distinct_tools
+        ):
+            continue
+        return True
+    return False
+
+
+def _finish_guidance(
+    state: InvestigationState,
+    catalog: ActionCatalog,
+) -> dict[str, JsonValue]:
+    """Expose verifier-aligned support and household-differentiation hints."""
+
+    ledger = state.evidence_ledger
+    customer_specific_categories = {
+        (
+            record.dimensions.get("department"),
+            record.dimensions.get("product_category"),
+        )
+        for record in ledger
+        if record.metric == "category_context_classification"
+        and record.text_value == "customer_specific"
+    }
+    candidates: list[dict[str, JsonValue]] = []
+    for action in catalog.actions:
+        if action.fallback_only or not _action_is_supported(action, ledger):
+            continue
+        matching = _matching_action_records(action, ledger)
+        differentiating = tuple(
+            record
+            for record in matching
+            if action.action_id is ActionId.CATEGORY_WINBACK
+            and (
+                record.dimensions.get("department"),
+                record.dimensions.get("product_category"),
+            )
+            in customer_specific_categories
+        )
+        preferred = differentiating or matching
+        support_ids = tuple(record.evidence_id for record in preferred[:12])
+        support_records = tuple(preferred[:12])
+        differentiating_factors: list[dict[str, JsonValue]] = []
+        differentiating_categories = dict.fromkeys(
+            (
+                record.dimensions.get("department", "UNKNOWN"),
+                record.dimensions.get("product_category", "UNKNOWN"),
+            )
+            for record in support_records
+            if differentiating
+        )
+        for department, product_category in differentiating_categories:
+            differentiating_factors.append(
+                {
+                    "factor": f"{department} / {product_category}",
+                    "support_evidence_ids": [
+                        record.evidence_id
+                        for record in support_records
+                        if record.dimensions.get("department") == department
+                        and record.dimensions.get("product_category")
+                        == product_category
+                    ],
+                }
+            )
+        material_counter_ids = required_context_counterevidence_ids(
+            action,
+            support_records,
+            ledger,
+        )
+        claim_ceiling = min(
+            (record.maximum_claim_type for record in support_records),
+            key=lambda item: {"descriptive": 0, "associational": 1, "causal": 2}[
+                item.value
+            ],
+        )
+        candidates.append(
+            {
+                "action_id": action.action_id.value,
+                "qualifying_support_evidence_ids": list(support_ids),
+                "household_differentiating": bool(differentiating),
+                "differentiating_factors": cast(JsonValue, differentiating_factors),
+                "material_counterevidence_ids": list(material_counter_ids),
+                "maximum_driver_claim_type": claim_ceiling.value,
+            }
+        )
+    candidates.sort(
+        key=lambda item: (
+            not bool(item["household_differentiating"]),
+            str(item["action_id"]),
+        )
+    )
+    return cast(
+        dict[str, JsonValue],
+        {
+            "selection_rule": (
+                "Prefer a qualifying household-differentiating category factor; "
+                "otherwise choose the strongest action-specific behavioral factor."
+            ),
+            "action_candidates": candidates,
+        },
+    )
+
+
 def _nonnegative_token_count(usage: object, field: str) -> int:
     """Read a nonnegative provider token count, treating a missing count as zero."""
 
@@ -377,8 +528,13 @@ def _nonnegative_token_count(usage: object, field: str) -> int:
     return raw
 
 
-def _finish_decision(payload: _FinishPayload) -> FinishDecision:
-    """Build one internally consistent proposal from the flat provider payload."""
+def _finish_decision(
+    payload: _FinishPayload,
+    *,
+    state: InvestigationState,
+    catalog: ActionCatalog,
+) -> FinishDecision:
+    """Resolve a model selection into a verifier-aligned qualitative proposal."""
 
     supporting = payload.supporting_evidence_ids
     counterevidence = payload.counterevidence_ids
@@ -389,19 +545,87 @@ def _finish_decision(payload: _FinishPayload) -> FinishDecision:
     supporting_set = set(supporting)
     if supporting_set.intersection(counterevidence):
         raise _CallContractError("Finish support and counterevidence overlapped")
-    limitations = tuple(item for item in payload.limitations if item.strip()) or (
+    if not supporting and counterevidence:
+        raise _CallContractError("Finish counterevidence requires a supported driver")
+    action = catalog.get(payload.next_best_action_id)
+    ledger_by_id = {record.evidence_id: record for record in state.evidence_ledger}
+    selected_support_records = tuple(
+        ledger_by_id[evidence_id]
+        for evidence_id in supporting
+        if evidence_id in ledger_by_id
+    )
+    matching_support = _matching_action_records(action, selected_support_records)
+    # The model selects candidate evidence; application policy narrows it to records
+    # that actually satisfy the chosen action. Preserve invalid selections when no
+    # match exists so the verifier still fails closed.
+    if matching_support:
+        unknown_support = tuple(
+            evidence_id for evidence_id in supporting if evidence_id not in ledger_by_id
+        )
+        supporting = (
+            tuple(record.evidence_id for record in matching_support) + unknown_support
+        )
+        selected_support_records = matching_support
+
+    relevant_counters = [
+        evidence_id
+        for evidence_id in counterevidence
+        if evidence_id not in ledger_by_id
+    ]
+    if selected_support_records:
+        for evidence_id in counterevidence:
+            record = ledger_by_id.get(evidence_id)
+            if record is not None and is_relevant_counterevidence(
+                action,
+                record,
+                selected_support_records,
+            ):
+                relevant_counters.append(evidence_id)
+        relevant_counters.extend(
+            required_context_counterevidence_ids(
+                action,
+                selected_support_records,
+                state.evidence_ledger,
+            )
+        )
+    counterevidence = tuple(dict.fromkeys(relevant_counters))
+
+    if action.fallback_only:
+        supporting = ()
+        selected_support_records = ()
+        counterevidence = ()
+
+    limitations = (
         "The available evidence is observational and does not establish causation.",
     )
     drivers: tuple[DriverClaim, ...] = ()
     if supporting:
+        claim_type = ClaimType(payload.driver_claim_type)
+        if selected_support_records:
+            claim_type = min(
+                (
+                    claim_type,
+                    *(record.maximum_claim_type for record in selected_support_records),
+                ),
+                key=lambda item: {
+                    ClaimType.DESCRIPTIVE: 0,
+                    ClaimType.ASSOCIATIONAL: 1,
+                    ClaimType.CAUSAL: 2,
+                }[item],
+            )
         drivers = (
             DriverClaim(
-                summary=payload.driver_summary,
-                claim_type=ClaimType(payload.driver_claim_type),
+                summary=(
+                    "Recorded evidence supports the selected human-reviewed action "
+                    "hypothesis."
+                ),
+                claim_type=claim_type,
                 supporting_evidence_ids=supporting,
                 counterevidence_ids=counterevidence,
                 no_material_counterevidence_reason=(
-                    None if counterevidence else payload.counterevidence_assessment
+                    None
+                    if counterevidence
+                    else "No material counterevidence was present in the records."
                 ),
                 limitations=limitations,
             ),
@@ -417,9 +641,14 @@ def _finish_decision(payload: _FinishPayload) -> FinishDecision:
             supporting_evidence_ids=supporting,
             counterevidence_ids=counterevidence,
             next_best_action_id=payload.next_best_action_id,
-            rationale=payload.rationale,
-            alternative_explanations=payload.alternative_explanations,
-            uncertainties=payload.uncertainties,
+            rationale=(
+                "The selected records are submitted for deterministic action-policy "
+                "review."
+            ),
+            alternative_explanations=(
+                "Observed activity may have shifted outside this retailer.",
+            ),
+            uncertainties=("The underlying household reason is not observed.",),
         ),
     )
 
@@ -497,6 +726,7 @@ class GeminiFunctionCallingBackend:
         request_input = {
             "state": state.compact_model_context(),
             "action_catalog": self._action_catalog.compact_model_context(),
+            "finish_guidance": _finish_guidance(state, self._action_catalog),
             "repair_issues": list(repair_issues),
         }
         # Finish is offered on every turn, including while analytical tools remain.
@@ -553,6 +783,8 @@ class GeminiFunctionCallingBackend:
                 raw_name,
                 dict(raw_arguments),
                 offered_tools={item.name: item for item in tools},
+                state=state,
+                action_catalog=self._action_catalog,
             )
         except _CallContractError as error:
             raise MalformedModelResponse(str(error)) from error
@@ -627,12 +859,18 @@ class GeminiFunctionCallingBackend:
         raw: object,
         *,
         offered_tools: Mapping[ToolName, ToolDefinition],
+        state: InvestigationState,
+        action_catalog: ActionCatalog,
     ) -> ModelDecision:
         """Convert a validated provider call into an application-owned decision."""
 
         if name == "finish_investigation":
             payload = _FinishPayload.model_validate(raw)
-            return _finish_decision(payload)
+            return _finish_decision(
+                payload,
+                state=state,
+                catalog=action_catalog,
+            )
         try:
             tool_name = ToolName(name)
         except ValueError as error:

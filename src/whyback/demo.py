@@ -537,15 +537,22 @@ def _results_markdown(
     rows = []
     for outcome in outcomes:
         state = outcome.state
-        action = (
-            outcome.verification.final.next_best_action_id.value
+        final = (
+            outcome.verification.final
             if outcome.verification is not None
             and outcome.verification.final is not None
-            else "UNAVAILABLE"
+            else None
         )
+        action = final.next_best_action_id.value if final is not None else "UNAVAILABLE"
+        factor = (
+            final.drivers[0].summary
+            if final is not None and final.drivers
+            else "No verified differentiating factor"
+        )
+        factor = factor.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")
         rows.append(
             f"| {state.household_id} | {state.detector_snapshot.decline_score:.3f} "
-            f"| {state.run_status.value} | {action} |"
+            f"| {state.run_status.value} | {factor} | {action} |"
         )
     return "\n".join(
         [
@@ -569,8 +576,9 @@ def _results_markdown(
                 )
             ),
             "",
-            "| Household | Decline score | Status | Human-reviewed action |",
-            "|---|---:|---|---|",
+            "| Household | Decline score | Status | Identified factor | "
+            "Human-reviewed action |",
+            "|---|---:|---|---|---|",
             *rows,
             "",
             "The decline score is a transparent heuristic, not a churn probability.",

@@ -284,6 +284,12 @@ results.
 
 The official detector deterministically selected households `5`, `181`, `423`,
 `472`, and `682`. This ordering is preserved even when paths look similar.
+For live batches, the investigator now treats the shared detector signal as
+screening context and prioritizes mapped category losses classified as
+customer-specific against target-excluded households. The batch index includes
+an **Identified factor** column, and category conclusions name the selected
+department/category so differences between households are visible rather than
+collapsing every complete recent-window decline into the same cadence label.
 Households `181`, `472`, and `682` have legitimate Type A campaign history,
 which permits a real partial-data exercise: participation and redemption may be
 known, while the exact 16 delivered coupon identities are not.

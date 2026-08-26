@@ -140,6 +140,10 @@ verifier:
 - Category context compares only eligible, target-excluded households with
   meaningful baseline activity in the selected category; an undersized cohort
   produces no median, prevalence, or target gap.
+- Live finish guidance lists only action-qualifying support IDs, identifies
+  customer-specific category factors, and supplies material context IDs in the
+  counterevidence role. Application code resolves safe qualitative prose and
+  claim ceilings before the unchanged verifier evaluates the proposal.
 
 A tool may calculate plausible values and still be unpublishable if these
 diagnostics fail.

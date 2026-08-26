@@ -168,6 +168,15 @@ are `mixed`. These are household-level descriptive comparisons, not causal
 controls. With roughly one year of source data, widespread movement is called
 **broad contemporaneous context**, never proven recurring seasonality.
 
+The live finish boundary derives verifier-aligned action candidates from the
+ledger. Qualifying mapped losses with `customer_specific` category context are
+marked as household-differentiating and presented before generic signals shared
+by many selected households. Model-selected evidence is narrowed to records that
+actually satisfy the chosen action predicate; claim strength and material
+counterevidence are resolved from the ledger. Published category drivers name
+the deterministically selected department/category, and the batch index exposes
+that factor beside each household.
+
 ## Control plane
 
 ### Backend boundary

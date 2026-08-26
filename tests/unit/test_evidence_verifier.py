@@ -683,6 +683,7 @@ def test_broad_category_context_caps_category_driver_at_low() -> None:
     }
     assert verdict.passed and verdict.final is not None
     assert verdict.final.resolved_confidence is ResolvedConfidence.LOW
+    assert "GROCERY / SOUP" in verdict.final.drivers[0].summary
     adjustment = verdict.final.confidence_adjustments[0]
     assert adjustment.context_classification is ContextClassification.BROAD_CONTEXT
     assert adjustment.evidence_ids == ("ev-category-context",)

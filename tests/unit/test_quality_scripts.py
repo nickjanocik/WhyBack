@@ -307,12 +307,18 @@ def _write_results_files(root: Path) -> None:
             else "No live model call was attempted because OPENAI_API_KEY was absent."
         )
     )
-    rows = [
-        f"| {report['household_id']} | {report['decline']['decline_score']:.3f} "
-        f"| {report['run_status']} | "
-        f"{report['action']['action_id'] if report['action'] else 'UNAVAILABLE'} |"
-        for report in reports
-    ]
+    rows = []
+    for report in reports:
+        drivers = report["likely_drivers"]
+        factor = (
+            drivers[0]["summary"] if drivers else "No verified differentiating factor"
+        )
+        factor = factor.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")
+        rows.append(
+            f"| {report['household_id']} | {report['decline']['decline_score']:.3f} "
+            f"| {report['run_status']} | {factor} | "
+            f"{report['action']['action_id'] if report['action'] else 'UNAVAILABLE'} |"
+        )
     (root / "RESULTS.md").write_text(
         "\n".join(
             [
@@ -324,8 +330,9 @@ def _write_results_files(root: Path) -> None:
                 "",
                 note,
                 "",
-                "| Household | Decline score | Status | Human-reviewed action |",
-                "|---|---:|---|---|",
+                "| Household | Decline score | Status | Identified factor | "
+                "Human-reviewed action |",
+                "|---|---:|---|---|---|",
                 *rows,
                 "",
                 "The decline score is a transparent heuristic, not a churn "

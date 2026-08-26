@@ -3081,9 +3081,15 @@ def _render_results_markdown(
             if report.action is not None
             else "UNAVAILABLE"
         )
+        factor = (
+            report.likely_drivers[0].summary
+            if report.likely_drivers
+            else "No verified differentiating factor"
+        )
+        factor = factor.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")
         rows.append(
             f"| {report.household_id} | {report.decline.decline_score:.3f} "
-            f"| {report.run_status.value} | {action} |"
+            f"| {report.run_status.value} | {factor} | {action} |"
         )
     backend_note = (
         "Scripted runs are deterministic orchestration controls and are not "
@@ -3110,8 +3116,9 @@ def _render_results_markdown(
             "",
             backend_note,
             "",
-            "| Household | Decline score | Status | Human-reviewed action |",
-            "|---|---:|---|---|",
+            "| Household | Decline score | Status | Identified factor | "
+            "Human-reviewed action |",
+            "|---|---:|---|---|---|",
             *rows,
             "",
             "The decline score is a transparent heuristic, not a churn probability.",

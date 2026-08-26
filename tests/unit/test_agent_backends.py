@@ -26,7 +26,7 @@ from whyback.agent.state import (
 )
 from whyback.detection.decline import DeclineSnapshot
 from whyback.methodology import ClaimType
-from whyback.tools.contracts import ToolDefinition, ToolName
+from whyback.tools.contracts import EvidenceRecord, ToolDefinition, ToolName
 from whyback.tools.registry import ToolRegistry
 
 
@@ -61,6 +61,40 @@ def _state() -> InvestigationState:
     return InvestigationState.start(
         _snapshot(),
         run_id=UUID("00000000-0000-0000-0000-000000000042"),
+    )
+
+
+def _state_with_evidence(*records: EvidenceRecord) -> InvestigationState:
+    """Create state containing owned deterministic evidence records."""
+
+    return _state().model_copy(update={"evidence_ledger": records})
+
+
+def _evidence(
+    evidence_id: str,
+    *,
+    source_tool: ToolName,
+    metric: str,
+    change: float | None = None,
+    value: float | None = None,
+    text_value: str | None = None,
+    dimensions: dict[str, str] | None = None,
+    maximum_claim_type: ClaimType = ClaimType.ASSOCIATIONAL,
+) -> EvidenceRecord:
+    """Build one backend-test evidence record owned by the active state."""
+
+    return EvidenceRecord(
+        evidence_id=evidence_id,
+        run_id=_state().run_id,
+        household_id="42",
+        source_tool=source_tool,
+        source_tool_call_id=f"call-{source_tool.value}",
+        metric=metric,
+        change=change,
+        value=value,
+        text_value=text_value,
+        dimensions=dimensions or {},
+        maximum_claim_type=maximum_claim_type,
     )
 
 
@@ -281,7 +315,13 @@ def test_gemini_backend_sends_one_strict_function_decision() -> None:
     assert {item["action_id"] for item in request_input["action_catalog"]} == {
         item.value for item in ActionId
     }
-    assert set(request_input) == {"action_catalog", "repair_issues", "state"}
+    assert set(request_input) == {
+        "action_catalog",
+        "finish_guidance",
+        "repair_issues",
+        "state",
+    }
+    assert request_input["finish_guidance"]["action_candidates"] == []
     config = request["generation_config"]
     assert config.max_output_tokens == 4096
     assert config.thinking_level == "high"
@@ -362,9 +402,22 @@ def test_gemini_backend_parses_finish_action() -> None:
     client = _FakeClient(_response("finish_investigation", _finish_payload()))
     backend = GeminiFunctionCallingBackend(client=client)
 
-    result = backend.decide_next_step(_state(), ())
+    state = _state_with_evidence(
+        _evidence(
+            "ev-trend",
+            source_tool=ToolName.CUSTOMER_TREND,
+            metric="distinct_trips",
+            change=-5.0,
+        )
+    )
+    result = backend.decide_next_step(state, ())
 
-    assert result.decision == _finish_decision()
+    assert isinstance(result.decision, FinishDecision)
+    final = result.decision.final
+    assert final.next_best_action_id is ActionId.VISIT_FREQUENCY_REACTIVATION
+    assert final.supporting_evidence_ids == ("ev-trend",)
+    assert final.driver_summary[0].summary.startswith("Recorded evidence supports")
+    assert final.rationale.startswith("The selected records are submitted")
     request = client.interactions.kwargs
     declarations = request["tools"]
     assert [item.name for item in declarations] == ["finish_investigation"]
@@ -406,21 +459,97 @@ def test_gemini_backend_preserves_counterevidence_and_supplies_safe_limitation()
     """Keep valid evidence roles and use a code-owned observational fallback."""
 
     payload = _finish_payload()
-    payload["counterevidence_ids"] = ["ev-counter"]
+    payload["counterevidence_ids"] = ["ev-context"]
     payload["limitations"] = ["", "   "]
     backend = GeminiFunctionCallingBackend(
         client=_FakeClient(_response("finish_investigation", payload))
     )
 
-    result = backend.decide_next_step(_state(), ())
+    state = _state_with_evidence(
+        _evidence(
+            "ev-trend",
+            source_tool=ToolName.CUSTOMER_TREND,
+            metric="distinct_trips",
+            change=-5.0,
+        ),
+        _evidence(
+            "ev-context",
+            source_tool=ToolName.PEER_COMPARISON,
+            metric="context_classification",
+            text_value="mixed",
+            maximum_claim_type=ClaimType.DESCRIPTIVE,
+        ),
+    )
+    result = backend.decide_next_step(state, ())
 
     assert isinstance(result.decision, FinishDecision)
     driver = result.decision.final.driver_summary[0]
-    assert driver.counterevidence_ids == ("ev-counter",)
+    assert driver.counterevidence_ids == ("ev-context",)
     assert driver.no_material_counterevidence_reason is None
     assert driver.limitations == (
         "The available evidence is observational and does not establish causation.",
     )
+
+
+def test_gemini_backend_prioritizes_household_specific_category_evidence() -> None:
+    """Expose category factors that distinguish the target from other households."""
+
+    category_dimensions = {
+        "department": "GROCERY",
+        "product_category": "CHEESE",
+        "direction": "loss",
+    }
+    state = _state_with_evidence(
+        _evidence(
+            "ev-category-loss",
+            source_tool=ToolName.CATEGORY_DECOMPOSITION,
+            metric="contribution_to_lost_retailer_sales_value",
+            value=0.75,
+            dimensions=category_dimensions,
+        ),
+        _evidence(
+            "ev-category-context",
+            source_tool=ToolName.CATEGORY_DECOMPOSITION,
+            metric="category_context_classification",
+            text_value="customer_specific",
+            dimensions={**category_dimensions, "target_excluded": "true"},
+            maximum_claim_type=ClaimType.DESCRIPTIVE,
+        ),
+        _evidence(
+            "ev-trend",
+            source_tool=ToolName.CUSTOMER_TREND,
+            metric="distinct_trips",
+            change=-5.0,
+        ),
+    )
+    response = _response(
+        "customer_trend",
+        {
+            "investigation_question": "Did trip frequency fall?",
+            "decision_summary": "Inspect frequency and value trajectory.",
+            "arguments": {"household_id": "42"},
+        },
+    )
+    client = _FakeClient(response)
+    backend = GeminiFunctionCallingBackend(client=client)
+
+    backend.decide_next_step(state, ToolRegistry().definitions())
+
+    request_input = __import__("json").loads(client.interactions.kwargs["input"])
+    candidates = request_input["finish_guidance"]["action_candidates"]
+    assert candidates[0] == {
+        "action_id": "CATEGORY_WINBACK",
+        "differentiating_factors": [
+            {
+                "factor": "GROCERY / CHEESE",
+                "support_evidence_ids": ["ev-category-loss"],
+            }
+        ],
+        "household_differentiating": True,
+        "material_counterevidence_ids": [],
+        "maximum_driver_claim_type": "associational",
+        "qualifying_support_evidence_ids": ["ev-category-loss"],
+    }
 
 
 def test_gemini_backend_builds_driverless_insufficient_finish() -> None:
