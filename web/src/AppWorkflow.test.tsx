@@ -5,7 +5,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
-import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
+import type {
+  DemoStatusResponse,
+  InvestigationResponse,
+  PopulationSummary,
+  Workspace,
+} from "./types";
 
 const workspace: Workspace = {
   schemaVersion: 1,
@@ -53,6 +58,65 @@ const runningStatus: DemoStatusResponse = {
 
 const existingCollectionId = "live-ceff4f61-0000-4000-8000-000000000000";
 const nextCollectionId = "live-223e4567-e89b-42d3-a456-426614174000";
+
+const partialPopulation: PopulationSummary = {
+  schema_version: 1,
+  availability: "partial",
+  missing_data_reasons: ["This preserved run predates population_summary.json."],
+  cohort_definitions: {
+    eligible: "Eligible households.",
+    flagged: "Flagged eligible households.",
+    investigated: "Selected investigated households.",
+  },
+  analysis_windows: {
+    baseline_start_week: 1,
+    baseline_end_week: 8,
+    recent_start_week: 9,
+    recent_end_week: 16,
+  },
+  detector_policy: {
+    minimum_baseline_active_weeks: null,
+    minimum_baseline_distinct_baskets: null,
+    minimum_baseline_retailer_sales_value: null,
+    decline_threshold: 0.3,
+    sensitivity_thresholds: [0.2, 0.3, 0.4],
+  },
+  threshold_sensitivity: [],
+  data_quality_warnings: [],
+  cohorts: [
+    { cohort: "eligible", definition: "Eligible households.", household_count: 100, aggregate_baseline_value: null, aggregate_recent_value: null, gross_recorded_decrease: null, metrics: [] },
+    { cohort: "flagged", definition: "Flagged eligible households.", household_count: 20, aggregate_baseline_value: null, aggregate_recent_value: null, gross_recorded_decrease: null, metrics: [] },
+    { cohort: "investigated", definition: "Selected investigated households.", household_count: 5, aggregate_baseline_value: null, aggregate_recent_value: null, gross_recorded_decrease: null, metrics: [] },
+  ],
+  density_grid: null,
+  investigated_households: [],
+  executive: {
+    eligible_count: 100,
+    flagged_count: 20,
+    flagged_share: 0.2,
+    selected_count: 5,
+    investigated_count: 5,
+    completed_count: 0,
+    insufficient_count: 0,
+    failed_count: 5,
+    aggregate_baseline_value: null,
+    aggregate_recent_value: null,
+    recorded_value_change: null,
+    gross_recorded_decrease: null,
+    verified_action_rate: 0,
+    action_mix: [],
+    factor_mix: [],
+    context_mix: [],
+  },
+  provenance: {
+    dataset_kind: "official_complete_journey",
+    dataset_source_repository: "source",
+    dataset_source_commit: "commit",
+    backend: "gemini",
+    source_manifest: "data_provenance.json",
+    generated_at: "2026-08-26T12:00:00Z",
+  },
+};
 
 const existingWorkspace: Workspace = {
   ...workspace,
@@ -199,6 +263,58 @@ afterEach(() => {
 });
 
 describe("CLI application workflow", () => {
+  it("opens on Home without loading a household report", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+      if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "What changed across the household population?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/investigation?")),
+    ).toBe(false);
+  });
+
+  it("maps the legacy overview query value to Investigation", async () => {
+    window.history.replaceState(null, "", "/?view=overview");
+    const never = new Promise<never>(() => undefined);
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+      if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
+      if (url.startsWith("/api/investigation?")) return never;
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Investigation" })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(
+        fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/investigation?")),
+      ).toBe(true);
+    });
+  });
+
   it("starts the CLI from an honest empty state and opens its live activity", async () => {
     const user = userEvent.setup();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
@@ -269,6 +385,7 @@ describe("CLI application workflow", () => {
       const url = String(input);
       if (url === "/api/workspace") return jsonResponse(existingWorkspace);
       if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
       if (url.startsWith("/api/investigation?")) {
         return jsonResponse(await staleReport.promise);
       }
@@ -289,7 +406,10 @@ describe("CLI application workflow", () => {
       within(document.querySelector<HTMLElement>("#candidate-rail")!).getByText("Household 1"),
     ).toBeInTheDocument();
     expect(
-      within(document.querySelector<HTMLElement>(".main-workspace")!).getByText("Household 1"),
+      await within(document.querySelector<HTMLElement>(".main-workspace")!).findByRole(
+        "heading",
+        { name: "What changed across the household population?" },
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Start a new WhyBack CLI run" }));
     expect(screen.getByRole("spinbutton", { name: "Households" })).toHaveValue(5);
@@ -324,6 +444,7 @@ describe("CLI application workflow", () => {
       const url = String(input);
       if (url === "/api/workspace") return jsonResponse(existingWorkspace);
       if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
       if (url.startsWith("/api/investigation?")) return never;
       if (url === "/api/demo" && init?.method === "POST") {
         return jsonResponse({ error: "Gemini rejected the launch." }, 503);
@@ -347,8 +468,8 @@ describe("CLI application workflow", () => {
     const rail = document.querySelector<HTMLElement>("#candidate-rail")!;
     const main = document.querySelector<HTMLElement>(".main-workspace")!;
     expect(within(rail).getByText("Household 1")).toBeInTheDocument();
-    expect(within(main).getByText("Household 1")).toBeInTheDocument();
-    expect(within(main).getByLabelText("Loading investigation")).toBeInTheDocument();
+    expect(within(main).getByRole("heading", { name: "What changed across the household population?" })).toBeInTheDocument();
+    expect(within(main).queryByLabelText("Loading investigation")).not.toBeInTheDocument();
     expect(within(main).queryByRole("heading", { name: "Investigation in progress" })).not.toBeInTheDocument();
     expect((document.querySelector("#collection") as HTMLSelectElement).value).toBe(
       existingCollectionId,
@@ -379,6 +500,7 @@ describe("CLI application workflow", () => {
         return jsonResponse(await publication.promise);
       }
       if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
       if (url.startsWith("/api/investigation?")) return never;
       if (url === "/api/demo" && init?.method === "POST") {
         return jsonResponse(nextRunningStatus, 202);
@@ -417,8 +539,9 @@ describe("CLI application workflow", () => {
     const rail = document.querySelector<HTMLElement>("#candidate-rail")!;
     expect(within(rail).getByText("Household 900")).toBeInTheDocument();
     expect(
-      within(document.querySelector<HTMLElement>(".main-workspace")!).getByText(
-        "Household 900",
+      await within(document.querySelector<HTMLElement>(".main-workspace")!).findByRole(
+        "heading",
+        { name: "What changed across the household population?" },
       ),
     ).toBeInTheDocument();
     expect((document.querySelector("#collection") as HTMLSelectElement).value).not.toBe(
@@ -444,6 +567,7 @@ describe("CLI application workflow", () => {
         if (url === "/api/demo/status?after=0") {
           return jsonResponse(await statusResponse.promise);
         }
+        if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
         if (url.startsWith("/api/investigation?")) return never;
         if (url.startsWith("/api/demo/status?after=0&job=")) return never;
         throw new Error(`Unexpected request: ${url}`);

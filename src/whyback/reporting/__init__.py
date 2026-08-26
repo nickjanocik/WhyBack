@@ -1,6 +1,7 @@
 """Deterministic JSON, Markdown, HTML, and trace reporting for WhyBack."""
 
 from whyback.reporting.models import ReportData, TraceViewData
+from whyback.reporting.population import PopulationSummary, build_population_summary
 from whyback.reporting.render import (
     ReportBundlePaths,
     build_interpretation_limits,
@@ -18,11 +19,13 @@ from whyback.reporting.trace import (
 )
 
 __all__ = [
+    "PopulationSummary",
     "ReportBundlePaths",
     "ReportData",
     "TraceViewData",
     "build_interpretation_limits",
     "build_population_context",
+    "build_population_summary",
     "build_report_data",
     "build_trace_view",
     "render_report_html",

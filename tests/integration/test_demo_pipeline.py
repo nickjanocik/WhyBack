@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -89,6 +90,68 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
     )
     assert all("partial calendar weeks" not in item for item in standard["limitations"])
 
+    population = json.loads(
+        (tmp_path / "population_summary.json").read_text(encoding="utf-8")
+    )
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["population_summary"] == "population_summary.json"
+    assert manifest["population_schema_version"] == 1
+    assert population["availability"] == "full"
+    assert [item["cohort"] for item in population["cohorts"]] == [
+        "eligible",
+        "flagged",
+        "investigated",
+    ]
+    eligible, flagged, investigated = population["cohorts"]
+    assert eligible["household_count"] >= flagged["household_count"] >= 5
+    assert investigated["household_count"] == 5
+    for cohort in population["cohorts"]:
+        assert {item["metric"] for item in cohort["metrics"]} == {
+            "decline_score",
+            "sales_drop",
+            "trip_drop",
+            "active_week_drop",
+            "baseline_retailer_sales_value",
+            "recent_retailer_sales_value",
+            "recorded_value_change",
+        }
+        assert all(
+            sum(bin_["count"] for bin_ in metric["histogram"])
+            == cohort["household_count"]
+            for metric in cohort["metrics"]
+        )
+    assert (
+        sum(cell["eligible_count"] for cell in population["density_grid"]["cells"])
+        == eligible["household_count"]
+    )
+    assert len(population["threshold_sensitivity"]) == 3
+    assert [item["household_id"] for item in population["investigated_households"]] == [
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+    ]
+    assert all(
+        item["identified_factor"]["factor_type"]
+        in {
+            "category",
+            "cadence",
+            "promotion_value",
+            "multifactor",
+            "monitoring",
+            "insufficient_evidence",
+            "failed",
+        }
+        for item in population["investigated_households"]
+    )
+    population_without_investigated = {
+        key: value
+        for key, value in population.items()
+        if key != "investigated_households"
+    }
+    assert "household_id" not in json.dumps(population_without_investigated)
+
     failure = json.loads(
         (tmp_path / "failure_example" / "report.json").read_text(encoding="utf-8")
     )
@@ -124,6 +187,43 @@ def test_synthetic_demo_reaches_verified_reports_and_safe_failure(
 
     verification = verify_artifact_tree(tmp_path, allow_live_skipped=True)
     assert verification.passed, verification.issues
+
+
+def test_population_artifact_tampering_and_manifest_fields_fail_closed(
+    tmp_path: Path,
+) -> None:
+    """Verify population semantics are checked beyond their manifest digest."""
+
+    build_synthetic_demo(tmp_path, customers=MIN_DEMO_CUSTOMERS)
+    population_path = tmp_path / "population_summary.json"
+    manifest_path = tmp_path / "manifest.json"
+    population = json.loads(population_path.read_text(encoding="utf-8"))
+    population["executive"]["eligible_count"] += 1
+    population_path.write_text(
+        f"{json.dumps(population, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["population_summary.json"] = hashlib.sha256(
+        population_path.read_bytes()
+    ).hexdigest()
+    manifest_path.write_text(
+        f"{json.dumps(manifest, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+    assert "population_schema_invalid" in {item.code for item in result.issues}
+
+    manifest.pop("population_schema_version")
+    manifest_path.write_text(
+        f"{json.dumps(manifest, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    result = verify_artifact_tree(tmp_path, allow_live_skipped=True)
+    assert "population_manifest_fields_incomplete" in {
+        item.code for item in result.issues
+    }
 
 
 @pytest.mark.timeout(90)

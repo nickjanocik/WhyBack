@@ -22,20 +22,31 @@ from whyback.agent.gemini_backend import GeminiFunctionCallingBackend
 from whyback.agent.runner import InvestigationOutcome, InvestigationRunner
 from whyback.agent.scripted_backend import ScriptedBackend
 from whyback.agent.scripted_plans import ScriptedPlan, build_scripted_plan
-from whyback.config import SOURCE_COMMIT, SOURCE_REPOSITORY, load_settings
+from whyback.config import (
+    SOURCE_COMMIT,
+    SOURCE_REPOSITORY,
+    DetectionConfig,
+    load_settings,
+)
 from whyback.data.manifest import DataManifest
 from whyback.data.prepare import prepare_frames_for_tests
 from whyback.data.repository import DataRepository
 from whyback.demo_limits import DEFAULT_DEMO_CUSTOMERS, validate_demo_customer_count
 from whyback.detection.decline import (
     DeclineSnapshot,
+    SensitivityRow,
     candidates_frame,
     detect_declines,
     sensitivity_diagnostics,
 )
 from whyback.observability import AuditJsonlWriter
 from whyback.provenance import RunProvenance
-from whyback.reporting import write_report_bundle, write_trace_html
+from whyback.reporting import (
+    ReportData,
+    build_population_summary,
+    write_report_bundle,
+    write_trace_html,
+)
 from whyback.tools.registry import build_tool_registry
 
 type BackendName = Literal["scripted", "gemini"]
@@ -637,6 +648,10 @@ def _write_demo_index(
     dataset_kind: DatasetKind,
     backend: BackendName,
     selected_ids: tuple[str, ...],
+    candidates: Sequence[DeclineSnapshot],
+    selected: Sequence[DeclineSnapshot],
+    detector_policy: DetectionConfig,
+    threshold_sensitivity: Sequence[SensitivityRow],
     source_manifest: str | None,
     selection_rule: str = (
         "Highest-ranked eligible decline scores; stable ID tie-break."
@@ -681,6 +696,22 @@ def _write_demo_index(
     dataset_source_commit = (
         SYNTHETIC_DATASET_VERSION if dataset_kind == "synthetic" else SOURCE_COMMIT
     )
+    population = build_population_summary(
+        candidates=candidates,
+        selected=selected,
+        reports=tuple(ReportData.model_validate(item) for item in reports),
+        detector_policy=detector_policy,
+        threshold_sensitivity=threshold_sensitivity,
+        dataset_kind=dataset_kind,
+        dataset_source_repository=dataset_source_repository,
+        dataset_source_commit=dataset_source_commit,
+        backend=backend,
+        source_manifest=source_manifest,
+    )
+    _write_json(
+        output_directory / "population_summary.json",
+        population.model_dump(mode="json"),
+    )
     failed = (
         tuple(
             item.state.household_id
@@ -698,6 +729,8 @@ def _write_demo_index(
         "dataset_source_repository": dataset_source_repository,
         "dataset_source_commit": dataset_source_commit,
         "source_manifest": source_manifest,
+        "population_summary": "population_summary.json",
+        "population_schema_version": population.schema_version,
         "backend": backend,
         "execution_mode": execution_mode,
         "reason": (
@@ -758,9 +791,12 @@ def _build_synthetic_demo_contents(
         candidates_frame(candidates).to_csv(
             output_directory / "decline_candidates.csv", index=False
         )
-        candidates_frame(
-            sensitivity_diagnostics(candidates, (0.20, 0.30, 0.40))
-        ).to_csv(output_directory / "sensitivity.csv", index=False)
+        sensitivity = sensitivity_diagnostics(
+            candidates, settings.detection.sensitivity_thresholds
+        )
+        candidates_frame(sensitivity).to_csv(
+            output_directory / "sensitivity.csv", index=False
+        )
 
         outcomes = [
             run_investigation(
@@ -804,6 +840,10 @@ def _build_synthetic_demo_contents(
             dataset_kind="synthetic",
             backend="scripted",
             selected_ids=selected_ids,
+            candidates=candidates,
+            selected=selected,
+            detector_policy=settings.detection,
+            threshold_sensitivity=sensitivity,
             source_manifest=None,
         )
     completed = tuple(
@@ -937,7 +977,10 @@ def _build_official_demo_contents(
     candidates_frame(flagged).to_csv(
         output_directory / "decline_candidates.csv", index=False
     )
-    candidates_frame(sensitivity_diagnostics(candidates, (0.20, 0.30, 0.40))).to_csv(
+    sensitivity = sensitivity_diagnostics(
+        candidates, settings.detection.sensitivity_thresholds
+    )
+    candidates_frame(sensitivity).to_csv(
         output_directory / "sensitivity.csv", index=False
     )
     _write_data_provenance(
@@ -971,6 +1014,10 @@ def _build_official_demo_contents(
             dataset_kind="official_complete_journey",
             backend=backend,
             selected_ids=selected_ids,
+            candidates=candidates,
+            selected=selected,
+            detector_policy=settings.detection,
+            threshold_sensitivity=sensitivity,
             source_manifest="data_provenance.json",
         )
     else:
@@ -993,6 +1040,10 @@ def _build_official_demo_contents(
             dataset_kind="official_complete_journey",
             backend=backend,
             selected_ids=selected_ids,
+            candidates=candidates,
+            selected=selected,
+            detector_policy=settings.detection,
+            threshold_sensitivity=sensitivity,
             source_manifest="data_provenance.json",
         )
     completed = tuple(
@@ -1153,6 +1204,12 @@ def _build_official_type_a_contents(
     candidates_frame(tuple(item for item in candidates if item.flagged)).to_csv(
         output_directory / "decline_candidates.csv", index=False
     )
+    sensitivity = sensitivity_diagnostics(
+        candidates, settings.detection.sensitivity_thresholds
+    )
+    candidates_frame(sensitivity).to_csv(
+        output_directory / "sensitivity.csv", index=False
+    )
     _write_data_provenance(
         prepared_dir,
         output_directory / "data_provenance.json",
@@ -1164,6 +1221,10 @@ def _build_official_type_a_contents(
         dataset_kind="official_complete_journey",
         backend="scripted",
         selected_ids=(snapshot.household_id,),
+        candidates=candidates,
+        selected=(snapshot,),
+        detector_policy=settings.detection,
+        threshold_sensitivity=sensitivity,
         source_manifest="data_provenance.json",
         selection_rule=(
             "Highest-ranked flagged official household with recorded Type A "

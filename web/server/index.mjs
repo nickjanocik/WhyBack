@@ -12,7 +12,9 @@ import { fileURLToPath, URL } from "node:url";
 
 import {
   loadInvestigation,
+  loadPopulation,
   loadWorkspace,
+  populationCsv,
   resolveArtifactFile,
 } from "./artifacts.mjs";
 import { demoCustomerCountError } from "./demo-limits.mjs";
@@ -664,6 +666,45 @@ async function handleApi(request, response, url) {
       return;
     }
     sendJson(response, 200, investigation);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/population") {
+    const collection = url.searchParams.get("collection") || "";
+    const population = await loadPopulation(repositoryRoot, collection);
+    if (!population) {
+      sendError(response, 404, "Population artifact not found.");
+      return;
+    }
+    sendJson(response, 200, population);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/population/export") {
+    const collection = url.searchParams.get("collection") || "";
+    const format = url.searchParams.get("format") || "";
+    if (!new Set(["json", "csv"]).has(format)) {
+      sendError(response, 400, "format must be json or csv.");
+      return;
+    }
+    const population = await loadPopulation(repositoryRoot, collection);
+    if (!population) {
+      sendError(response, 404, "Population artifact not found.");
+      return;
+    }
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="whyback-population.${format}"`,
+    );
+    if (format === "json") {
+      sendJson(response, 200, population);
+      return;
+    }
+    const payload = populationCsv(population);
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "text/csv; charset=utf-8");
+    securityHeaders(response, true);
+    response.end(payload);
     return;
   }
 

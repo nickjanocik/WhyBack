@@ -15,7 +15,9 @@ import test from "node:test";
 
 import {
   loadInvestigation,
+  loadPopulation,
   loadWorkspace,
+  populationCsv,
   resolveArtifactFile,
   resolveCollection,
   validateHouseholdId,
@@ -41,7 +43,7 @@ async function fixtureRoot() {
 /** Writes a sealed live collection fixture, with optional deliberate tampering. */
 async function writeLiveCollection(
   root,
-  { jobId, householdId, generatedAt, modifiedAt },
+  { jobId, householdId, generatedAt, modifiedAt, population = null },
 ) {
   const descriptor = createLiveRunDescriptor(root, jobId);
   const customer = path.join(descriptor.directory, `customer_${householdId}`);
@@ -91,6 +93,12 @@ async function writeLiveCollection(
       },
     })}\n`,
   );
+  if (population) {
+    await writeFile(
+      path.join(descriptor.directory, "population_summary.json"),
+      JSON.stringify(population),
+    );
+  }
   await writeFile(
     path.join(descriptor.directory, "manifest.json"),
     JSON.stringify({
@@ -104,6 +112,13 @@ async function writeLiveCollection(
       completed_household_ids: [householdId],
       failed_household_ids: [],
       skipped_household_ids: [],
+      ...(population
+        ? {
+            population_summary: "population_summary.json",
+            population_schema_version: 1,
+            files: { "population_summary.json": "0".repeat(64) },
+          }
+        : {}),
     }),
   );
   await markLiveRunVerified(root, descriptor.collectionId);
@@ -283,4 +298,142 @@ test("rejects unsafe dynamic collections and files", async (context) => {
   );
   assert.equal(await loadInvestigation(root, valid.collectionId, "181"), null);
   assert.equal(await loadInvestigation(root, "demo", "7"), null);
+});
+
+test("derives explicit partial population context for a legacy run", async (context) => {
+  const root = await fixtureRoot();
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+  });
+
+  const population = await loadPopulation(root, live.collectionId);
+  assert.equal(population.availability, "partial");
+  assert.equal(population.executive.eligible_count, null);
+  assert.equal(population.cohorts[0].metrics.length, 0);
+  assert.deepEqual(
+    population.investigated_households.map((item) => item.household_id),
+    ["7"],
+  );
+  assert.match(population.missing_data_reasons.join(" "), /predates/u);
+  assert.equal(await loadPopulation(root, "../manifest.json"), null);
+});
+
+test("projects full population data without leaking non-investigated IDs", async (context) => {
+  const root = await fixtureRoot();
+  context.after(() => rm(root, { recursive: true, force: true }));
+  const populationArtifact = {
+    schema_version: 1,
+    availability: "full",
+    missing_data_reasons: [],
+    eligible_household_ids: ["SECRET-ELIGIBLE-ID"],
+    cohort_definitions: {
+      eligible: "Eligible",
+      flagged: "Flagged",
+      investigated: "Investigated",
+    },
+    analysis_windows: {
+      baseline_start_week: 1,
+      baseline_end_week: 8,
+      recent_start_week: 9,
+      recent_end_week: 16,
+    },
+    detector_policy: { decline_threshold: 0.3, sensitivity_thresholds: [0.3] },
+    threshold_sensitivity: [
+      {
+        threshold: 0.3,
+        eligible_households: 100,
+        flagged_households: 20,
+        flagged_share: 0.2,
+      },
+    ],
+    data_quality_warnings: [],
+    cohorts: [
+      {
+        cohort: "eligible",
+        definition: "Eligible",
+        household_count: 100,
+        household_ids: ["SECRET-FLAGGED-ID"],
+        metrics: [
+          {
+            metric: "decline_score",
+            unit: "share",
+            count: 100,
+            mean: 0.2,
+            minimum: 0,
+            q25: 0.1,
+            median: 0.2,
+            q75: 0.3,
+            maximum: 1,
+            deciles: [],
+            histogram: [{ lower: 0, upper: 1, count: 100, share: 1 }],
+          },
+        ],
+      },
+    ],
+    density_grid: null,
+    investigated_households: [
+      {
+        household_id: "7",
+        rank: 1,
+        status: "completed",
+        context_classification: "customer_specific",
+        decline_score: 0.7,
+        sales_drop: 0.6,
+        trip_drop: 0.5,
+        active_week_drop: 0.4,
+        identified_factor: {
+          factor_type: "cadence",
+          label: "Visit cadence",
+          detail: "Recorded cadence declined.",
+        },
+        action_id: "VISIT_FREQUENCY_REACTIVATION",
+        action_label: "Restore cadence",
+        confidence: "medium",
+        warnings: [],
+      },
+    ],
+    executive: {
+      eligible_count: 100,
+      flagged_count: 20,
+      flagged_share: 0.2,
+      selected_count: 1,
+      investigated_count: 1,
+      completed_count: 1,
+      insufficient_count: 0,
+      failed_count: 0,
+      verified_action_rate: 1,
+      action_mix: [],
+      factor_mix: [],
+      context_mix: [],
+    },
+    provenance: {
+      dataset_kind: "official_complete_journey",
+      dataset_source_repository: "source",
+      dataset_source_commit: "commit",
+      backend: "gemini",
+      source_manifest: "data_provenance.json",
+      generated_at: "2026-08-25T00:00:00Z",
+    },
+  };
+  const live = await writeLiveCollection(root, {
+    jobId: FIRST_LIVE_JOB,
+    householdId: "7",
+    generatedAt: "2026-08-25T00:00:00Z",
+    modifiedAt: new Date("2026-08-25T00:00:00Z"),
+    population: populationArtifact,
+  });
+
+  const population = await loadPopulation(root, live.collectionId);
+  const serialized = JSON.stringify(population);
+  assert.equal(population.availability, "full");
+  assert.doesNotMatch(serialized, /SECRET-/u);
+  assert.match(serialized, /"household_id":"7"/u);
+  const csv = populationCsv(population);
+  assert.match(csv, /statistic,eligible,decline_score,median,0.2/u);
+  assert.match(csv, /investigated_household.*7/u);
+  assert.doesNotMatch(csv, /SECRET-/u);
 });

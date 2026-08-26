@@ -51,6 +51,7 @@ from whyback.reporting.models import (
     ReportEvidenceData,
     ToolWarningData,
 )
+from whyback.reporting.population import PopulationSummary
 from whyback.tools.contracts import (
     SUCCESS_STATUSES,
     EvidenceRecord,
@@ -3059,6 +3060,7 @@ def _render_results_markdown(
     *,
     data: Mapping[str, object],
     reports: Sequence[ReportData],
+    include_factor: bool = True,
 ) -> str | None:
     """Render the exact reviewer-facing results index for a supported demo."""
 
@@ -3088,8 +3090,15 @@ def _render_results_markdown(
         )
         factor = factor.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")
         rows.append(
-            f"| {report.household_id} | {report.decline.decline_score:.3f} "
-            f"| {report.run_status.value} | {factor} | {action} |"
+            (
+                f"| {report.household_id} | {report.decline.decline_score:.3f} "
+                f"| {report.run_status.value} | {factor} | {action} |"
+            )
+            if include_factor
+            else (
+                f"| {report.household_id} | {report.decline.decline_score:.3f} "
+                f"| {report.run_status.value} | {action} |"
+            )
         )
     backend_note = (
         "Scripted runs are deterministic orchestration controls and are not "
@@ -3116,9 +3125,13 @@ def _render_results_markdown(
             "",
             backend_note,
             "",
-            "| Household | Decline score | Status | Identified factor | "
-            "Human-reviewed action |",
-            "|---|---:|---|---|---|",
+            (
+                "| Household | Decline score | Status | Identified factor | "
+                "Human-reviewed action |"
+                if include_factor
+                else "| Household | Decline score | Status | Human-reviewed action |"
+            ),
+            "|---|---:|---|---|---|" if include_factor else "|---|---:|---|---|",
             *rows,
             "",
             "The decline score is a transparent heuristic, not a churn probability.",
@@ -3181,14 +3194,175 @@ def _validate_results_index(
     expected_markdown = _render_results_markdown(data=data, reports=ordered_reports)
     markdown_path = manifest_path.parent / "RESULTS.md"
     if expected_markdown is not None:
-        issues.extend(
-            _validate_exact_render(
+        render_issues = _validate_exact_render(
+            markdown_path,
+            root,
+            expected_markdown,
+            missing_code="results_markdown_missing",
+            mismatch_code="results_markdown_mismatch",
+            label="demo results Markdown",
+        )
+        if render_issues and "population_summary" not in data:
+            legacy_markdown = _render_results_markdown(
+                data=data,
+                reports=ordered_reports,
+                include_factor=False,
+            )
+            if legacy_markdown is not None and not _validate_exact_render(
                 markdown_path,
                 root,
-                expected_markdown,
+                legacy_markdown,
                 missing_code="results_markdown_missing",
                 mismatch_code="results_markdown_mismatch",
                 label="demo results Markdown",
+            ):
+                render_issues = []
+        issues.extend(render_issues)
+    return issues
+
+
+def _validate_population_summary(
+    manifest_path: Path,
+    root: Path,
+    validation: ManifestValidation,
+    reports_by_path: Mapping[Path, ReportData],
+) -> list[VerificationIssue]:
+    """Validate the optional population contract and reconcile its manifest owner."""
+
+    data = validation.data
+    if data is None:
+        return []
+    has_path = "population_summary" in data
+    has_version = "population_schema_version" in data
+    if not has_path and not has_version:
+        return []
+    if not has_path or not has_version:
+        return [
+            _issue(
+                manifest_path,
+                root,
+                "population_manifest_fields_incomplete",
+                "population_summary and population_schema_version must appear together",
+            )
+        ]
+    relative = data.get("population_summary")
+    if not isinstance(relative, str) or not relative:
+        return [
+            _issue(
+                manifest_path,
+                root,
+                "population_manifest_path_invalid",
+                "population_summary must name a non-empty relative artifact path",
+            )
+        ]
+    population_path = _safe_manifest_path(root, manifest_path, relative)
+    if population_path is None or population_path not in validation.declared_files:
+        return [
+            _issue(
+                manifest_path,
+                root,
+                "population_manifest_path_unsafe",
+                "population_summary must resolve to a hashed file in the artifact tree",
+            )
+        ]
+    raw, parse_issues = _load_json(population_path, root)
+    issues = list(parse_issues)
+    if raw is None:
+        return issues
+    try:
+        population = PopulationSummary.model_validate(raw)
+    except ValidationError as error:
+        issues.append(
+            _issue(
+                population_path,
+                root,
+                "population_schema_invalid",
+                f"Population summary does not satisfy its schema: {error}",
+            )
+        )
+        return issues
+    if data.get("population_schema_version") != population.schema_version:
+        issues.append(
+            _issue(
+                manifest_path,
+                root,
+                "population_schema_version_mismatch",
+                "Manifest and population artifact schema versions disagree",
+            )
+        )
+    selected, selected_issues = _manifest_id_list(
+        manifest_path, root, data, "selected_household_ids"
+    )
+    issues.extend(selected_issues)
+    if population.executive.selected_count != len(selected):
+        issues.append(
+            _issue(
+                population_path,
+                root,
+                "population_selected_count_mismatch",
+                "Population selected count disagrees with the manifest batch",
+            )
+        )
+    contained_reports = {
+        report.household_id: report
+        for path, report in reports_by_path.items()
+        if path.resolve() in validation.declared_files
+    }
+    rows = population.investigated_households
+    if tuple(item.household_id for item in rows) != tuple(
+        household_id for household_id in selected if household_id in contained_reports
+    ):
+        issues.append(
+            _issue(
+                population_path,
+                root,
+                "population_investigated_ids_mismatch",
+                "Population investigated rows do not match selected report owners",
+            )
+        )
+    for row in rows:
+        report = contained_reports.get(row.household_id)
+        if report is None:
+            continue
+        action_id = report.action.action_id.value if report.action is not None else None
+        confidence = (
+            report.action.resolved_confidence.value
+            if report.action is not None
+            else "unavailable"
+        )
+        if (
+            row.status != report.run_status.value
+            or row.decline_score != report.decline.decline_score
+            or row.sales_drop != report.decline.sales_drop
+            or row.trip_drop != report.decline.trip_drop
+            or row.active_week_drop != report.decline.active_week_drop
+            or row.action_id != action_id
+            or row.confidence != confidence
+        ):
+            issues.append(
+                _issue(
+                    population_path,
+                    root,
+                    "population_report_reconciliation_failed",
+                    f"Population row for household {row.household_id!r} "
+                    "disagrees with its report",
+                )
+            )
+    if (
+        population.provenance.dataset_kind != data.get("dataset_kind")
+        or population.provenance.dataset_source_repository
+        != data.get("dataset_source_repository")
+        or population.provenance.dataset_source_commit
+        != data.get("dataset_source_commit")
+        or population.provenance.backend != data.get("backend")
+        or population.provenance.source_manifest != data.get("source_manifest")
+    ):
+        issues.append(
+            _issue(
+                population_path,
+                root,
+                "population_provenance_mismatch",
+                "Population provenance disagrees with its manifest",
             )
         )
     return issues
@@ -3821,6 +3995,14 @@ def verify_artifact_tree(
                     manifest_path,
                     root,
                     manifest.data,
+                    reports_by_path,
+                )
+            )
+            issues.extend(
+                _validate_population_summary(
+                    manifest_path,
+                    root,
+                    manifest,
                     reports_by_path,
                 )
             )

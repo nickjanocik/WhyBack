@@ -4,10 +4,13 @@ import {
   Activity,
   CircleCheck,
   CircleAlert,
+  ChartNoAxesCombined,
   FileSearch,
   FlaskConical,
+  House,
   LoaderCircle,
   Menu,
+  Network,
   Play,
   RefreshCw,
   ShieldCheck,
@@ -17,28 +20,44 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ApiError, getDemoStatus, getInvestigation, getWorkspace, runDemo } from "./api";
+import {
+  ApiError,
+  getDemoStatus,
+  getInvestigation,
+  getPopulation,
+  getWorkspace,
+  runDemo,
+} from "./api";
 import { AuditPanel } from "./components/AuditPanel";
 import { CandidateRail } from "./components/CandidateRail";
 import { EvidencePanel } from "./components/EvidencePanel";
+import { ExecutiveHome } from "./components/ExecutiveHome";
+import { FactorMap } from "./components/FactorMap";
 import { LiveTraceDrawer } from "./components/LiveTraceDrawer";
 import { OverviewPanel } from "./components/OverviewPanel";
+import { PopulationExplorer } from "./components/PopulationExplorer";
 import { RunCliDialog } from "./components/RunCliDialog";
 import type {
   DemoCustomerLimits,
   DemoStatusResponse,
   InvestigationResponse,
   LiveRunConfiguration,
+  PopulationSummary,
   Workspace,
 } from "./types";
 
-type View = "overview" | "evidence" | "audit";
+type View = "home" | "population" | "factors" | "investigation" | "evidence" | "audit";
 
 const views: Array<{ id: View; label: string; icon: typeof Activity }> = [
-  { id: "overview", label: "Investigation", icon: FileSearch },
+  { id: "home", label: "Home", icon: House },
+  { id: "population", label: "Populations", icon: ChartNoAxesCombined },
+  { id: "factors", label: "Factors", icon: Network },
+  { id: "investigation", label: "Investigation", icon: FileSearch },
   { id: "evidence", label: "Evidence", icon: FlaskConical },
-  { id: "audit", label: "Audit replay", icon: ShieldCheck },
+  { id: "audit", label: "Audit", icon: ShieldCheck },
 ];
+
+const householdViews = new Set<View>(["investigation", "evidence", "audit"]);
 
 const emptyLiveStatus: DemoStatusResponse = {
   jobId: null,
@@ -59,10 +78,13 @@ const emptyLiveStatus: DemoStatusResponse = {
   collectionId: null,
 };
 
-/** Reads the optional view query parameter while falling back to the investigation. */
+/** Reads the optional view query parameter while making Home the default. */
 function initialView(): View {
   const candidate = new URLSearchParams(window.location.search).get("view");
-  return candidate === "evidence" || candidate === "audit" ? candidate : "overview";
+  if (candidate === "overview" || candidate === "investigation") return "investigation";
+  return candidate === "population" || candidate === "factors" || candidate === "evidence" || candidate === "audit"
+    ? candidate
+    : "home";
 }
 
 /** Renders the complete WhyBack reviewer workspace and owns its application state. */
@@ -71,6 +93,9 @@ export default function App() {
   const [collectionId, setCollectionId] = useState("");
   const [householdId, setHouseholdId] = useState("");
   const [investigation, setInvestigation] = useState<InvestigationResponse | null>(null);
+  const [population, setPopulation] = useState<PopulationSummary | null>(null);
+  const [populationLoading, setPopulationLoading] = useState(false);
+  const [populationError, setPopulationError] = useState<string | null>(null);
   const [view, setView] = useState<View>(initialView);
   const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +141,10 @@ export default function App() {
     setError(null);
     setRailOpen(false);
     setToast(null);
-    setView("overview");
+    setPopulation(null);
+    setPopulationError(null);
+    setPopulationLoading(false);
+    setView("home");
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
     window.history.replaceState(null, "", url);
@@ -135,7 +163,7 @@ export default function App() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    setLoading(false);
     setWorkspace(nextWorkspace);
     const collection =
       nextWorkspace.collections.find((item) => item.id === preferredCollection) ??
@@ -293,11 +321,36 @@ export default function App() {
     workspaceRefreshAttempt,
   ]);
 
-  // Load the selected household's report and trace whenever its artifact identity changes.
+  // Load the aggregate population contract once per selected collection.
   useEffect(() => {
-    if (!collectionId || !householdId) return;
+    if (!collectionId) return;
+    const controller = new AbortController();
+    setPopulationLoading(true);
+    setPopulationError(null);
+    setPopulation(null);
+    getPopulation(collectionId, controller.signal)
+      .then((value) => {
+        if (controller.signal.aborted) return;
+        setPopulation(value);
+        setPopulationLoading(false);
+      })
+      .catch((caught: unknown) => {
+        if ((caught as { name?: string }).name === "AbortError") return;
+        setPopulationError(
+          caught instanceof Error ? caught.message : "Could not load population context.",
+        );
+        setPopulationLoading(false);
+      });
+    return () => controller.abort();
+  }, [collectionId]);
+
+  // Load a report and trace only after entering a household-level view.
+  useEffect(() => {
+    if (!collectionId || !householdId || !householdViews.has(view)) return;
     const controller = new AbortController();
     const requestEpoch = ++investigationRequestEpochRef.current;
+    setLoading(true);
+    setError(null);
     getInvestigation(collectionId, householdId, controller.signal)
       .then((value) => {
         if (controller.signal.aborted || investigationRequestEpochRef.current !== requestEpoch) {
@@ -321,7 +374,7 @@ export default function App() {
         investigationRequestEpochRef.current += 1;
       }
     };
-  }, [collectionId, householdId, selectedGeneratedAt]);
+  }, [collectionId, householdId, selectedGeneratedAt, view]);
 
   // Remove transient completion notices after enough time for assistive technology to read them.
   useEffect(() => {
@@ -335,13 +388,13 @@ export default function App() {
     const next = workspace?.collections.find((item) => item.id === nextId);
     if (!next) return;
     investigationRequestEpochRef.current += 1;
-    setLoading(true);
+    setLoading(false);
     setError(null);
     setSelectedEvidenceId(null);
     setInvestigation(null);
     setCollectionId(next.id);
     setHouseholdId(next.reports[0]?.householdId ?? "");
-    changeView("overview");
+    changeView("home");
   }
 
   /** Opens the evidence view with one cited ledger record selected. */
@@ -354,9 +407,21 @@ export default function App() {
   function changeView(nextView: View) {
     setView(nextView);
     const url = new URL(window.location.href);
-    if (nextView === "overview") url.searchParams.delete("view");
+    if (nextView === "home") url.searchParams.delete("view");
     else url.searchParams.set("view", nextView);
     window.history.replaceState(null, "", url);
+  }
+
+  /** Selects an investigated household and enters its report view. */
+  function openHousehold(nextHouseholdId: string) {
+    investigationRequestEpochRef.current += 1;
+    setLoading(true);
+    setError(null);
+    setSelectedEvidenceId(null);
+    setInvestigation(null);
+    setHouseholdId(nextHouseholdId);
+    setRailOpen(false);
+    changeView("investigation");
   }
 
   /** Starts a live batch and opens its audit drawer without waiting for completion. */
@@ -421,7 +486,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <div className="app-content">
-        <a className="skip-link" href="#main-investigation">Skip to investigation</a>
+        <a className="skip-link" href="#main-dashboard">Skip to dashboard</a>
         <header className="app-header">
           {hasReports && (
             <button
@@ -473,23 +538,17 @@ export default function App() {
             onHouseholdChange={(value) => {
               // Closing the mobile rail returns focus to its trigger after selection.
               const returnFocusToMenu = railOpen;
-              investigationRequestEpochRef.current += 1;
-              setLoading(true);
-              setError(null);
-              setSelectedEvidenceId(null);
-              setInvestigation(null);
-              setHouseholdId(value);
-              setRailOpen(false);
+              openHousehold(value);
               if (returnFocusToMenu) {
                 window.requestAnimationFrame(() => mobileMenuRef.current?.focus());
               }
             }}
           />
         )}
-        <main className="main-workspace" id="main-investigation" tabIndex={-1}>
+        <main className="main-workspace" id="main-dashboard" tabIndex={-1}>
           {hasReports && (
             <div className="workspace-toolbar">
-              <nav aria-label="Investigation views">
+              <nav aria-label="Dashboard views">
                 {views.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -508,8 +567,7 @@ export default function App() {
               </nav>
               <div className="toolbar-context">
                 <span>{selectedCollection?.title}</span>
-                <i />
-                <span>Household {householdId}</span>
+                {householdViews.has(view) && <><i /><span>Household {householdId}</span></>}
               </div>
             </div>
           )}
@@ -521,8 +579,8 @@ export default function App() {
                 <span>{workspace.collectionWarnings.join(" ")}</span>
               </div>
             )}
-            {loading && <LoadingState />}
-            {!loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
+            {householdViews.has(view) && loading && <LoadingState />}
+            {householdViews.has(view) && !loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
             {!loading && !error && workspace && !hasReports && customerLimits && liveRun && (
               <EmptyWorkspace
                 customerLimits={customerLimits}
@@ -532,9 +590,20 @@ export default function App() {
                 onStart={openNewRun}
               />
             )}
-            {!loading && !error && hasReports && investigation && (
+            {!householdViews.has(view) && populationLoading && <PopulationLoadingState />}
+            {!householdViews.has(view) && !populationLoading && populationError && (
+              <ErrorState message={populationError} onRetry={() => window.location.reload()} />
+            )}
+            {!householdViews.has(view) && !populationLoading && !populationError && population && (
+              <div key={`${collectionId}-${view}`}>
+                {view === "home" && <ExecutiveHome population={population} onNavigate={changeView} />}
+                {view === "population" && <PopulationExplorer collectionId={collectionId} population={population} onOpenHousehold={openHousehold} />}
+                {view === "factors" && <FactorMap population={population} onOpenHousehold={openHousehold} />}
+              </div>
+            )}
+            {householdViews.has(view) && !loading && !error && hasReports && investigation && (
               <div key={`${investigation.report.run_id}-${view}`}>
-                {view === "overview" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
+                {view === "investigation" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
                 {view === "evidence" && <EvidencePanel report={investigation.report} selectedEvidenceId={selectedEvidenceId} onEvidenceSelect={setSelectedEvidenceId} />}
                 {view === "audit" && <AuditPanel collectionId={collectionId} report={investigation.report} trace={investigation.trace} />}
               </div>
@@ -639,6 +708,16 @@ function LoadingState() {
     <div className="loading-state" role="status" aria-live="polite" aria-label="Loading investigation">
       <LoaderCircle className="spin" size={26} />
       <strong>Loading investigation…</strong>
+    </div>
+  );
+}
+
+/** Shows a distinct placeholder while aggregate collection data is loading. */
+function PopulationLoadingState() {
+  return (
+    <div className="loading-state" role="status" aria-live="polite" aria-label="Loading population summary">
+      <LoaderCircle className="spin" size={26} />
+      <strong>Loading population summary…</strong>
     </div>
   );
 }

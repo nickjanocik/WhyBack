@@ -175,7 +175,8 @@ See [Architecture](docs/architecture.md),
 [agent-loop ADR](docs/adr/001-own-the-agent-loop.md), and the current
 [Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md). The
 [population-context and claim-boundary ADR](docs/adr/008-population-context-and-claim-boundaries.md)
-records this methodology.
+and [population intelligence API contract](docs/population-api.md) record this
+methodology.
 
 ## Decline detector
 

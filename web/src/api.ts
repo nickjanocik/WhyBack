@@ -1,6 +1,11 @@
 /** Wraps the dashboard bridge endpoints in small typed browser helpers. */
 
-import type { DemoStatusResponse, InvestigationResponse, Workspace } from "./types";
+import type {
+  DemoStatusResponse,
+  InvestigationResponse,
+  PopulationSummary,
+  Workspace,
+} from "./types";
 
 /** Carries an HTTP status alongside a bridge error that React can handle. */
 export class ApiError extends Error {
@@ -46,6 +51,24 @@ export function getInvestigation(
     household: householdId,
   });
   return requestJson<InvestigationResponse>(`/api/investigation?${query}`, { signal });
+}
+
+/** Loads the aggregate-only population contract for one verified collection. */
+export function getPopulation(
+  collectionId: string,
+  signal?: AbortSignal,
+): Promise<PopulationSummary> {
+  const query = new URLSearchParams({ collection: collectionId });
+  return requestJson<PopulationSummary>(`/api/population?${query}`, { signal });
+}
+
+/** Builds a safe download URL for the verified aggregate population export. */
+export function populationExportUrl(
+  collectionId: string,
+  format: "json" | "csv",
+): string {
+  const query = new URLSearchParams({ collection: collectionId, format });
+  return `/api/population/export?${query}`;
 }
 
 /** Requests a bounded live Gemini batch containing only the selected customer count. */

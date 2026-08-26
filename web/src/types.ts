@@ -30,7 +30,153 @@ export interface ArtifactCollection {
   reportCount: number;
   completedCount: number;
   humanReviewRequired: boolean;
+  populationAvailability?: "full" | "partial" | "unavailable";
   reports: ReportSummary[];
+}
+
+export type PopulationAvailability = "full" | "partial" | "unavailable";
+export type PopulationCohortId = "eligible" | "flagged" | "investigated";
+export type PopulationMetricId =
+  | "decline_score"
+  | "sales_drop"
+  | "trip_drop"
+  | "active_week_drop"
+  | "baseline_retailer_sales_value"
+  | "recent_retailer_sales_value"
+  | "recorded_value_change";
+
+export interface HistogramBin {
+  lower: number;
+  upper: number;
+  count: number;
+  share: number;
+}
+
+export interface PopulationMetric {
+  metric: PopulationMetricId;
+  unit: "share" | "retailer_sales_value";
+  count: number;
+  mean: number | null;
+  minimum: number | null;
+  q25: number | null;
+  median: number | null;
+  q75: number | null;
+  maximum: number | null;
+  deciles: Array<{ probability: number; value: number }>;
+  histogram: HistogramBin[];
+}
+
+export interface PopulationCohort {
+  cohort: PopulationCohortId;
+  definition: string;
+  household_count: number | null;
+  aggregate_baseline_value: number | null;
+  aggregate_recent_value: number | null;
+  gross_recorded_decrease: number | null;
+  metrics: PopulationMetric[];
+}
+
+export interface PopulationMix {
+  key: string;
+  label: string;
+  count: number;
+  share: number;
+}
+
+export interface InvestigatedPopulationHousehold {
+  household_id: string;
+  rank: number;
+  status: RunStatus;
+  context_classification: string;
+  decline_score: number | null;
+  sales_drop: number | null;
+  trip_drop: number | null;
+  active_week_drop: number | null;
+  baseline_retailer_sales_value: number | null;
+  recent_retailer_sales_value: number | null;
+  recorded_value_change: number | null;
+  population_gap: number | null;
+  peer_gap: number | null;
+  identified_factor: {
+    factor_type: string;
+    label: string;
+    detail: string;
+  };
+  action_id: string | null;
+  action_label: string;
+  confidence: string;
+  warnings: string[];
+}
+
+export interface PopulationSummary {
+  schema_version: 1;
+  availability: PopulationAvailability;
+  missing_data_reasons: string[];
+  cohort_definitions: Record<PopulationCohortId, string>;
+  analysis_windows: {
+    baseline_start_week: number | null;
+    baseline_end_week: number | null;
+    recent_start_week: number | null;
+    recent_end_week: number | null;
+  };
+  detector_policy: {
+    minimum_baseline_active_weeks: number | null;
+    minimum_baseline_distinct_baskets: number | null;
+    minimum_baseline_retailer_sales_value: number | null;
+    decline_threshold: number | null;
+    sensitivity_thresholds: number[];
+  };
+  threshold_sensitivity: Array<{
+    threshold: number | null;
+    eligible_households: number | null;
+    flagged_households: number | null;
+    flagged_share: number | null;
+  }>;
+  data_quality_warnings: string[];
+  cohorts: PopulationCohort[];
+  density_grid: {
+    x_metric: string;
+    y_metric: string;
+    x_scale: string;
+    x_edges: number[];
+    y_edges: number[];
+    cells: Array<{
+      x_lower: number | null;
+      x_upper: number | null;
+      y_lower: number | null;
+      y_upper: number | null;
+      eligible_count: number;
+      flagged_count: number;
+      investigated_count: number;
+    }>;
+  } | null;
+  investigated_households: InvestigatedPopulationHousehold[];
+  executive: {
+    eligible_count: number | null;
+    flagged_count: number | null;
+    flagged_share: number | null;
+    selected_count: number | null;
+    investigated_count: number | null;
+    completed_count: number | null;
+    insufficient_count: number | null;
+    failed_count: number | null;
+    aggregate_baseline_value: number | null;
+    aggregate_recent_value: number | null;
+    recorded_value_change: number | null;
+    gross_recorded_decrease: number | null;
+    verified_action_rate: number | null;
+    action_mix: PopulationMix[];
+    factor_mix: PopulationMix[];
+    context_mix: PopulationMix[];
+  };
+  provenance: {
+    dataset_kind: string;
+    dataset_source_repository: string;
+    dataset_source_commit: string;
+    backend: string;
+    source_manifest: string | null;
+    generated_at: string;
+  };
 }
 
 export interface DemoCustomerLimits {
