@@ -1,16 +1,20 @@
 # Give contributors short, documented aliases for the repository quality commands.
 .DEFAULT_GOAL := help
 
-.PHONY: help sync format lint type test quality
+.PHONY: help dashboard sync format lint type test quality
 
 help:
 	@echo "WhyBack developer commands"
+	@echo "  make dashboard  Build, launch, and open the stakeholder dashboard"
 	@echo "  make sync     Install the locked development environment"
 	@echo "  make format   Format source and tests"
 	@echo "  make lint     Check formatting and lint rules"
 	@echo "  make type     Run Pyright"
 	@echo "  make test     Run deterministic tests"
 	@echo "  make quality  Run the auditable quality gate"
+
+dashboard:
+	npm --prefix web start
 
 sync:
 	uv sync --frozen --all-extras

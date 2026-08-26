@@ -133,6 +133,7 @@ const existingWorkspace: Workspace = {
       reportCount: 5,
       completedCount: 0,
       humanReviewRequired: true,
+      populationAvailability: "partial",
       reports: Array.from({ length: 5 }, (_, index) => ({
         householdId: String(index + 1),
         runId: `run-${index + 1}`,
@@ -265,10 +266,21 @@ afterEach(() => {
 });
 
 describe("analysis application workflow", () => {
-  it("opens on Home without loading a household report", async () => {
+  it("opens with exactly two primary choices, reveals history, and enters a selected workflow", async () => {
+    const user = userEvent.setup();
+    const sameDayCollection = {
+      ...existingWorkspace.collections[0]!,
+      id: "live-deff4f61-0000-4000-8000-000000000000",
+      completedCount: 5,
+      populationAvailability: "full" as const,
+    };
+    const historyWorkspace: Workspace = {
+      ...existingWorkspace,
+      collections: [existingWorkspace.collections[0]!, sameDayCollection],
+    };
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+      if (url === "/api/workspace") return jsonResponse(historyWorkspace);
       if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
       if (url.startsWith("/api/population?")) return jsonResponse(partialPopulation);
       throw new Error(`Unexpected request: ${url}`);
@@ -276,6 +288,39 @@ describe("analysis application workflow", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Where would you like to begin?",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /^View past workflows/i })).toHaveAccessibleDescription(
+      "Choose from 2 verified analyses",
+    );
+    expect(screen.getByRole("button", { name: "Start a new analysis" })).toHaveAccessibleDescription(
+      "Configure and investigate a new household cohort",
+    );
+    expect(screen.queryByRole("button", { name: /live progress/i })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/population?"))).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: /^View past workflows/i }));
+    expect(await screen.findByRole("heading", { name: "Past workflows" })).toHaveFocus();
+    expect(screen.getByText("Limited population view")).toBeInTheDocument();
+    expect(screen.getByText("Full population view")).toBeInTheDocument();
+    expect(screen.getByText("0 of 5 completed")).toBeInTheDocument();
+    expect(screen.getByText("5 of 5 completed")).toBeInTheDocument();
+    const workflowButtons = screen.getAllByRole("button", {
+      name: /Open Population analysis \d{2}/i,
+    });
+    expect(workflowButtons).toHaveLength(2);
+    expect(workflowButtons[0]).toHaveAccessibleName(
+      /Population analysis 01.*Limited population view.*0 of 5 completed/i,
+    );
+    expect(workflowButtons[1]).toHaveAccessibleName(
+      /Population analysis 02.*Full population view.*5 of 5 completed/i,
+    );
+    await user.click(workflowButtons[0]!);
 
     expect(
       await screen.findByRole("heading", {
@@ -289,6 +334,75 @@ describe("analysis application workflow", () => {
     expect(
       fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/investigation?")),
     ).toBe(false);
+  });
+
+  it("keeps an invalid view query on the two-choice welcome screen", async () => {
+    window.history.replaceState(null, "", "/?view=not-a-dashboard-view");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+      if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Where would you like to begin?" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/population?"))).toBe(false);
+  });
+
+  it.each(["completed", "failed"] as const)(
+    "keeps the welcome visible when the retained startup status is %s",
+    async (status) => {
+      const retainedStatus: DemoStatusResponse = {
+        ...runningStatus,
+        status,
+        completedAt: "2026-08-26T12:05:00Z",
+        error: status === "failed" ? "The previous analysis did not complete." : null,
+      };
+      const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url === "/api/workspace") return jsonResponse(existingWorkspace);
+        if (url === "/api/demo/status?after=0") return jsonResponse(retainedStatus);
+        throw new Error(`Unexpected request: ${url}`);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<App />);
+
+      expect(
+        await screen.findByRole("heading", { name: "Where would you like to begin?" }),
+      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(fetchMock.mock.calls.filter(([url]) => url === "/api/workspace")).toHaveLength(1);
+      });
+      expect(screen.queryByText(/analysis complete/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Live progress" })).not.toBeInTheDocument();
+      expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/population?"))).toBe(false);
+    },
+  );
+
+  it("uses a workspace-specific heading when startup data cannot load", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/workspace") {
+        return jsonResponse({ error: "Workspace catalog unavailable." }, 503);
+      }
+      if (url === "/api/demo/status?after=0") return jsonResponse(idleStatus);
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Workspace unavailable" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Investigation unavailable" })).not.toBeInTheDocument();
   });
 
   it("maps the legacy overview query value to Investigation", async () => {
@@ -346,9 +460,9 @@ describe("analysis application workflow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: "Ready for your first portfolio review" }),
+      await screen.findByRole("heading", { name: "Where would you like to begin?" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/launch a verified analysis of official household data/i)).toBeInTheDocument();
+    expect(screen.getByText(/begin a fresh population analysis/i)).toBeInTheDocument();
     expect(screen.queryByText(/committed sample|official type a|boundary case/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Start a new analysis" }));
@@ -381,6 +495,7 @@ describe("analysis application workflow", () => {
   });
 
   it("clears the candidate rail and main panel after a fresh run is accepted", async () => {
+    window.history.replaceState(null, "", "/?view=home");
     const user = userEvent.setup();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -448,6 +563,7 @@ describe("analysis application workflow", () => {
   });
 
   it("preserves the candidate rail and main panel when the bridge rejects a new run", async () => {
+    window.history.replaceState(null, "", "/?view=home");
     const user = userEvent.setup();
     const never = new Promise<never>(() => undefined);
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -487,6 +603,7 @@ describe("analysis application workflow", () => {
   });
 
   it("keeps the reset workspace empty through a publication race, then selects the new run", async () => {
+    window.history.replaceState(null, "", "/?view=home");
     const user = userEvent.setup();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -588,7 +705,7 @@ describe("analysis application workflow", () => {
 
       if (firstResponse === "workspace first") {
         workspaceResponse.resolve(existingWorkspace);
-        await screen.findByRole("combobox", { name: "Analysis run" });
+        await screen.findByRole("heading", { name: "Where would you like to begin?" });
         statusResponse.resolve(nextRunningStatus);
       } else {
         statusResponse.resolve(nextRunningStatus);

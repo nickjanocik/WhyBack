@@ -52,18 +52,26 @@ uv run whyback data prepare --full
 uv run whyback detect --top 20 --output-dir artifacts/local/detection
 ```
 
-The optional reviewer dashboard requires Node 24 and locked npm dependencies:
+The reviewer dashboard requires Node 24 and locked npm dependencies. From the
+repository root, install the web dependencies once:
 
 ```bash
-cd web
-npm ci --ignore-scripts
-npm run dev
+npm --prefix web ci --ignore-scripts
 ```
 
-Open <http://127.0.0.1:5163>. The React interface reads the local Node bridge's
-sanitized artifact API and can ask that bridge to start one fixed, bounded
-Gemini CLI command. The browser never receives credentials, calculates
-evidence, or executes a customer action. See the [dashboard guide](web/README.md).
+Then launch the complete stakeholder app with one command:
+
+```bash
+make dashboard
+```
+
+The launcher builds the production interface, starts the localhost bridge, and
+opens <http://127.0.0.1:4173> in the default browser once the listener is ready.
+Set `WHYBACK_NO_OPEN=1` for CI or another headless environment. The React
+interface reads the local Node bridge's sanitized result API and can ask that
+bridge to start one fixed, bounded Gemini analysis. The browser never receives
+credentials, calculates evidence, or executes a customer action. See the
+[dashboard guide](web/README.md).
 
 **Representative executed result.** Against the full official source pinned at
 `5b5d061`, the detector anchored baseline weeks 38–45 and recent weeks 46–53.

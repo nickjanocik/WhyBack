@@ -33,6 +33,8 @@ import { CandidateRail } from "./components/CandidateRail";
 import { EvidencePanel } from "./components/EvidencePanel";
 import { ExecutiveHome } from "./components/ExecutiveHome";
 import { FactorMap } from "./components/FactorMap";
+import { LaunchExperience } from "./components/LaunchExperience";
+import type { LaunchView } from "./components/LaunchExperience";
 import { LiveTraceDrawer } from "./components/LiveTraceDrawer";
 import { OverviewPanel } from "./components/OverviewPanel";
 import { PopulationExplorer } from "./components/PopulationExplorer";
@@ -90,6 +92,21 @@ function initialView(): View {
     : "home";
 }
 
+/** Opens direct dashboard links immediately while normal launches begin at the welcome choice. */
+function initialLaunchView(): LaunchView | null {
+  const candidate = new URLSearchParams(window.location.search).get("view");
+  const validViews = new Set([
+    "home",
+    "overview",
+    "population",
+    "factors",
+    "investigation",
+    "evidence",
+    "audit",
+  ]);
+  return candidate && validViews.has(candidate) ? null : "welcome";
+}
+
 /** Renders the complete WhyBack reviewer workspace and owns its application state. */
 export default function App() {
   const reduceMotion = useReducedMotion();
@@ -101,6 +118,7 @@ export default function App() {
   const [populationLoading, setPopulationLoading] = useState(false);
   const [populationError, setPopulationError] = useState<string | null>(null);
   const [view, setView] = useState<View>(initialView);
+  const [launchView, setLaunchView] = useState<LaunchView | null>(initialLaunchView);
   const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +137,7 @@ export default function App() {
   const refreshedJobRef = useRef<string | null>(null);
   const investigationRequestEpochRef = useRef(0);
   const workspaceResetRef = useRef(false);
+  const launchViewRef = useRef<LaunchView | null>(launchView);
 
   const selectedCollection = useMemo(
     () => workspace?.collections.find((item) => item.id === collectionId),
@@ -130,6 +149,8 @@ export default function App() {
 
   /** Clears the visible run and invalidates any report request already in flight. */
   const clearActiveWorkspace = useCallback(() => {
+    launchViewRef.current = null;
+    setLaunchView(null);
     workspaceResetRef.current = true;
     investigationRequestEpochRef.current += 1;
     setWorkspace((current) =>
@@ -169,6 +190,12 @@ export default function App() {
     }
     setLoading(false);
     setWorkspace(nextWorkspace);
+    if (!preferredCollection && launchViewRef.current !== null) {
+      setCollectionId("");
+      setHouseholdId("");
+      setError(null);
+      return;
+    }
     const collection =
       nextWorkspace.collections.find((item) => item.id === preferredCollection) ??
       nextWorkspace.collections[0];
@@ -206,10 +233,10 @@ export default function App() {
     getDemoStatus(null, 0, controller.signal)
       .then((status) => {
         if (activeJobRef.current && activeJobRef.current !== status.jobId) return;
-        if (status.status !== "idle") clearActiveWorkspace();
+        if (status.status === "running") clearActiveWorkspace();
         activeJobRef.current = status.jobId;
         liveCursorRef.current = status.cursor;
-        if (status.status !== "running" && status.status !== "completed") {
+        if (status.status !== "running") {
           refreshedJobRef.current = status.jobId;
         }
         setLiveStatus(status);
@@ -396,6 +423,8 @@ export default function App() {
     setError(null);
     setSelectedEvidenceId(null);
     setInvestigation(null);
+    launchViewRef.current = null;
+    setLaunchView(null);
     setCollectionId(next.id);
     setHouseholdId(next.reports[0]?.householdId ?? "");
     changeView("home");
@@ -493,9 +522,9 @@ export default function App() {
   return (
     <div className="app-shell">
       <div className="app-content">
-        <a className="skip-link" href="#main-dashboard">Skip to dashboard</a>
+        <a className="skip-link" href="#main-dashboard">Skip to main content</a>
         <header className="app-header">
-          {hasReports && (
+          {launchView === null && hasReports && (
             <button
               ref={mobileMenuRef}
               className="mobile-menu"
@@ -512,7 +541,7 @@ export default function App() {
             <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
             <span className="brand-copy"><strong>WhyBack</strong><small>Population Intelligence</small></span>
           </div>
-          <div className="header-actions">
+          {launchView === null && <div className="header-actions">
             <button
               className={`live-toggle ${liveOpen ? "active" : ""}`}
               type="button"
@@ -535,11 +564,11 @@ export default function App() {
               {runRunning ? <LoaderCircle className="spin" size={15} /> : <RefreshCw size={15} />}
               <span className="run-button__label">{runRunning ? "Analyzing" : "New analysis"}</span>
             </button>
-          </div>
+          </div>}
         </header>
 
-      <div className={`workspace-layout ${railOpen ? "workspace-layout--rail-open" : ""} ${hasReports ? "" : "workspace-layout--empty"}`}>
-        {workspace && hasReports && (
+      <div className={`workspace-layout ${railOpen ? "workspace-layout--rail-open" : ""} ${launchView === null && hasReports ? "" : "workspace-layout--empty"}`}>
+        {launchView === null && workspace && hasReports && (
           <CandidateRail
             collections={workspace.collections}
             collectionId={collectionId}
@@ -555,8 +584,8 @@ export default function App() {
             }}
           />
         )}
-        <main className="main-workspace" id="main-dashboard" tabIndex={-1}>
-          {hasReports && (
+        <main className={`main-workspace ${launchView !== null ? "main-workspace--launch" : ""}`} id="main-dashboard" tabIndex={-1}>
+          {launchView === null && hasReports && (
             <div className="workspace-toolbar">
               <nav aria-label="Dashboard views">
                 {views.map((item) => {
@@ -584,15 +613,36 @@ export default function App() {
           )}
 
           <div className="workspace-scroll">
-            {workspace && workspace.collectionWarnings.length > 0 && (
+            {launchView === null && workspace && workspace.collectionWarnings.length > 0 && (
               <div className="collection-warning" role="status">
                 <CircleAlert size={16} />
                 <span>{productMessage(workspace.collectionWarnings.join(" "), "Some analysis history is temporarily unavailable.")}</span>
               </div>
             )}
-            {householdViews.has(view) && loading && <LoadingState />}
-            {householdViews.has(view) && !loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
-            {!loading && !error && workspace && !hasReports && customerLimits && liveRun && (
+            {launchView !== null && loading && !workspace && <AppLoadingState />}
+            {launchView !== null && !loading && error && <ErrorState title="Workspace unavailable" message={error} onRetry={() => window.location.reload()} />}
+            {launchView !== null && !loading && !error && workspace && (
+              <LaunchExperience
+                view={launchView}
+                collections={workspace.collections}
+                collectionWarnings={workspace.collectionWarnings}
+                analysisReady={workspace.liveRun.ready && !runBusy}
+                analysisBlockedReason={workspace.liveRun.blockedReason}
+                onShowHistory={() => {
+                  launchViewRef.current = "history";
+                  setLaunchView("history");
+                }}
+                onBack={() => {
+                  launchViewRef.current = "welcome";
+                  setLaunchView("welcome");
+                }}
+                onSelectCollection={changeCollection}
+                onStartAnalysis={openNewRun}
+              />
+            )}
+            {launchView === null && householdViews.has(view) && loading && <LoadingState />}
+            {launchView === null && householdViews.has(view) && !loading && error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
+            {launchView === null && !loading && !error && workspace && !hasReports && customerLimits && liveRun && (
               <EmptyWorkspace
                 customerLimits={customerLimits}
                 liveRun={liveRun}
@@ -601,11 +651,11 @@ export default function App() {
                 onStart={openNewRun}
               />
             )}
-            {!householdViews.has(view) && populationLoading && <PopulationLoadingState />}
-            {!householdViews.has(view) && !populationLoading && populationError && (
+            {launchView === null && !householdViews.has(view) && populationLoading && <PopulationLoadingState />}
+            {launchView === null && !householdViews.has(view) && !populationLoading && populationError && (
               <ErrorState message={populationError} onRetry={() => window.location.reload()} />
             )}
-            {!householdViews.has(view) && !populationLoading && !populationError && population && (
+            {launchView === null && !householdViews.has(view) && !populationLoading && !populationError && population && (
               <motion.div
                 className="view-stage"
                 key={`${collectionId}-${view}`}
@@ -618,7 +668,7 @@ export default function App() {
                 {view === "factors" && <FactorMap population={population} onOpenHousehold={openHousehold} />}
               </motion.div>
             )}
-            {householdViews.has(view) && !loading && !error && hasReports && investigation && (
+            {launchView === null && householdViews.has(view) && !loading && !error && hasReports && investigation && (
               <motion.div
                 className="view-stage"
                 key={`${investigation.report.run_id}-${view}`}
@@ -727,6 +777,16 @@ function EmptyWorkspace({
   );
 }
 
+/** Shows a quiet branded placeholder while the application catalog is loading. */
+function AppLoadingState() {
+  return (
+    <div className="loading-state loading-state--launch" role="status" aria-live="polite" aria-label="Loading WhyBack">
+      <LoaderCircle className="spin" size={26} />
+      <strong>Preparing your workspace…</strong>
+    </div>
+  );
+}
+
 /** Shows the shared accessible placeholder while a report request is pending. */
 function LoadingState() {
   return (
@@ -748,9 +808,17 @@ function PopulationLoadingState() {
 }
 
 /** Shows a terminal workspace-loading error with an explicit retry action. */
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorState({
+  title = "Investigation unavailable",
+  message,
+  onRetry,
+}: {
+  title?: string;
+  message: string;
+  onRetry: () => void;
+}) {
   return (
-    <div className="error-state" role="alert"><CircleAlert size={28} /><h1>Investigation unavailable</h1><p>{message}</p><button type="button" onClick={onRetry}><RefreshCw size={15} /> Try again</button></div>
+    <div className="error-state" role="alert"><CircleAlert size={28} /><h1>{title}</h1><p>{message}</p><button type="button" onClick={onRetry}><RefreshCw size={15} /> Try again</button></div>
   );
 }
 

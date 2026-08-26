@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "start": "npm run build && node server/start.mjs --open",
     "dev": "node scripts/dev.mjs",
     "server": "node server/start.mjs",
     "build": "tsc -b && vite build",

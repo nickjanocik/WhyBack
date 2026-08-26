@@ -24,17 +24,34 @@ evidence, authors recommendations, or executes customer actions.
 - Use the interface with a keyboard, reduced-motion preferences, or a narrow
   viewport.
 
-## Run in development
+## Launch the stakeholder dashboard
 
 Python 3.12 with `uv` and Node.js are required. CI uses Node 24; the current
 Vite toolchain supports Node `^20.19.0` or `>=22.12.0`. From the repository
-root, prepare the locked Python and web environments:
+root, prepare the locked Python and web environments once:
 
 ```bash
 uv sync --frozen --extra dev
-cd web
-npm ci
-npm run dev
+npm --prefix web ci
+```
+
+Then start the complete app from the repository root with one command:
+
+```bash
+make dashboard
+```
+
+The launcher builds the production frontend, starts the artifact bridge, and
+opens <http://127.0.0.1:4173> in the default browser once the server is ready.
+Stop the app with `Ctrl-C`. Use `WHYBACK_NO_OPEN=1 make dashboard` in CI, over
+SSH, or when you want to open the URL yourself.
+
+## Run in development
+
+For frontend development with hot reload:
+
+```bash
+npm --prefix web run dev
 ```
 
 Open <http://127.0.0.1:5163>. The development runner starts both Vite and the
