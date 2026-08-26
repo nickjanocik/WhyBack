@@ -75,12 +75,12 @@ def test_current_docs_match_the_verified_methodology_status() -> None:
 
     scenario_count = len(load_scenario_catalog().scenarios)
     readme = Path("README.md").read_text(encoding="utf-8")
-    plans = Path("PLANS.md").read_text(encoding="utf-8")
+    data_semantics = Path("docs/data-semantics.md").read_text(encoding="utf-8")
     productionization = Path("docs/productionization.md").read_text(encoding="utf-8")
 
     assert scenario_count == 12
     assert "Twelve behavioral scenarios" in readme
     assert "twelve current behavioral scenarios" in productionization
-    assert "| Requirement | Pre-change status" in plans
-    assert "Every listed software gap is now verified." in plans
-    assert "## Current completion boundaries" in plans
+    assert "## Variables not observed or inadequately controlled" in data_semantics
+    assert "## Descriptive, associational, and causal limits" in data_semantics
+    assert "## Experimentation and causal measurement" in productionization

@@ -107,9 +107,10 @@ All locally implementable methodology capabilities are complete. In reports,
 not unfinished features. For example, the compact synthetic fixture has 23
 eligible peers when 50 were requested, and the official source omits Type A
 household-specific delivered-coupon identities. WhyBack preserves those facts
-instead of weakening the request or inventing data. The current implementation
-versus external-data and experimental boundaries are itemized in
-[PLANS.md](PLANS.md#current-completion-boundaries).
+instead of weakening the request or inventing data. The remaining data and
+experimental boundaries are documented in
+[Data semantics](docs/data-semantics.md) and
+[Productionization](docs/productionization.md).
 
 To run an explicitly authorized live investigation, keep the credential out of
 Git and run:
@@ -172,9 +173,7 @@ See [Architecture](docs/architecture.md),
 [agent-loop ADR](docs/adr/001-own-the-agent-loop.md), and the current
 [Gemini provider ADR](docs/adr/007-use-gemini-function-calling.md). The
 [population-context and claim-boundary ADR](docs/adr/008-population-context-and-claim-boundaries.md)
-records this methodology. For a file-by-file explanation, use the
-[plain-English agent guide](docs/agent-guide.md) and
-[repository technical outline](docs/repository-technical-outline.md).
+records this methodology.
 
 ## Decline detector
 
@@ -322,7 +321,7 @@ Reviewer entry points:
   [embedded data provenance](artifacts/official-type-a/data_provenance.json).
 - [Deterministic evaluation summary](artifacts/evals/EVAL_SUMMARY.md),
   [quality-gate audit](artifacts/tests/TEST_AUDIT.md), and
-  [Git commit summary](artifacts/git/COMMIT_SUMMARY.md).
+  [machine-readable test record](artifacts/tests/test_audit.json).
 
 ## Complete execution trace
 
@@ -451,8 +450,7 @@ docs/                   semantics, architecture, reliability, evaluation, ADRs
 
 ## Git history and test audit
 
-The Git log is authoritative. `artifacts/git/COMMIT_SUMMARY.md` maps each
-milestone commit to its recorded checks and push state; it does not invent
-retroactive validation. `artifacts/tests/test_audit.json` is the authoritative
-machine record for the final quality-gate execution, with a readable companion
-at `artifacts/tests/TEST_AUDIT.md`.
+The Git log is the authoritative implementation history.
+`artifacts/tests/test_audit.json` is the machine record for the final
+quality-gate execution, with a readable companion at
+`artifacts/tests/TEST_AUDIT.md`.
