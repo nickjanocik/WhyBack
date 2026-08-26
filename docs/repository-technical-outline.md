@@ -272,8 +272,8 @@ overrides are:
 
 The dashboard additionally accepts `WHYBACK_DASHBOARD_PORT` and a bounded
 `WHYBACK_LIVE_TIMEOUT_MS`
-([`index.mjs` lines 24–35](../web/server/index.mjs#L24-L35),
-[`index.mjs` lines 126–138](../web/server/index.mjs#L126-L138)).
+([`index.mjs` lines 29–35](../web/server/index.mjs#L29-L35),
+[`index.mjs` lines 140–148](../web/server/index.mjs#L140-L148)).
 
 ## 3.3 CLI command table
 
@@ -374,7 +374,8 @@ All web scripts are declared in
 6. Base frames are written as Zstandard-compressed Parquet. DuckDB builds three
    derived tables: deduplicated `promotion_state`, `household_week`, and
    basket-grain `baskets`
-   ([`prepare.py` lines 127–249](../src/whyback/data/prepare.py#L127-L249)).
+   ([`prepare.py` lines 127–249](../src/whyback/data/prepare.py#L127-L249),
+   [`prepare.py` lines 331–345](../src/whyback/data/prepare.py#L331-L345)).
 7. Cross-table coverage diagnostics are calculated, and a manifest records
    source/prepared schemas, row counts, missingness, hashes, code hash and source
    identity ([`manifest.py` lines 26–127](../src/whyback/data/manifest.py#L26-L127)).
@@ -553,13 +554,13 @@ The implemented formula and weight validation are at
    ([`index.mjs` lines 162–191](../web/server/index.mjs#L162-L191),
    [`index.mjs` lines 480–505](../web/server/index.mjs#L480-L505)).
 3. The dialog permits only 3–24 customers and selects five by default. `POST /api/demo` accepts only a JSON
-   object containing `customers`, checks same-origin/content type, rechecks
-   capability and returns `202`
+   object containing `customers`, requires JSON, rejects explicitly cross-site
+   or nonlocal-origin mutations, rechecks capability and returns `202`
    ([`index.mjs` lines 589–598](../web/server/index.mjs#L589-L598),
    [`index.mjs` lines 679–705](../web/server/index.mjs#L679-L705)).
-4. `createDemoRunManager()` serializes jobs, gives the job a UUID, polls
-   sanitized JSONL files, caps retained activity at 5,000 events and exposes a
-   cursor-based status response
+4. `createDemoRunManager()` admits at most one live job and rejects a concurrent
+   start, gives the accepted job a UUID, serializes trace collection, caps
+   retained activity at 5,000 events and exposes a cursor-based status response
    ([`live-trace.mjs` lines 367–560](../web/server/live-trace.mjs#L367-L560)).
 5. The bridge spawns a fixed argument vector, never a shell string:
 
@@ -594,29 +595,29 @@ old case file.
 
 | Contract | Lines | Purpose |
 |---|---:|---|
-| `DetectionConfig` | [`config.py` 37–46](../src/whyback/config.py#L37-L46) | Detector eligibility and score thresholds. |
-| `AgentConfig` | [`config.py` 49–59](../src/whyback/config.py#L49-L59) | Tool/turn/timeout/retry/model defaults. |
-| `WindowSpec` | [`decline.py` 30–64](../src/whyback/detection/decline.py#L30-L64) | Constructs valid adjacent week ranges. |
-| `DeclineSnapshot` | [`decline.py` 67–89](../src/whyback/detection/decline.py#L67-L89) | Run-owned detector result for one household. |
-| `AnalysisWindow` | [`tools/contracts.py` 41–60](../src/whyback/tools/contracts.py#L41-L60) | Tool-visible validated copy of baseline/recent boundaries. |
-| Six tool inputs | [`tools/contracts.py` 63–92](../src/whyback/tools/contracts.py#L63-L92) | Strict model-visible arguments. |
-| `ToolExecutionContext` | [`tools/contracts.py` 95–112](../src/whyback/tools/contracts.py#L95-L112) | Application-owned run, household, window, source and context policy. |
-| `EvidenceRecord` | [`tools/contracts.py` 115–151](../src/whyback/tools/contracts.py#L115-L151) | One grounded value/text receipt with owner, source, dimensions, claim ceiling and limitations. |
-| `ToolProvenance` | [`tools/contracts.py` 154–173](../src/whyback/tools/contracts.py#L154-L173) | Parameters, SQL/query hash, rows, time and diagnostics. |
-| `ToolResult` | [`tools/contracts.py` 179–211](../src/whyback/tools/contracts.py#L179-L211) | Common result envelope and status/evidence invariants. |
-| `ToolHistoryEntry` | [`state.py` 88–114](../src/whyback/agent/state.py#L88-L114) | Compact decision, attempt, result and evidence history. |
-| `DriverClaim` | [`state.py` 117–159](../src/whyback/agent/state.py#L117-L159) | Proposed qualitative driver with support/counterevidence and limits. |
-| `FinishProposal` | [`state.py` 162–206](../src/whyback/agent/state.py#L162-L206) | Complete model finish payload and evidence-accounting rules. |
-| `ToolDecision` / `FinishDecision` | [`state.py` 209–234](../src/whyback/agent/state.py#L209-L234) | Exactly one typed action returned by a backend. |
-| `InvestigationState` | [`state.py` 241–337](../src/whyback/agent/state.py#L241-L337) | Authoritative run state and compact model view. |
-| `VerifiedFinalDecision` | [`verifier.py` 94–114](../src/whyback/agent/verifier.py#L94-L114) | Code-resolved publishable conclusion. |
-| `ReportData` | [`reporting/models.py` 354–930](../src/whyback/reporting/models.py#L354-L930) | Stable report JSON boundary with cross-grounding validation. |
-| `RunProvenance` | [`provenance.py` 15–47](../src/whyback/provenance.py#L15-L47) | Data/backend/model/code/prompt/time identity. |
+| `DetectionConfig` | [`config.py` 37–48](../src/whyback/config.py#L37-L48) | Detector eligibility and score thresholds. |
+| `AgentConfig` | [`config.py` 49–61](../src/whyback/config.py#L49-L61) | Tool/turn/timeout/retry/model defaults. |
+| `WindowSpec` | [`decline.py` 34–72](../src/whyback/detection/decline.py#L34-L72) | Constructs valid adjacent week ranges. |
+| `DeclineSnapshot` | [`decline.py` 75–98](../src/whyback/detection/decline.py#L75-L98) | Run-owned detector result for one household. |
+| `AnalysisWindow` | [`tools/contracts.py` 45–66](../src/whyback/tools/contracts.py#L45-L66) | Tool-visible validated copy of baseline/recent boundaries. |
+| Six tool inputs | [`tools/contracts.py` 69–110](../src/whyback/tools/contracts.py#L69-L110) | Strict model-visible arguments. |
+| `ToolExecutionContext` | [`tools/contracts.py` 113–133](../src/whyback/tools/contracts.py#L113-L133) | Application-owned run, household, window, source and context policy. |
+| `EvidenceRecord` | [`tools/contracts.py` 135–173](../src/whyback/tools/contracts.py#L135-L173) | One grounded value/text receipt with owner, source, dimensions, claim ceiling and limitations. |
+| `ToolProvenance` | [`tools/contracts.py` 176–197](../src/whyback/tools/contracts.py#L176-L197) | Parameters, SQL/query hash, rows, time and diagnostics. |
+| `ToolResult` | [`tools/contracts.py` 203–237](../src/whyback/tools/contracts.py#L203-L237) | Common result envelope and status/evidence invariants. |
+| `ToolHistoryEntry` | [`state.py` 88–116](../src/whyback/agent/state.py#L88-L116) | Compact decision, attempt, result and evidence history. |
+| `DriverClaim` | [`state.py` 119–165](../src/whyback/agent/state.py#L119-L165) | Proposed qualitative driver with support/counterevidence and limits. |
+| `FinishProposal` | [`state.py` 168–216](../src/whyback/agent/state.py#L168-L216) | Complete model finish payload and evidence-accounting rules. |
+| `ToolDecision` / `FinishDecision` | [`state.py` 219–250](../src/whyback/agent/state.py#L219-L250) | Exactly one typed action returned by a backend. |
+| `InvestigationState` | [`state.py` 253–351](../src/whyback/agent/state.py#L253-L351) | Authoritative run state and compact model view. |
+| `VerifiedFinalDecision` | [`verifier.py` 96–116](../src/whyback/agent/verifier.py#L96-L116) | Code-resolved publishable conclusion. |
+| `ReportData` | [`reporting/models.py` 366–946](../src/whyback/reporting/models.py#L366-L946) | Stable report JSON boundary with cross-grounding validation. |
+| `RunProvenance` | [`provenance.py` 15–51](../src/whyback/provenance.py#L15-L51) | Data/backend/model/code/prompt/time identity. |
 
 ## 5.2 Tool status state machine
 
 The exact status vocabulary is declared at
-[`tools/contracts.py` lines 32–38](../src/whyback/tools/contracts.py#L32-L38).
+[`tools/contracts.py` lines 34–42](../src/whyback/tools/contracts.py#L34-L42).
 
 | Status | Meaning | Evidence allowed? | Can retry? |
 |---|---|---:|---:|
@@ -629,7 +630,7 @@ The exact status vocabulary is declared at
 
 `ToolResult.validate_status_contract()` enforces these relationships and checks
 that evidence records point back to the exact tool and call
-([`tools/contracts.py` lines 179–211](../src/whyback/tools/contracts.py#L179-L211)).
+([`tools/contracts.py` lines 203–237](../src/whyback/tools/contracts.py#L203-L237)).
 
 ## 5.3 Claim levels
 
@@ -655,13 +656,13 @@ This is descriptive contemporaneous context, not a seasonal or causal control.
 
 The TypeScript file mirrors the JSON needed by the browser:
 
-- collection/workspace summaries: [`types.ts` lines 4–53](../web/src/types.ts#L4-L53);
-- provenance and decline: [`types.ts` lines 55–92](../web/src/types.ts#L55-L92);
-- evidence and drivers: [`types.ts` lines 94–122](../web/src/types.ts#L94-L122);
-- path, warnings, confidence and action: [`types.ts` lines 124–165](../web/src/types.ts#L124-L165);
-- population context: [`types.ts` lines 167–201](../web/src/types.ts#L167-L201);
-- complete report: [`types.ts` lines 209–234](../web/src/types.ts#L209-L234);
-- saved/live trace and job status: [`types.ts` lines 236–276](../web/src/types.ts#L236-L276).
+- collection/workspace summaries: [`types.ts` lines 3–55](../web/src/types.ts#L3-L55);
+- provenance and decline: [`types.ts` lines 57–94](../web/src/types.ts#L57-L94);
+- evidence and drivers: [`types.ts` lines 96–124](../web/src/types.ts#L96-L124);
+- path, warnings, confidence and action: [`types.ts` lines 126–167](../web/src/types.ts#L126-L167);
+- population context: [`types.ts` lines 169–203](../web/src/types.ts#L169-L203);
+- complete report: [`types.ts` lines 211–236](../web/src/types.ts#L211-L236);
+- saved/live trace and job status: [`types.ts` lines 238–278](../web/src/types.ts#L238-L278).
 
 These are compile-time browser contracts. Runtime report validation belongs to
 Python; the Node bridge performs narrower safety and publication checks rather
@@ -671,7 +672,7 @@ than recreating the entire Pydantic model.
 
 # 6. The six deterministic analytical tools
 
-The one registry at [`registry.py` lines 53–110](../src/whyback/tools/registry.py#L53-L110)
+The one registry at [`registry.py` lines 57–114](../src/whyback/tools/registry.py#L57-L114)
 binds each `ToolName` to one input model, handler and model-facing description.
 The model cannot add a seventh tool or supply SQL.
 
@@ -679,12 +680,12 @@ The model cannot add a seventh tool or supply SQL.
 
 | Tool | File / main function | Core question | Principal evidence | Important boundary |
 |---|---|---|---|---|
-| Customer Trend | [`trend.py` `customer_trend`, 204–533](../src/whyback/tools/trend.py#L204-L533) | Is the decline value, visit frequency, activity, recency or trajectory? | Value, trips, active weeks, trip value, quantity, products, recency, zero-filled weekly series and slope | Missing periods become explicit; recorded quantity has a fuel-scale warning. |
-| Category Decomposition | [`category.py` `category_decomposition`, 281–815](../src/whyback/tools/category.py#L281-L815) | Which departments/categories gained or lost recorded value? | Category value/change/share, gross-loss contribution, mapping coverage, target-excluded category context | `UNKNOWN` is retained; window totals must reconcile within `1e-6`; no preference causation. |
-| Basket Behavior | [`basket.py` `basket_behavior`, 232–542](../src/whyback/tools/basket.py#L232-L542) | Are there fewer, smaller, differently composed or differently timed visits? | Basket count/value/items/products/categories, cadence, stores, primary-store change | Calculated at distinct household+basket grain; sparse cadence is explicit. |
-| Promotion Response | [`promotion.py` `run_promotion_response`, 57–331](../src/whyback/tools/promotion.py#L57-L331) | Did purchasing associated with recorded promotion availability change? | Promotion/display/mailer-associated value/share and category change | Join must preserve rows/value; availability is not exposure or causation. |
-| Coupon/Campaign History | [`coupon.py` `run_coupon_campaign_history`, 30–257](../src/whyback/tools/coupon.py#L30-L257) | What participation, redemption and transaction coupon behavior is recorded? | Campaign counts/types/dates, known delivered coupons, matched redemptions, coupon baskets/discount | Type A household-specific delivered identities are unavailable, producing `partial`. |
-| Peer Comparison | [`peer.py` `run_peer_comparison`, 108–611](../src/whyback/tools/peer.py#L108-L611) | Is the target unusual versus eligible population and similar baseline shoppers? | Target change, distribution quartiles/percentile/declining share/gap and context classification | Target excluded; robust behavioral matching; no demographics; descriptive only. |
+| Customer Trend | [`trend.py` `customer_trend`, 214–543](../src/whyback/tools/trend.py#L214-L543) | Is the decline value, visit frequency, activity, recency or trajectory? | Value, trips, active weeks, trip value, quantity, products, recency, zero-filled weekly series and slope | Missing periods become explicit; recorded quantity has a fuel-scale warning. |
+| Category Decomposition | [`category.py` `category_decomposition`, 297–831](../src/whyback/tools/category.py#L297-L831) | Which departments/categories gained or lost recorded value? | Category value/change/share, gross-loss contribution, mapping coverage, target-excluded category context | `UNKNOWN` is retained; window totals must reconcile within `1e-6`; no preference causation. |
+| Basket Behavior | [`basket.py` `basket_behavior`, 248–558](../src/whyback/tools/basket.py#L248-L558) | Are there fewer, smaller, differently composed or differently timed visits? | Basket count/value/items/products/categories, cadence, stores, primary-store change | Calculated at distinct household+basket grain; sparse cadence is explicit. |
+| Promotion Response | [`promotion.py` `run_promotion_response`, 59–335](../src/whyback/tools/promotion.py#L59-L335) | Did purchasing associated with recorded promotion availability change? | Promotion/display/mailer-associated value/share and category change | Join must preserve rows/value; availability is not exposure or causation. |
+| Coupon/Campaign History | [`coupon.py` `run_coupon_campaign_history`, 32–261](../src/whyback/tools/coupon.py#L32-L261) | What participation, redemption and transaction coupon behavior is recorded? | Campaign counts/types/dates, known delivered coupons, matched redemptions, coupon baskets/discount | Type A household-specific delivered identities are unavailable, producing `partial`. |
+| Peer Comparison | [`peer.py` `run_peer_comparison`, 118–623](../src/whyback/tools/peer.py#L118-L623) | Is the target unusual versus eligible population and similar baseline shoppers? | Target change, distribution quartiles/percentile/declining share/gap and context classification | Target excluded; robust behavioral matching; no demographics; descriptive only. |
 
 ## 6.2 Shared tool helpers
 
@@ -693,22 +694,23 @@ The model cannot add a seventh tool or supply SQL.
 - `query_hash()` at lines 28–32: hashes normalized SQL/query text, not values or
   parameter payloads;
 - `normalized_parameters()` at 35–38: records parameters separately;
-- `ToolTimer` at 42–52;
-- `make_provenance()` at 55–76;
-- `EvidenceFactory` at 79–120: creates call-owned IDs such as
+- `ToolTimer` at 42–56;
+- `make_provenance()` at 59–82;
+- `EvidenceFactory` at 85–130: creates call-owned IDs such as
   `ev_<tool-call>_001`;
-- `percentage_change()` at 132–135: signed recent-versus-baseline change;
-- `median()` at 138–141 and OLS `slope()` at 144–155.
+- `_finite_or_none()` at 133–141 suppresses non-finite values;
+- `percentage_change()` at 144–149: signed recent-versus-baseline change;
+- `median()` at 152–157 and OLS `slope()` at 160–171.
 
 ## 6.3 Customer Trend internals
 
 | Symbol | Lines | Responsibility |
 |---|---:|---|
 | SQL constants | [`trend.py` 37–113](../src/whyback/tools/trend.py#L37-L113) | Household existence, period aggregates, basket medians and zero-filled weeks. |
-| `_WindowMetrics` | [`trend.py` 117–145](../src/whyback/tools/trend.py#L117-L145) | Typed per-window measures and compact summary. |
-| `_failed_result()` | [`trend.py` 148–177](../src/whyback/tools/trend.py#L148-L177) | Builds provenance-rich evidence-free failures. |
-| `_comparison()` | [`trend.py` 180–193](../src/whyback/tools/trend.py#L180-L193) | Turns paired metrics into baseline/recent/change evidence. |
-| `_window_has_partial_week()` | [`trend.py` 196–201](../src/whyback/tools/trend.py#L196-L201) | Detects week 53 limitation. |
+| `_WindowMetrics` | [`trend.py` 117–149](../src/whyback/tools/trend.py#L117-L149) | Typed per-window measures and compact summary. |
+| `_failed_result()` | [`trend.py` 152–183](../src/whyback/tools/trend.py#L152-L183) | Builds provenance-rich evidence-free failures. |
+| `_comparison()` | [`trend.py` 186–201](../src/whyback/tools/trend.py#L186-L201) | Turns paired metrics into baseline/recent/change evidence. |
+| `_window_has_partial_week()` | [`trend.py` 204–211](../src/whyback/tools/trend.py#L204-L211) | Detects week 53 limitation. |
 
 The weekly query materializes every week in the requested range, giving zero
 for no recorded shopping rather than omitting that week. That supports the
@@ -718,11 +720,11 @@ visible trend chart and a stable slope.
 
 | Symbol | Lines | Responsibility |
 |---|---:|---|
-| `_CategoryRow` | [`category.py` 100–126](../src/whyback/tools/category.py#L100-L126) | Value/change/share/contribution for one category. |
-| `_CategoryContext` | [`category.py` 130–156](../src/whyback/tools/category.py#L130-L156) | Target-excluded category comparison result. |
-| `_category_context_sql()` | [`category.py` 159–217](../src/whyback/tools/category.py#L159-L217) | Builds allowlisted selected-category comparison query. |
-| `_category_context_dimensions()` | [`category.py` 220–238](../src/whyback/tools/category.py#L220-L238) | Records exact cohort/category/window/sign scope. |
-| `_failed_result()` | [`category.py` 241–270](../src/whyback/tools/category.py#L241-L270) | Typed failure response. |
+| `_CategoryRow` | [`category.py` 100–131](../src/whyback/tools/category.py#L100-L131) | Value/change/share/contribution for one category. |
+| `_CategoryContext` | [`category.py` 134–164](../src/whyback/tools/category.py#L134-L164) | Target-excluded category comparison result. |
+| `_category_context_sql()` | [`category.py` 167–227](../src/whyback/tools/category.py#L167-L227) | Builds allowlisted selected-category comparison query. |
+| `_category_context_dimensions()` | [`category.py` 230–250](../src/whyback/tools/category.py#L230-L250) | Records exact cohort/category/window/sign scope. |
+| `_failed_result()` | [`category.py` 253–284](../src/whyback/tools/category.py#L253-L284) | Typed failure response. |
 
 The tool separately checks baseline and recent category sums against transaction
 totals. “Contribution” uses gross observed loss as denominator, so a truncated
@@ -732,11 +734,11 @@ top list need not add to 100%, and gains are reported separately.
 
 | Symbol | Lines | Responsibility |
 |---|---:|---|
-| `_Basket` | [`basket.py` 64–72](../src/whyback/tools/basket.py#L64-L72) | Normalized one-basket row. |
-| `_BasketMetrics` | [`basket.py` 76–120](../src/whyback/tools/basket.py#L76-L120) | Per-window count/value/composition/cadence/store measures. |
-| `_calculate_metrics()` | [`basket.py` 127–173](../src/whyback/tools/basket.py#L127-L173) | Orders baskets, calculates intervals and deterministic primary-store ties. |
-| `_failed_result()` | [`basket.py` 176–205](../src/whyback/tools/basket.py#L176-L205) | Typed failure. |
-| `_comparison()` | [`basket.py` 216–229](../src/whyback/tools/basket.py#L216-L229) | Paired evidence record helper. |
+| `_Basket` | [`basket.py` 64–75](../src/whyback/tools/basket.py#L64-L75) | Normalized one-basket row. |
+| `_BasketMetrics` | [`basket.py` 78–126](../src/whyback/tools/basket.py#L78-L126) | Per-window count/value/composition/cadence/store measures. |
+| `_calculate_metrics()` | [`basket.py` 135–183](../src/whyback/tools/basket.py#L135-L183) | Orders baskets, calculates intervals and deterministic primary-store ties. |
+| `_failed_result()` | [`basket.py` 186–217](../src/whyback/tools/basket.py#L186-L217) | Typed failure. |
+| `_comparison()` | [`basket.py` 230–245](../src/whyback/tools/basket.py#L230-L245) | Paired evidence record helper. |
 
 The tool reports both “how much was in a basket” and “how often a basket
 occurred,” so a smaller total can be separated into fewer trips versus smaller
@@ -771,10 +773,10 @@ at [`coupon.py` lines 18–21](../src/whyback/tools/coupon.py#L18-L21).
 | Symbol | Lines | Responsibility |
 |---|---:|---|
 | `_Distribution` | [`peer.py` 52–59](../src/whyback/tools/peer.py#L52-L59) | Count, quartiles, percentile, declining share and target gap. |
-| `_identifier_key()` | [`peer.py` 62–63](../src/whyback/tools/peer.py#L62-L63) | Stable numeric/text ID tie-breaking. |
-| `_sales_change()` | [`peer.py` 66–68](../src/whyback/tools/peer.py#L66-L68) | Signed value change. |
-| `_distribution()` | [`peer.py` 71–83](../src/whyback/tools/peer.py#L71-L83) | Target-excluded distribution summary. |
-| `_dimensions()` | [`peer.py` 86–105](../src/whyback/tools/peer.py#L86-L105) | Explicit cohort/method/window dimensions. |
+| `_identifier_key()` | [`peer.py` 64–67](../src/whyback/tools/peer.py#L64-L67) | Stable numeric/text ID tie-breaking. |
+| `_sales_change()` | [`peer.py` 70–74](../src/whyback/tools/peer.py#L70-L74) | Signed value change. |
+| `_distribution()` | [`peer.py` 77–91](../src/whyback/tools/peer.py#L77-L91) | Target-excluded distribution summary. |
+| `_dimensions()` | [`peer.py` 94–115](../src/whyback/tools/peer.py#L94-L115) | Explicit cohort/method/window dimensions. |
 
 Behavioral distance uses baseline log value, trips, median basket, active weeks,
 and category concentration. Concentration is the sum of squared category shares;
@@ -974,23 +976,23 @@ nonmultiplication before publication.
 - `SecretHandling`, lines 47–51, and `UnsafeAuditDetailError`, 54–55;
 - secret/hidden-reasoning key/value patterns, 58–124;
 - `_normalize_key`, `_is_secret_key`, `_is_hidden_reasoning_key`,
-  `_looks_like_secret_value`, 127–146;
-- recursive `_sanitize_value`, 149–201;
-- public `sanitize_details`, 204–221, and `sanitize_public_text`, 224–228;
-- `AuditEvent`, 237–273, enforcing aware UTC, sanitized/frozen JSON details.
+  `_looks_like_secret_value`, 127–152;
+- recursive `_sanitize_value`, 155–209;
+- public `sanitize_details`, `sanitize_public_text`, and `utc_now`, 212–242;
+- `AuditEvent`, 245–287, enforcing aware UTC, sanitized/frozen JSON details.
 
 ## 8.2 Append-only JSONL
 
 [`observability/audit.py`](../src/whyback/observability/audit.py) contains:
 
 - `AuditTraceReadError`, lines 16–17;
-- `AuditJsonlWriter`, 20–82;
-  - constructor 23–39 opens append mode and creates an instance-local lock;
-  - `append()` 45–60 revalidates, writes one compact JSON line, flushes and can
+- `AuditJsonlWriter`, 20–90;
+  - constructor 23–42 opens append mode and creates an instance-local lock;
+  - `append()` 49–64 revalidates, writes one compact JSON line, flushes and can
     call `fsync`;
-  - `close()` and context-manager methods 62–82;
-- `iter_audit_events()` 85–101, a strict ordered JSONL reader;
-- `read_audit_events()` 104–107, named compatibility wrapper.
+  - `close()` and context-manager methods 66–90;
+- `iter_audit_events()` 93–109, a strict ordered JSONL reader;
+- `read_audit_events()` 112–115, named compatibility wrapper.
 
 The lock coordinates threads sharing that writer instance; it is not a
 cross-process lock.
@@ -1001,24 +1003,24 @@ cross-process lock.
 |---|---:|---|
 | `DeclineReportData` | [`models.py` 45–70](../src/whyback/reporting/models.py#L45-L70) | Detector-owned summary. |
 | `InvestigationStepData` | 73–87 | Compact decision/attempt path. |
-| `ReportEvidenceData` | 90–117 | One ledger record plus display role/source status. |
-| `DriverReportData` | 120–150 | Verified driver and exact support/counter sets. |
-| `CohortComparisonReportData` | 153–206 | Target-excluded distribution with availability rules. |
-| `CategoryContextReportData` | 209–264 | One category comparison tied to ledger evidence. |
-| `PopulationContextReportData` | 267–279 | Population/peer/category context bundle. |
-| `InterpretationLimitsReportData` | 282–303 | Observed, unobserved and causal boundaries. |
-| `ConfidenceAdjustmentReportData` | 306–320 | Evidence-linked cap. |
-| `ToolWarningData` | 323–335 | Failed/partial/retried step. |
-| `ActionReportData` | 338–351 | Verifier-approved catalog action and measurement text. |
-| `ReportData` | 354–930 | Complete cross-validated publication. |
-| `TraceEventData` / `TraceViewData` | 933–975 | Static trace viewer boundary. |
+| `ReportEvidenceData` | 90–119 | One ledger record plus display role/source status. |
+| `DriverReportData` | 122–154 | Verified driver and exact support/counter sets. |
+| `CohortComparisonReportData` | 157–212 | Target-excluded distribution with availability rules. |
+| `CategoryContextReportData` | 215–272 | One category comparison tied to ledger evidence. |
+| `PopulationContextReportData` | 275–287 | Population/peer/category context bundle. |
+| `InterpretationLimitsReportData` | 290–313 | Observed, unobserved and causal boundaries. |
+| `ConfidenceAdjustmentReportData` | 316–332 | Evidence-linked cap. |
+| `ToolWarningData` | 335–347 | Failed/partial/retried step. |
+| `ActionReportData` | 350–363 | Verifier-approved catalog action and measurement text. |
+| `ReportData` | 366–946 | Complete internally cross-checked publication. |
+| `TraceEventData` / `TraceViewData` | 949–993 | Static trace viewer boundary. |
 
 All unqualified ranges in this table are within
 [`reporting/models.py`](../src/whyback/reporting/models.py).
 
-`ReportData.validate_terminal_report()` at lines 387–652 enforces terminal/action
+`ReportData.validate_terminal_report()` at lines 399–665 enforces terminal/action
 consistency, evidence ownership, exact support/counter partitions, current action
-policy and confidence. `_validate_population_context()` at 654–930 binds every
+policy and confidence. `_validate_population_context()` at 668–946 binds every
 comparison field to exact ledger evidence.
 
 ## 8.4 Report builders/renderers
@@ -1026,17 +1028,17 @@ comparison field to exact ledger evidence.
 [`reporting/render.py`](../src/whyback/reporting/render.py) symbols:
 
 - `ReportBundlePaths`, lines 60–65;
-- `_qualitative()` 74–84, final prose safety boundary;
-- `_verified_final()` 87–91;
-- `_evidence_role()` 94–104 and `_report_evidence()` 107–137;
-- `_cohort_comparison()` 152–233 and `_category_context()` 236–347;
-- `build_population_context()` 350–421;
-- `build_interpretation_limits()` 424–484;
-- `build_report_data()` 487–709;
-- Markdown/number helpers 712–742;
-- strict Jinja environment 745–762;
-- JSON/Markdown/HTML renderers 765–789;
-- `write_report_bundle()` 792–812.
+- `_qualitative()` 76–86, final prose safety boundary;
+- `_verified_final()` 89–95;
+- `_evidence_role()` 98–110 and `_report_evidence()` 113–145;
+- `_cohort_comparison()` 164–247 and `_category_context()` 250–363;
+- `build_population_context()` 366–437;
+- `build_interpretation_limits()` 440–500;
+- `build_report_data()` 503–725;
+- Markdown/number helpers 728–768;
+- strict Jinja environment 771–790;
+- JSON/Markdown/HTML renderers 793–817;
+- `write_report_bundle()` 820–840.
 
 Templates are:
 
@@ -1047,18 +1049,17 @@ Templates are:
 ## 8.5 Trace renderer
 
 [`reporting/trace.py`](../src/whyback/reporting/trace.py) contains category/value
-extractors at lines 36–115, `build_trace_view()` at 118–175,
-`render_trace_html()` at 182–201, and `write_trace_html()` at 204–209.
+extractors at lines 36–129, `build_trace_view()` at 132–189,
+`render_trace_html()` at 198–217, and `write_trace_html()` at 220–225.
 
 ---
 
 
 # 9. Complete current Python file and symbol index
 
-This intentionally front-loaded index gives a receiving reviewer direct source
-links before the numbered conceptual tour begins in Section 1. It is the
-granular lookup table for the final working-tree inventory and should be
-preferred when an earlier broad line range differs after documentation edits.
+This granular lookup table follows the conceptual tour and is the preferred
+source when an earlier broad range differs after documentation edits. It maps
+the final working-tree inventory directly to current symbols.
 Ranges are inclusive and describe the current files, not only `HEAD`.
 
 ## 9.1 Package facades and foundation modules
@@ -1274,8 +1275,8 @@ outside that inclusive range.
 | `ScriptedCall` | [`scripted_backend.py` 26–33](../src/whyback/agent/scripted_backend.py#L26-L33) | Observable compact-state/menu record. |
 | `ScriptedBackend` | [`scripted_backend.py` 36–91](../src/whyback/agent/scripted_backend.py#L36-L91) | Pops deterministic decisions, records calls and fails on plan exhaustion. |
 | `ScriptedPlan` / builders | [`scripted_plans.py` 22–189](../src/whyback/agent/scripted_plans.py#L22-L189) | Standard, promotion-timeout and Type A tool/finish sequences with predictable evidence IDs. |
-| Gemini schema helpers | [`gemini_backend.py` 35–217](../src/whyback/agent/gemini_backend.py#L35-L217) | Protocols, strict payloads, local-ref expansion, closed Interactions schemas and tool/finish function declarations. |
-| `GeminiFunctionCallingBackend` | [`gemini_backend.py` 220–445](../src/whyback/agent/gemini_backend.py#L220-L445) | Requires explicit credential, sends fresh compact state with forced function call, records usage/provider ID and accepts exactly one offered strict call. |
+| Gemini protocols/schema helpers | [`gemini_backend.py` 35–227](../src/whyback/agent/gemini_backend.py#L35-L227) | Protocols, strict payloads, local-ref expansion, closed Interactions schemas, tool/finish declarations and safe token parsing. |
+| `GeminiFunctionCallingBackend` | [`gemini_backend.py` 230–455](../src/whyback/agent/gemini_backend.py#L230-L455) | Production construction requires a credential; injected tests may supply a client. Sends fresh compact state with a forced function call, records usage/provider ID and accepts exactly one offered strict call. |
 | Run/confidence/usage/attempt/history models | [`state.py` 26–116](../src/whyback/agent/state.py#L26-L116) | Lifecycle, proposal/resolved confidence, immutable usage addition and frozen tool history. |
 | `DriverClaim` | [`state.py` 119–165](../src/whyback/agent/state.py#L119-L165) | Unique supporting IDs, explicit counterevidence consideration and limitations. |
 | `FinishProposal` | [`state.py` 168–216](../src/whyback/agent/state.py#L168-L216) | Exact evidence partition, action/confidence and up-to-four driver proposal. |
@@ -1286,7 +1287,7 @@ outside that inclusive range.
 
 | File / symbols | Current lines | Responsibility |
 |---|---:|---|
-| `EvidenceLedger` | [`evidence.py` 17–72](../src/whyback/agent/evidence.py#L17-L72) | Unique-ID validation, lookup and success/run/customer/call/source ownership gate. |
+| `EvidenceLedger` | [`evidence.py` 17–72](../src/whyback/agent/evidence.py#L17-L72) | Unique-ID validation, lookup and success/run/customer/call ownership gate; `ToolResult` separately enforces source-tool matching. |
 | Fault contracts / `DemoFaultInjector` | [`faults.py` 19–103](../src/whyback/agent/faults.py#L19-L103) | Explicit opt-in promotion timeout-once/always typed failure injection. |
 | Action IDs/predicates/prerequisites | [`actions.py` 23–130](../src/whyback/agent/actions.py#L23-L130) | Exact allowlist and evidence/dimension/threshold matching policy. |
 | Success/experiment/action models | [`actions.py` 133–183](../src/whyback/agent/actions.py#L133-L183) | Catalog measurement, holdout, contraindication, fallback and selection policy. |
@@ -1334,6 +1335,9 @@ outside that inclusive range.
 | Formatting/Jinja helpers | [`reporting/render.py` 728–790](../src/whyback/reporting/render.py#L728-L790) | Escaping, numeric display and strict template environment. |
 | JSON/Markdown/HTML renderers | [`reporting/render.py` 793–817](../src/whyback/reporting/render.py#L793-L817) | Deterministic output strings. |
 | `write_report_bundle()` | [`reporting/render.py` 820–840](../src/whyback/reporting/render.py#L820-L840) | Writes report JSON, Markdown and HTML. |
+| [`report.md.j2`](../src/whyback/reporting/templates/report.md.j2) | complete template | Renders verified report fields into portable Markdown; performs no evidence calculation. |
+| [`report.html.j2`](../src/whyback/reporting/templates/report.html.j2) | complete template | Renders the same verified report into self-contained HTML; performs no evidence calculation. |
+| [`trace.html.j2`](../src/whyback/reporting/templates/trace.html.j2) | complete template | Renders the sanitized trace view into offline HTML; performs no analytical calculation. |
 | Trace extraction helpers | [`reporting/trace.py` 36–129](../src/whyback/reporting/trace.py#L36-L129) | Converts audit names/details into public category, labels and evidence IDs. |
 | `build_trace_view()` | [`reporting/trace.py` 132–189](../src/whyback/reporting/trace.py#L132-L189) | Ordered display view with counts and public labels. |
 | Trace rendering/writing | [`reporting/trace.py` 192–225](../src/whyback/reporting/trace.py#L192-L225) | Strict self-contained HTML render and file write. |
@@ -1424,8 +1428,10 @@ provides icons. The principal development versions are TypeScript 6.0.3, Vite
 
 | Environment variable | Exact web behavior |
 |---|---|
-| `GEMINI_API_KEY` | Required for live readiness but never returned to React. Root `.env` loading preserves an exported value ([`start.mjs` 12–28](../web/server/start.mjs#L12-L28)). It is deleted from Vite ([`dev.mjs` 42–45](../web/scripts/dev.mjs#L42-L45)) and from prepared-data validation/artifact verification ([`index.mjs` 480–505](../web/server/index.mjs#L480-L505), [`508–562`](../web/server/index.mjs#L508-L562)); only the actual Gemini child receives it. |
+| `GEMINI_API_KEY` | The Node bridge holds it only to determine readiness and never returns it to React. Root `.env` loading preserves an exported value ([`start.mjs` 12–28](../web/server/start.mjs#L12-L28)). It is deleted from Vite ([`dev.mjs` 42–45](../web/scripts/dev.mjs#L42-L45)) and from prepared-data validation/artifact verification ([`index.mjs` 480–505](../web/server/index.mjs#L480-L505), [`508–562`](../web/server/index.mjs#L508-L562)); among spawned child processes, only the actual Gemini child receives it. |
 | `RETENTION_MODEL` | Trimmed, capped at 128 characters and defaulted to `gemini-3.7-flash` ([`index.mjs` 135–138](../web/server/index.mjs#L135-L138)). Python receives it through the child environment; the fixed command has no model argument. |
+| `RETENTION_THINKING_LEVEL` | Inherited by the Python child and accepted only as `low`, `medium` or `high` by typed settings ([`config.py` 97–100](../src/whyback/config.py#L97-L100)). |
+| `WHYBACK_DATA_DIR` | Inherited by prepared-data validation and the live demo child; Python resolves the prepared directory beneath it ([`config.py` 95](../src/whyback/config.py#L95)). |
 | `WHYBACK_LIVE_TIMEOUT_MS` | Integer from 60,000 through 21,600,000 ms; otherwise four hours ([`index.mjs` 32–37](../web/server/index.mjs#L32-L37), [`141–148`](../web/server/index.mjs#L141-L148)). |
 | `WHYBACK_DASHBOARD_PORT` | Positive integer bridge port, default 4173 ([`index.mjs` 29–31](../web/server/index.mjs#L29-L31)). Vite's proxy remains fixed at 4173, so changing this variable during `npm run dev` breaks the proxy unless Vite is also changed. |
 
@@ -1448,7 +1454,7 @@ The single API dispatcher is
 | Method and route | Inputs | Success | Guard/failure |
 |---|---|---|---|
 | `GET /api/workspace` | None | `200`: collections, limits, warnings and secret-free live capability ([`615–621`](../web/server/index.mjs#L615-L621)). | Unreadable optional collections become warnings. Live readiness runs official prepared-data validation. |
-| `GET /api/demo/status` | Optional `job`; `after` defaults to 0 | `200`: latest/requested job and only events after the cursor ([`624–642`](../web/server/index.mjs#L624-L642)). | Invalid cursor → 400; absent/expired job → 404; running trace is refreshed before response. |
+| `GET /api/demo/status` | Optional `job`; `after` defaults to 0 | `200`: requested job, latest job, or idle status, with only events after the cursor ([`624–642`](../web/server/index.mjs#L624-L642)). | Invalid cursor → 400; an explicitly supplied unknown/expired job → 404; running trace is refreshed before response. |
 | `GET /api/investigation` | `collection`, `household` | `200`: `{report, trace}` ([`645–659`](../web/server/index.mjs#L645-L659)). | Unsafe, absent or household-mismatched artifact → 404. |
 | `GET /api/artifact` | `collection`, `household`, `file` | Streams a rendered artifact ([`661–677`](../web/server/index.mjs#L661-L677)). | Only `report.html`, `report.md`, `trace.html`; unsafe/missing/symlinked file → 404. |
 | `POST /api/demo` | Exact JSON `{customers}` | `202`: initial asynchronous job state ([`679–705`](../web/server/index.mjs#L679-L705)). | Rejects shutdown, wrong content type, cross-site/origin mutation, body over 4 KiB, extra/missing fields, noninteger/outside 3–24, missing key, invalid official data or concurrent run. |
@@ -1581,7 +1587,7 @@ production singleton always supplies an explicit unique live-run directory
 | `startLiveRun()` | [`577–586`](../web/server/index.mjs#L577-L586) | Fail closed when current readiness is false. |
 | `liveRunRequestError()` | [`589–598`](../web/server/index.mjs#L589-L598) | Accept exactly one `customers` property and validate 3–24. |
 | `serveFile()` | [`601–611`](../web/server/index.mjs#L601-L611) | Set length/type/security and stream a resolved file. |
-| `handleApi()` | [`614–712`](../web/server/index.mjs#L614-L712) | Route table in Section 9.3. |
+| `handleApi()` | [`614–712`](../web/server/index.mjs#L614-L712) | Route table in Section 10.3. |
 | `handleRequest()` | [`715–764`](../web/server/index.mjs#L715-L764) | Host gate, API dispatch, static confinement and public error handling. |
 | `createDashboardShutdown()` | [`767–817`](../web/server/index.mjs#L767-L817) | Idempotently close listener, repeatedly stop children and perform final drain. Nested `drainProcesses()` is 790–809. |
 | `startServer()` | [`820–841`](../web/server/index.mjs#L820-L841) | Reset shutdown state, create server, install signals and bind loopback. |
@@ -1730,19 +1736,19 @@ and trace HTML
 
 | Symbol | Lines | Responsibility |
 |---|---:|---|
-| unit sets | [`8–14`](../web/src/lib/report.ts#L8-L14) | Display-only currency and percentage unit vocabulary. |
-| `humanize()` | [`16–20`](../web/src/lib/report.ts#L16-L20) | Identifier to title text. |
-| `formatCurrency()` | [`22–28`](../web/src/lib/report.ts#L22-L28) | US-dollar display. |
-| `formatNumber()` | [`30–32`](../web/src/lib/report.ts#L30-L32) | Locale number display. |
-| `formatPercent()` | [`34–39`](../web/src/lib/report.ts#L34-L39) | Ratio to percentage display. |
-| `formatMetricValue()` | [`41–45`](../web/src/lib/report.ts#L41-L45) | Display dispatch by unit. |
-| `weeklyTrend()` | [`47–57`](../web/src/lib/report.ts#L47-L57) | Select and sort finite weekly-sales ledger records. |
-| `evidenceDisplayValue()` | [`59–74`](../web/src/lib/report.ts#L59-L74) | Render text, baseline→recent, scalar or unavailable. |
-| `compactId()` | [`76–79`](../web/src/lib/report.ts#L76-L79) | Preserve ID ends for display. |
-| `meaningfulTrace()` | [`81–83`](../web/src/lib/report.ts#L81-L83) | Hide noisy evidence-write events by default. |
-| `eventLabel()` | [`85–103`](../web/src/lib/report.ts#L85-L103) | Public audit-event labels. |
-| `actionLabel()` | [`105–115`](../web/src/lib/report.ts#L105-L115) | Catalog action ID to reviewer label. |
-| `uniqueLimitations()` | [`117–128`](../web/src/lib/report.ts#L117-L128) | Combine/deduplicate visible limits, uncertainties and alternatives. |
+| unit sets | [`10–16`](../web/src/lib/report.ts#L10-L16) | Display-only currency and percentage unit vocabulary. |
+| `humanize()` | [`19–23`](../web/src/lib/report.ts#L19-L23) | Identifier to title text. |
+| `formatCurrency()` | [`26–32`](../web/src/lib/report.ts#L26-L32) | US-dollar display. |
+| `formatNumber()` | [`35–37`](../web/src/lib/report.ts#L35-L37) | Locale number display. |
+| `formatPercent()` | [`40–45`](../web/src/lib/report.ts#L40-L45) | Ratio to percentage display. |
+| `formatMetricValue()` | [`48–52`](../web/src/lib/report.ts#L48-L52) | Display dispatch by unit. |
+| `weeklyTrend()` | [`55–65`](../web/src/lib/report.ts#L55-L65) | Select and sort finite weekly-sales ledger records. |
+| `evidenceDisplayValue()` | [`68–83`](../web/src/lib/report.ts#L68-L83) | Render text, baseline→recent, scalar or unavailable. |
+| `compactId()` | [`86–89`](../web/src/lib/report.ts#L86-L89) | Preserve ID ends for display. |
+| `meaningfulTrace()` | [`92–94`](../web/src/lib/report.ts#L92-L94) | Hide noisy evidence-write events by default. |
+| `eventLabel()` | [`97–115`](../web/src/lib/report.ts#L97-L115) | Public audit-event labels. |
+| `actionLabel()` | [`118–128`](../web/src/lib/report.ts#L118-L128) | Catalog action ID to reviewer label. |
+| `uniqueLimitations()` | [`131–142`](../web/src/lib/report.ts#L131-L142) | Combine/deduplicate visible limits, uncertainties and alternatives. |
 
 These helpers and the chart geometry format/select already-produced report
 facts; they do not calculate analytical evidence or choose an action.
@@ -1785,7 +1791,7 @@ checks.
 | [`2263–2785`](../web/src/styles.css#L2263-L2785) | Operations refinements, live drawer and spinner. |
 | [`2786–3069`](../web/src/styles.css#L2786-L3069) | 1100, 820 and 600 px responsive breakpoints. |
 | [`3071–3080`](../web/src/styles.css#L3071-L3080) | Reduced-motion override. |
-| [`3082–3157`](../web/src/styles.css#L3082-L3157) | Current container queries preventing metric/filter/evidence overflow. |
+| [`3084–3159`](../web/src/styles.css#L3084-L3159) | Current container queries preventing metric/filter/evidence overflow. |
 
 Accessibility enforcement includes the skip link
 ([`App.tsx` line 350](../web/src/App.tsx#L350)), exact chart text alternative
@@ -1801,13 +1807,13 @@ and drawer focus/inert behavior
 |---|---|
 | Local machine only | Loopback bind and localhost Host gate ([`index.mjs` 29–31](../web/server/index.mjs#L29-L31), [`88–96`](../web/server/index.mjs#L88-L96), [`715–720`](../web/server/index.mjs#L715-L720)). This intentionally local interface provides no account authentication or TLS. |
 | Browser cannot choose backend/command/path | Exact `{customers}`, 3–24 integer validation and server-generated Gemini argv/output UUID ([`index.mjs` 194–225](../web/server/index.mjs#L194-L225), [`589–598`](../web/server/index.mjs#L589-L598)). |
-| Cross-site mutation resistance | JSON content type, Fetch Metadata, local Origin and 4 KiB body limit ([`index.mjs` 66–85](../web/server/index.mjs#L66-L85), [`113–132`](../web/server/index.mjs#L113-L132)). GET routes rely on loopback/Host controls. |
-| Secret isolation | Key is absent from Vite, React, API responses, displayed command, validation and artifact verification; only the actual Gemini child receives it. |
+| Cross-site mutation resistance | Requires JSON, rejects explicit cross-site Fetch Metadata and a supplied nonlocal Origin, and caps the body at 4 KiB ([`index.mjs` 66–85](../web/server/index.mjs#L66-L85), [`113–132`](../web/server/index.mjs#L113-L132)). Missing Origin remains valid for local nonbrowser clients; GET routes rely on loopback/Host controls. |
+| Secret isolation | The Node bridge holds the key for readiness, but it is absent from Vite, React, API responses, displayed command, validation and artifact verification; among spawned child processes only the Gemini child receives it. |
 | Raw process output | `runBoundedChild()` uses `stdio: "ignore"`; browser activity comes only from sanitized JSONL ([`index.mjs` line 418](../web/server/index.mjs#L418)). |
 | Hidden reasoning/raw audit details | Exact detail-key/value projection, truncation and conversion of evidence-ID arrays to counts ([`artifacts.mjs` 42–109](../web/server/artifacts.mjs#L42-L109), [`299–338`](../web/server/artifacts.mjs#L299-L338)). |
 | Traversal/symlinks | Exact collection IDs, household regex, artifact filename set, descendant checks and `lstat` real-path rules. |
 | One paid run | Manager running-job gate plus live-child registry ([`live-trace.mjs` 462–467](../web/server/live-trace.mjs#L462-L467), [`index.mjs` 308–324](../web/server/index.mjs#L308-L324)). |
-| Bounded process | Four-hour default/one-to-six-hour configurable deadline, detached group and TERM→KILL handling ([`index.mjs` 350–477](../web/server/index.mjs#L350-L477)). |
+| Bounded process | Four-hour default/one-minute-to-six-hour configurable deadline, detached group and TERM→KILL handling ([`index.mjs` 350–477](../web/server/index.mjs#L350-L477)). |
 | Bounded activity | Newline-complete reads, monotonic cursors, 5,000-event window and eight-job memory history ([`live-trace.mjs` 196–319](../web/server/live-trace.mjs#L196-L319), [`367–560`](../web/server/live-trace.mjs#L367-L560)). |
 | Fail-closed publication | Exact owned path, terminal manifest, every report/trace pair, Python artifact verifier and one-time seal ([`index.mjs` 508–562](../web/server/index.mjs#L508-L562), [`live-runs.mjs` 219–301](../web/server/live-runs.mjs#L219-L301)). |
 | Post-publication tamper detection | Every dynamic resolution recomputes manifest and complete-tree hashes ([`live-runs.mjs` 231–260](../web/server/live-runs.mjs#L231-L260)). |
@@ -2471,22 +2477,22 @@ requires official prepared-data readiness
 
 The adapter inlines local Pydantic references and transforms schemas into
 closed provider function declarations
-([`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L93-L181)). The
+([`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L93-L182)). The
 closed schema marks object properties as required for the provider even when a
 local Pydantic input has a default. This intentionally makes the model send a
 complete explicit payload; local callers can still rely on Pydantic defaults.
 
 The live request uses `store=False`, no streaming, no thinking summaries, a
 bounded output size, and an allowlist of currently offered functions
-([`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L265-L313)). The
+([`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L275-L323)). The
 adapter then rejects zero, multiple, unknown, malformed, or unoffered function
 calls before Python executes a tool.
 
 ## 14.9 Duplicate refusal is signature-specific, not tool-name-specific
 
 The signature covers the selected tool and canonical normalized arguments. The
-same tool may be called again with a genuinely different bounded question or
-arguments; only an exact normalized repeat is refused
+same tool may be called again with genuinely different normalized arguments;
+only an exact normalized repeat is refused
 ([`runner.py`](../src/whyback/agent/runner.py#L477-L543)). A refused duplicate
 creates history with no attempts and consumes a **model decision**, but does not
 consume the analytical execution budget.
@@ -2807,7 +2813,7 @@ bundle.
 [`cli.py`](../src/whyback/cli.py#L22-L436); scripted backend
 [`scripted_backend.py`](../src/whyback/agent/scripted_backend.py#L21-L91);
 Gemini adapter request
-[`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L265-L373); web live
+[`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L275-L383); web live
 route [`server/index.mjs`](../web/server/index.mjs#L679-L705).
 
 **Speaker boundary:** Scripted output proves orchestration controls, not a live
@@ -2931,10 +2937,10 @@ free-form causal diagnosis.
 **Visual:** `Compact state → Gemini → one function call → validated decision`.
 
 **Code anchors:** request payload/schema classes
-[`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L61-L181); credential
-and SDK construction [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L214-L257);
-request/parse/usage [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L265-L373);
-exact-one extraction [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L375-L445).
+[`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L61-L216); credential
+and SDK construction [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L230-L267);
+request/parse/usage [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L275-L383);
+exact-one extraction and strict parse [`gemini_backend.py`](../src/whyback/agent/gemini_backend.py#L386-L455).
 
 **Speaker boundary:** Function-calling mode constrains shape; the Python runner
 and verifier—not Gemini—enforce the actual analytical and publication policy.
