@@ -20,7 +20,6 @@ import { TraceEventRow } from "./TraceEventRow";
 interface LiveTraceDrawerProps {
   open: boolean;
   status: DemoStatusResponse;
-  hasVisibleReport: boolean;
   reportRefreshFailed: boolean;
   onClose: () => void;
   onRefreshReports: () => void;
@@ -31,7 +30,6 @@ interface LiveTraceDrawerProps {
 export function LiveTraceDrawer({
   open,
   status,
-  hasVisibleReport,
   reportRefreshFailed,
   onClose,
   onRefreshReports,
@@ -179,12 +177,6 @@ export function LiveTraceDrawer({
             Sanitized questions, decisions, deterministic tool activity, and verification from the running CLI. Private model reasoning is not collected.
           </p>
 
-          {status.status === "running" && hasVisibleReport && (
-            <p className="live-trace-context" role="status">
-              The existing verified report remains visible until this CLI run passes verification.
-            </p>
-          )}
-
           {status.jobId && (
             <section className="live-run-details" aria-label="CLI execution details">
               <dl>
@@ -225,9 +217,6 @@ export function LiveTraceDrawer({
               <span>
                 {status.status === "failed" && <strong>CLI run not published. </strong>}
                 {status.error || status.traceWarning}
-                {status.status === "failed" && hasVisibleReport
-                  ? " The visible report is unchanged."
-                  : ""}
               </span>
             </div>
           )}
@@ -273,7 +262,7 @@ export function LiveTraceDrawer({
             <footer className="live-trace-footer">
               {status.status === "completed" && reportRefreshFailed ? (
                 <button type="button" onClick={onRefreshReports}>
-                  <CircleCheck size={15} /> Reload verified reports
+                  <CircleCheck size={15} /> Reload published reports
                 </button>
               ) : (
                 <button type="button" onClick={onStartRun}>
@@ -293,7 +282,7 @@ export function LiveTraceDrawer({
 function phaseLabel(status: DemoStatusResponse["status"]): string {
   if (status === "idle") return "Not started";
   if (status === "running") return "CLI running";
-  if (status === "completed") return "Verified and published";
+  if (status === "completed") return "Run finished · artifacts published";
   return "CLI failed";
 }
 

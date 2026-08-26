@@ -88,6 +88,8 @@ export default function App() {
   const activeJobRef = useRef<string | null>(null);
   const liveCursorRef = useRef(0);
   const refreshedJobRef = useRef<string | null>(null);
+  const investigationRequestEpochRef = useRef(0);
+  const workspaceResetRef = useRef(false);
 
   const selectedCollection = useMemo(
     () => workspace?.collections.find((item) => item.id === collectionId),
@@ -97,8 +99,42 @@ export default function App() {
     (item) => item.householdId === householdId,
   )?.generatedAt;
 
+  /** Clears the visible run and invalidates any report request already in flight. */
+  const clearActiveWorkspace = useCallback(() => {
+    workspaceResetRef.current = true;
+    investigationRequestEpochRef.current += 1;
+    setWorkspace((current) =>
+      current
+        ? { ...current, collections: [], collectionWarnings: [] }
+        : current,
+    );
+    setCollectionId("");
+    setHouseholdId("");
+    setInvestigation(null);
+    setSelectedEvidenceId(null);
+    setLoading(false);
+    setError(null);
+    setRailOpen(false);
+    setToast(null);
+    setView("overview");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("view");
+    window.history.replaceState(null, "", url);
+  }, []);
+
   /** Selects the preferred verified CLI run and handles an honestly empty workspace. */
   const initializeWorkspace = useCallback((nextWorkspace: Workspace, preferredCollection?: string) => {
+    investigationRequestEpochRef.current += 1;
+    setInvestigation(null);
+    setSelectedEvidenceId(null);
+    if (workspaceResetRef.current && !preferredCollection) {
+      setWorkspace({ ...nextWorkspace, collections: [], collectionWarnings: [] });
+      setCollectionId("");
+      setHouseholdId("");
+      setError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setWorkspace(nextWorkspace);
     const collection =
@@ -112,6 +148,7 @@ export default function App() {
       setLoading(false);
       return;
     }
+    if (preferredCollection) workspaceResetRef.current = false;
     setCollectionId(collection.id);
     setHouseholdId(collection.reports[0]?.householdId ?? "");
     setError(null);
@@ -137,6 +174,7 @@ export default function App() {
     getDemoStatus(null, 0, controller.signal)
       .then((status) => {
         if (activeJobRef.current && activeJobRef.current !== status.jobId) return;
+        if (status.status !== "idle") clearActiveWorkspace();
         activeJobRef.current = status.jobId;
         liveCursorRef.current = status.cursor;
         if (status.status !== "running" && status.status !== "completed") {
@@ -155,7 +193,7 @@ export default function App() {
         }
       });
     return () => controller.abort();
-  }, []);
+  }, [clearActiveWorkspace]);
 
   // Poll only the active job and merge cursor deltas without replaying older events.
   useEffect(() => {
@@ -221,10 +259,14 @@ export default function App() {
     let retryTimer: number | undefined;
     getWorkspace(controller.signal)
       .then((nextWorkspace) => {
+        const publishedCollectionId = requirePublishedCollection(
+          nextWorkspace,
+          liveStatus.collectionId,
+        );
         setWorkspaceRefreshAttempt(0);
         setReportRefreshFailed(false);
-        initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
-        setToast("CLI run verified. Reports refreshed.");
+        initializeWorkspace(nextWorkspace, publishedCollectionId);
+        setToast("CLI run finished. Published reports refreshed.");
       })
       .catch((caught: unknown) => {
         if ((caught as { name?: string }).name !== "AbortError") {
@@ -255,18 +297,30 @@ export default function App() {
   useEffect(() => {
     if (!collectionId || !householdId) return;
     const controller = new AbortController();
+    const requestEpoch = ++investigationRequestEpochRef.current;
     getInvestigation(collectionId, householdId, controller.signal)
       .then((value) => {
+        if (controller.signal.aborted || investigationRequestEpochRef.current !== requestEpoch) {
+          return;
+        }
         setInvestigation(value);
         setLoading(false);
       })
       .catch((caught: unknown) => {
+        if (controller.signal.aborted || investigationRequestEpochRef.current !== requestEpoch) {
+          return;
+        }
         if ((caught as { name?: string }).name !== "AbortError") {
           setError(caught instanceof Error ? caught.message : "Could not load the investigation.");
           setLoading(false);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      if (investigationRequestEpochRef.current === requestEpoch) {
+        investigationRequestEpochRef.current += 1;
+      }
+    };
   }, [collectionId, householdId, selectedGeneratedAt]);
 
   // Remove transient completion notices after enough time for assistive technology to read them.
@@ -280,9 +334,11 @@ export default function App() {
   function changeCollection(nextId: string) {
     const next = workspace?.collections.find((item) => item.id === nextId);
     if (!next) return;
+    investigationRequestEpochRef.current += 1;
     setLoading(true);
     setError(null);
     setSelectedEvidenceId(null);
+    setInvestigation(null);
     setCollectionId(next.id);
     setHouseholdId(next.reports[0]?.householdId ?? "");
     changeView("overview");
@@ -312,6 +368,7 @@ export default function App() {
       activeJobRef.current = status.jobId;
       liveCursorRef.current = status.cursor;
       refreshedJobRef.current = null;
+      clearActiveWorkspace();
       setWorkspaceRefreshAttempt(0);
       setReportRefreshFailed(false);
       setLiveStatus(status);
@@ -329,15 +386,19 @@ export default function App() {
     setLoading(true);
     try {
       const nextWorkspace = await getWorkspace();
+      const publishedCollectionId = requirePublishedCollection(
+        nextWorkspace,
+        liveStatus.collectionId,
+      );
       setWorkspaceRefreshAttempt(0);
       setReportRefreshFailed(false);
-      initializeWorkspace(nextWorkspace, liveStatus.collectionId ?? undefined);
+      initializeWorkspace(nextWorkspace, publishedCollectionId);
       setLiveOpen(false);
-      setToast("Verified CLI reports reloaded.");
+      setToast("Published CLI reports reloaded.");
     } catch {
       setLoading(false);
       setReportRefreshFailed(true);
-      setToast("The verified report list could not be reloaded. Try again.");
+      setToast("The published report list could not be reloaded. Try again.");
     }
   }
 
@@ -412,9 +473,11 @@ export default function App() {
             onHouseholdChange={(value) => {
               // Closing the mobile rail returns focus to its trigger after selection.
               const returnFocusToMenu = railOpen;
+              investigationRequestEpochRef.current += 1;
               setLoading(true);
               setError(null);
               setSelectedEvidenceId(null);
+              setInvestigation(null);
               setHouseholdId(value);
               setRailOpen(false);
               if (returnFocusToMenu) {
@@ -469,7 +532,7 @@ export default function App() {
                 onStart={openNewRun}
               />
             )}
-            {!loading && !error && investigation && (
+            {!loading && !error && hasReports && investigation && (
               <div key={`${investigation.report.run_id}-${view}`}>
                 {view === "overview" && <OverviewPanel report={investigation.report} onEvidenceSelect={selectEvidence} />}
                 {view === "evidence" && <EvidencePanel report={investigation.report} selectedEvidenceId={selectedEvidenceId} onEvidenceSelect={setSelectedEvidenceId} />}
@@ -482,7 +545,6 @@ export default function App() {
         <LiveTraceDrawer
           open={liveOpen}
           status={liveStatus}
-          hasVisibleReport={hasReports}
           reportRefreshFailed={reportRefreshFailed}
           onClose={() => setLiveOpen(false)}
           onRefreshReports={() => void handleRefreshReports()}
@@ -600,4 +662,15 @@ function mergeLiveStatus(
     ...update.events.filter((event) => !ids.has(event.id)),
   ].slice(-Math.max(1, update.eventCapacity));
   return { ...update, events };
+}
+
+/** Requires the just-finished run to exist before repopulating the cleared workspace. */
+function requirePublishedCollection(
+  workspace: Workspace,
+  collectionId: string | null,
+): string {
+  if (!collectionId || !workspace.collections.some((item) => item.id === collectionId)) {
+    throw new Error("The finished run is still being published.");
+  }
+  return collectionId;
 }

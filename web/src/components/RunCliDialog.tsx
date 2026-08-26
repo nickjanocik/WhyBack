@@ -172,7 +172,7 @@ function RunCliDialogContent({
         <p className="run-boundary">
           <Cpu size={15} />
           <span>
-            A unique run is created from the validated official data, and earlier runs stay in history. This uses real provider quota; Python computes every metric and executes no outreach.
+            Starting clears the active workspace. Earlier artifacts remain preserved and return to run history after the new run is published. This uses real provider quota; Python computes every metric and executes no outreach.
           </span>
         </p>
 

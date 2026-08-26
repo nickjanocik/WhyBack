@@ -2738,16 +2738,6 @@ select:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
-.live-trace-context {
-  padding: 9px 18px;
-  margin: 0;
-  color: var(--warning);
-  font-size: 10px;
-  line-height: 1.45;
-  background: var(--warning-soft);
-  border-bottom: 1px solid #ecd6b6;
-}
-
 .live-run-details {
   padding: 10px 18px;
   font-size: 10px;

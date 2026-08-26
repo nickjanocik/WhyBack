@@ -188,6 +188,8 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.getByText("Server environment")).toBeInTheDocument();
+    expect(screen.getByText(/starting clears the active workspace/i)).toBeInTheDocument();
+    expect(screen.getByText(/earlier artifacts remain preserved/i)).toBeInTheDocument();
     expect(screen.getByText(/uses real provider quota/i)).toBeInTheDocument();
     expect(screen.getByText(/python computes every metric/i)).toBeInTheDocument();
     expect(screen.getByText(/executes no outreach/i)).toBeInTheDocument();
@@ -300,7 +302,6 @@ describe("dashboard interactions", () => {
       <LiveTraceDrawer
         open
         status={status}
-        hasVisibleReport
         reportRefreshFailed={false}
         onClose={onClose}
         onRefreshReports={vi.fn()}
@@ -311,7 +312,7 @@ describe("dashboard interactions", () => {
     expect(screen.getByRole("heading", { name: "Live run activity" })).toBeInTheDocument();
     expect(screen.getByText(status.command!)).toBeInTheDocument();
     expect(screen.getByText(/private model reasoning is not collected/i)).toBeInTheDocument();
-    expect(screen.getByText(/existing verified report remains visible/i)).toBeInTheDocument();
+    expect(screen.queryByText(/existing verified report remains visible/i)).not.toBeInTheDocument();
     expect(screen.getByText(/4 earlier audit events were omitted/i)).toBeInTheDocument();
     expect(screen.getByText("Did visit frequency change?")).toBeInTheDocument();
     expect(
@@ -336,7 +337,6 @@ describe("dashboard interactions", () => {
     const onClose = vi.fn();
     const drawerProps = {
       status: idleStatus,
-      hasVisibleReport: false,
       reportRefreshFailed: false,
       onClose,
       onRefreshReports: vi.fn(),
@@ -425,7 +425,6 @@ describe("dashboard interactions", () => {
       <LiveTraceDrawer
         open
         status={completedStatus}
-        hasVisibleReport={false}
         reportRefreshFailed={false}
         onClose={vi.fn()}
         onRefreshReports={vi.fn()}
@@ -454,7 +453,6 @@ describe("dashboard interactions", () => {
       <LiveTraceDrawer
         open
         status={completedStatus}
-        hasVisibleReport
         reportRefreshFailed
         onClose={vi.fn()}
         onRefreshReports={onRefreshReports}
@@ -463,7 +461,7 @@ describe("dashboard interactions", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Start new run" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Reload verified reports" }));
+    await user.click(screen.getByRole("button", { name: "Reload published reports" }));
     expect(onRefreshReports).toHaveBeenCalledOnce();
   });
 
